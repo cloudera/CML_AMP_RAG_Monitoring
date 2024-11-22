@@ -1,0 +1,17 @@
+swagger: '2.0'
+basePath: /
+info:
+  title: Metrics
+  description: API for creating and fetching metrics
+  version: 1.0.0
+
+schemes: [http]
+host: localhost:3000
+consumes: [application/json]
+produces: [application/json]
+
+tags:
+  - name: runs
+    description: APIs for Experiments and Runs
+  - name: metrics
+    description: APIs for Metrics

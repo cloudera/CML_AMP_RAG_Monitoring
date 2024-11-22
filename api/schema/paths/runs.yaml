@@ -1,0 +1,60 @@
+/runs:
+  post:
+    tags: [runs]
+    summary: Register an experiment run for monitoring.
+    description: Register an experiment run for monitoring
+    parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/ExperimentRun"
+    responses:
+      200:
+        description: "success"
+        schema:
+          $ref: '#/definitions/ExperimentRun'
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"
+  delete:
+    tags: [runs]
+    summary: Delete an experiment run from monitoring.
+    description: Delete an experiment run from monitoring.
+    parameters:
+      - name: experiment_id
+        in: query
+        type: string
+        description: The ID of the experiment
+      - name: run_id
+        in: query
+        type: string
+        description: The ID of the run
+    responses:
+      200:
+        description: "success"
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"
+/runs/list:
+  post:
+    tags: [runs]
+    summary: Get a list of monitored experiment runs for an experiment.
+    description: Get a list monitored experiment runs for an experiment.
+    parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/ExperimentRunListFilter"
+    responses:
+      200:
+        description: "success"
+        schema:
+          type: array
+          items:
+            $ref: '#/definitions/ExperimentRun'
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"

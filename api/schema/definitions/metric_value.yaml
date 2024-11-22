@@ -1,0 +1,9 @@
+MetricValue:
+  type: object
+  properties:
+    metricType:
+      type: string
+    numericValue:
+      type: number
+    stringValue:
+      type: string

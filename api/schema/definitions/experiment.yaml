@@ -1,0 +1,9 @@
+Experiment:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: The ID
+    experiment_id:
+      type: string
+      description: The Experiment ID

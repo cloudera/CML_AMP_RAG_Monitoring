@@ -1,0 +1,38 @@
+/metrics:
+  post:
+    tags: [metrics]
+    summary: Create metrics.
+    description: Create monitoring metrics
+    parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/Metrics"
+    responses:
+      200:
+        description: "success"
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"
+/metrics/list:
+  post:
+    tags: [metrics]
+    summary: List metrics.
+    description: List monitoring metrics
+    parameters:
+      - name: body
+        in: body
+        schema:
+          $ref: "#/definitions/MetricListFilter"
+    responses:
+      200:
+        description: "success"
+        schema:
+          type: array
+          items:
+            $ref: "#/definitions/Metric"
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"

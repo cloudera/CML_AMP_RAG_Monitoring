@@ -1,0 +1,6 @@
+ExperimentRunListFilter:
+  type: object
+  properties:
+    experiment_id:
+      type: string
+      description: The Experiment ID to filter on

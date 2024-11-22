@@ -1,0 +1,28 @@
+Metric:
+  type: object
+  properties:
+    id:
+      type: integer
+      description: The ID
+    experiment_id:
+      type: string
+      description: The Experiment ID
+    experiment_run_id:
+      type: string
+      description: The Experiment Run ID
+    name:
+      type: string
+      description: The name of the metric
+    value:
+      type: object
+      $ref: "#/definitions/MetricValue"
+      description: The value of the metric
+    tags:
+      type: array
+      items:
+        $ref: "#/definitions/MetricTag"
+      description: The tags of the metric
+    ts:
+      type: string
+      format: date-time
+      description: The timestamp of the metric

@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+go run github.com/jteeuwen/go-bindata/go-bindata -pkg swaggerui $(ls | grep -v generate.sh | grep -v bindata.go)
+

@@ -1,0 +1,56 @@
+name: RAG Monitoring
+description: "Build a monitoring application for a RAG pipeline"
+author: "Cloudera"
+date: "2024-09-12"
+specification_version: 1.0
+prototype_version: 1.0
+
+runtimes:
+  - editor: Workbench
+    kernel: Python 3.10
+    edition: Standard
+
+environment_variables:
+  AWS_REGION:
+    default: ""
+    description: "AWS Region. Needed for accessing Bedrock Models."
+  AWS_ACCESS_KEY_ID:
+    default: ""
+    description: "AWS Access Key ID. Needed for accessing Bedrock Models."
+  AWS_SECRET_ACCESS_KEY:
+    default: ""
+    description: "AWS Secret Access Key. Needed for accessing Bedrock Models."
+
+tasks:
+  - type: run_session
+    name: Download/Install Project Dependencies
+    script: scripts/install_base.py
+    short_summary: Install Project Dependencies
+    kernel: python3
+    cpu: 2
+    memory: 4
+
+  - type: create_job
+    name: Update/build RAG Monitoring
+    entity_label: refresh_project
+    script: scripts/refresh_project.py
+    arguments: None
+    cpu: 2
+    memory: 4
+    short_summary: Create job to allow refreshing the project from source and rebuilding.
+    environment:
+      TASK_TYPE: CREATE/RUN_JOB
+
+  - type: run_job
+    entity_label: refresh_project
+    short_summary: Run job to refresh the project from source and rebuilding.
+
+  - type: start_application
+    name: RAG Monitoring
+    subdomain: ragmon
+    script: scripts/start_app.py
+    short_summary: Start RAG Monitoring application
+    cpu: 2
+    memory: 4
+    environment:
+      TASK_TYPE: START_APPLICATION

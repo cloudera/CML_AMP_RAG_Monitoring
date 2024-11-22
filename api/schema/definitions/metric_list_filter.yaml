@@ -1,0 +1,16 @@
+MetricListFilter:
+  type: object
+  properties:
+    experiment_id:
+      type: string
+      description: The Experiment ID to filter on
+    run_ids:
+      type: array
+      items:
+        type: string
+      description: The Experiment Run IDs to filter on
+    metric_names:
+      type: array
+      items:
+        type: string
+      description: The metric names to filter on

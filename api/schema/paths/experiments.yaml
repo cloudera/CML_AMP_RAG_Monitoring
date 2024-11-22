@@ -1,0 +1,16 @@
+/experiments:
+  get:
+    tags: [experiments]
+    summary: Fetch the list of monitored experiments.
+    description: Fetch the list of monitored experiments
+    responses:
+      200:
+        description: "success"
+        schema:
+          type: array
+          items:
+            type: string
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"

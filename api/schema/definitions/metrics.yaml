@@ -1,0 +1,8 @@
+Metrics:
+  type: object
+  properties:
+    metrics:
+      type: array
+      items:
+          $ref: "#/definitions/Metric"
+      description: The metrics
