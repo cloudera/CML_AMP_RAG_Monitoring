@@ -3,27 +3,24 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import List
 from tqdm import tqdm
 
-import pandas as pd
 import requests
 from llama_index.core import Settings
-from llama_index.core.base.llms.types import MessageRole
 from llama_index.core.indices import VectorStoreIndex
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.core.storage import StorageContext
-from llama_index.embeddings.bedrock import BedrockEmbedding
 from llama_index.vector_stores.qdrant import QdrantVectorStore
-from pydantic import BaseModel
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
+
+from services.ragllm import get_embedding_model_and_dims
 
 # Add the st_app directory to the sys.path
 file_path = Path(os.path.realpath(__file__))
 main_dir = file_path.parents[1]
-st_app_dir = os.path.join(main_dir, "st_app")
+st_app_dir = os.path.join(main_dir, "ragmon")
 sys.path.append(st_app_dir)
 
 from data_types import (
@@ -40,8 +37,7 @@ SAMPLE_DATA_DIR = os.path.join(main_dir, "sample_data")
 # Create the source files directory
 os.makedirs(SOURCE_FILES_DIR, exist_ok=True)
 
-Settings.embed_model = BedrockEmbedding(model_name="cohere.embed-english-v3")
-EMBED_DIMS = 1024
+Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
 
 
 # Function to get the table name from a data source ID
@@ -63,7 +59,7 @@ def get_response(request: RagPredictRequest) -> RagPredictResponse:
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
-        timeout=60,
+        timeout=None,
     )
 
     if response.status_code != 200:

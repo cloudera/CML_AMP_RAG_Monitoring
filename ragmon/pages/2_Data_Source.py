@@ -51,13 +51,13 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.core.storage import StorageContext
 from llama_index.vector_stores.qdrant import QdrantVectorStore
-from llama_index.embeddings.bedrock import BedrockEmbedding
 from qdrant_client.models import Distance, VectorParams
+from services.ragllm import get_embedding_model_and_dims
 from data_types import RagIndexConfiguration
 import mimetypes
 
-Settings.embed_model = BedrockEmbedding(model_name="cohere.embed-english-v3")
-EMBED_DIMS = 1024
+
+Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))

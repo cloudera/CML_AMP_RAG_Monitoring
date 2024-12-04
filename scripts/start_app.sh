@@ -23,22 +23,34 @@ for sig in INT QUIT HUP TERM; do
 done
 trap cleanup EXIT
 
+echo "Starting Qdrant"
 # Start Qdrant
-nohup ~/qdrant/qdrant >~/qdrant.log &
+nohup ./qdrant/qdrant >~/qdrant.log &
 
-# Start MLflow
-nohup uv run --no-project mlflow server --backend-store-uri "sqlite:///$SQL_DB_PATH" &>~/mlflow.log &
-
+echo "Starting Metric API"
 # Start up the Go api
 SQL_DB_NAME=rag_metrics SQL_DB_ADDRESS=rag_metrics nohup ./api/api &>~/api.log &
 
+cd ragmon
+
+echo "Starting MLflow"
+# Start MLflow
+nohup uv run mlflow server --backend-store-uri "sqlite:///$SQL_DB_PATH" &>../mlflow.log &
+
+echo "Starting REST API"
 # Start FastAPI
-nohup uv run --no-project fastapi run --host 127.0.0.1 --port $FASTAPI_PORT ~/service/main.py >~/fastapi.log &
+nohup uv run fastapi run --host 127.0.0.1 --port $FASTAPI_PORT main.py &>../fastapi.log &
+
+echo "Waiting for REST API"
+# Wait for FastAPI to boot and settle
+sleep 60
 
 # Run the pre-population script
-nohup uv run --no-project ~/scripts/populate_and_simulate_qa.py >~/populate_and_simulate_qa.log 
+echo "Pre-populating data"
+nohup uv run populate_and_simulate_qa.py >../populate_and_simulate_qa.log 
 
 ADDRESS=${ADDRESS:-127.0.0.1}
 
 # Start Streamlit
-uv run --no-project streamlit run ~/st_app/app.py --server.address $ADDRESS --server.port $CDSW_APP_PORT
+echo "Starting UI"
+uv run streamlit run app.py --server.address $ADDRESS --server.port $CDSW_APP_PORT
