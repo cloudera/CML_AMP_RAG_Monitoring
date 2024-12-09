@@ -61,23 +61,16 @@ from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.core.response_synthesizers import get_response_synthesizer
 from llama_index.core.storage import StorageContext
-from llama_index.embeddings.bedrock import BedrockEmbedding
-from llama_index.llms.bedrock_converse import BedrockConverse
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from pydantic import BaseModel
 
+from ...services.ragllm import get_embedding_model_and_dims, get_inference_model
 from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessEvaluator
-from ...config import settings
 from pprint import pprint
 import asyncio
 
 logger = logging.getLogger(__name__)
 tracer = opentelemetry.trace.get_tracer(__name__)
-
-
-# TODO: Embed Model Options - Refactor to config
-def get_embed_model_and_dim():
-    return BedrockEmbedding(model_name="cohere.embed-english-v3"), 1024
 
 
 class RagMessage(BaseModel):
@@ -123,7 +116,7 @@ def upload(
         configuration.chunk_overlap * 0.01 * configuration.chunk_size
     )
 
-    embed_model, _ = get_embed_model_and_dim()
+    embed_model, _ = get_embedding_model_and_dims()
     logger.info("indexing document")
     VectorStoreIndex.from_documents(
         documents,
@@ -158,9 +151,7 @@ async def evaluate_response(
     EvaluationResult,
     EvaluationResult,
 ]:
-    evaluator_llm = BedrockConverse(
-        model="meta.llama3-70b-instruct-v1:0",
-    )
+    evaluator_llm = get_inference_model()
 
     relevancy_evaluator = RelevancyEvaluator(llm=evaluator_llm)
     faithfulness_evaluator = FaithfulnessEvaluator(llm=evaluator_llm)
@@ -208,7 +199,6 @@ def query(
     configuration: RagPredictConfiguration,
     chat_history: list[RagMessage],
 ) -> AgentChatResponse:
-
     logger.info("fetching Qdrant index")
     try:
         vector_store = create_qdrant_vector_store(data_source_id)
@@ -216,7 +206,7 @@ def query(
         # TODO: catch a more specific exception for index/namespace not found
         logger.error("Qdrant index or namespace not found")
         raise
-    embed_model, _ = get_embed_model_and_dim()
+    embed_model, _ = get_embedding_model_and_dims()
     index = VectorStoreIndex.from_vector_store(
         vector_store=vector_store,
         embed_model=embed_model,
@@ -228,10 +218,8 @@ def query(
         similarity_top_k=configuration.top_k,
         embed_model=embed_model,
     )
-    # TODO: factor out LLM and chat engine into a separate function and create span
-    llm = BedrockConverse(
-        model=configuration.model_name,
-    )
+
+    llm = get_inference_model()
 
     response_synthesizer = get_response_synthesizer(llm=llm)
     query_engine = RetrieverQueryEngine(

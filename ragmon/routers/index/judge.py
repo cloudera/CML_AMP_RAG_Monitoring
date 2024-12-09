@@ -40,12 +40,9 @@
 
 import re
 import asyncio
-import re
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Sequence, Union
 
-from llama_index.core.evaluation.base import BaseEvaluator, EvaluationResult
 from llama_index.core.llms.llm import LLM
-from llama_index.core.prompts import BasePromptTemplate, PromptTemplate
 from llama_index.core.prompts.mixin import PromptDictType
 from llama_index.core.settings import Settings
 from typing import Optional, Tuple
@@ -75,7 +72,6 @@ _DEFAULT_SCORE_THRESHOLD = 2.0
 
 
 class CustomEvaluator(BaseEvaluator):
-
     def __init__(
         self,
         llm: Optional[LLM] = None,
