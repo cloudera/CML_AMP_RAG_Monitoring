@@ -107,7 +107,7 @@ func TestReconcilerReconcile(t *testing.T) {
 			if len(state.reconcileItems) > 0 {
 				r.Reconcile(context.TODO(), state.reconcileItems)
 
-				// Property: the number of mlflow metrics by run id equals the number of created metrics
+				// Property: the number of runs metrics by run id equals the number of created metrics
 				for runId, metrics := range state.mlFlow.MetricsByRunId {
 					numCreated := 0
 					for _, metric := range state.metrics.CreatedMetrics {

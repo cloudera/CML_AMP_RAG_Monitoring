@@ -10,7 +10,10 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/sqlite"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/experiments"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/metrics"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/runs"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/restapi"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/server"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
@@ -83,16 +86,24 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	dataStore := datasource.NewMLFlow(datasourceConfig, connections)
+	dataStores := datasource.NewDataStores(datasourceConfig, connections)
+	experimentsConfig, err := experiments.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	experimentReconciler := experiments.NewExperimentReconciler(experimentsConfig, database, dataStores)
+	syncReconciler := experiments.NewSyncReconciler(experimentsConfig, database, dataStores)
+	runsConfig, err := runs.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	runReconciler := runs.NewRunReconciler(runsConfig, database, dataStores)
 	metricsConfig, err := metrics.NewConfigFromEnv()
 	if err != nil {
 		return nil, err
 	}
-	reconciler := metrics.NewReconciler(metricsConfig, database, dataStore)
-	manager, err := metrics.NewReconcilerManager(instance, metricsConfig, reconciler)
-	if err != nil {
-		return nil, err
-	}
-	mainDependencies := newDependencies(instance, configConfig, sbhttpserverInstance, swaggerApiServer, v, database, migration, connections, dataStore, manager)
+	reconciler := metrics.NewReconciler(metricsConfig, database, dataStores)
+	reconcilerSet := reconcilers.NewReconcilerSet(instance, experimentsConfig, experimentReconciler, syncReconciler, runsConfig, runReconciler, metricsConfig, reconciler)
+	mainDependencies := newDependencies(instance, configConfig, sbhttpserverInstance, swaggerApiServer, v, database, migration, connections, dataStores, reconcilerSet)
 	return mainDependencies, nil
 }
