@@ -53,7 +53,7 @@ func (e *ExperimentRunsMock) ListExperimentRunIdsForReconciliation(_ context.Con
 	return runIds, nil
 }
 
-func (e *ExperimentRunsMock) UpdateExperimentRunTimestamp(_ context.Context, id int64) error {
+func (e *ExperimentRunsMock) UpdateExperimentRunUpdatedAndTimestamp(_ context.Context, id int64, updated bool, ts time.Time) error {
 	for _, run := range e.ExperimentRuns {
 		if run.Id == id {
 			run.UpdatedTs = run.UpdatedTs.Add(1)
@@ -78,6 +78,46 @@ var _ ExperimentRunService = &ExperimentRunsMock{}
 
 type ExperimentsMock struct {
 	Experiments []*Experiment
+}
+
+func (e *ExperimentsMock) GetExperimentById(ctx context.Context, id int64) (*Experiment, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) GetExperimentByExperimentId(ctx context.Context, experimentId string) (*Experiment, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) ListExperimentIDsForReconciliation(ctx context.Context, maxItems int64) ([]int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) MarkExperimentIDForReconciliation(ctx context.Context, id int64) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) UpdateRemoteExperimentId(ctx context.Context, id int64, remoteExperimentId string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) UpdateExperimentCreatedAndTimestamp(ctx context.Context, id int64, created bool, ts time.Time) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) UpdateExperimentUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, ts time.Time) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentsMock) CreateExperiment(ctx context.Context, experimentId string, createdTs time.Time, updatedTs time.Time) (*Experiment, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (e *ExperimentsMock) ListExperiments(_ context.Context) ([]*Experiment, error) {

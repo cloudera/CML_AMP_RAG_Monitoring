@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
+	"time"
 )
 
 type ExperimentRuns struct {
@@ -121,13 +122,13 @@ func (e *ExperimentRuns) ListExperimentRunIdsForReconciliation(ctx context.Conte
 	return response, nil
 }
 
-func (e *ExperimentRuns) UpdateExperimentRunTimestamp(ctx context.Context, id int64) error {
+func (e *ExperimentRuns) UpdateExperimentRunUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, updatedAt time.Time) error {
 	query := `
 	UPDATE experiment_runs
-	SET updated_ts = datetime('now')
+	SET updated = ?, updated_ts = datetime('now')
 	WHERE id = ? 
 	`
-	args := []interface{}{id}
+	args := []interface{}{updated, updatedAt, id}
 	_, err := e.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
