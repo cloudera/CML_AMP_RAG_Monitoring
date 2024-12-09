@@ -29,7 +29,7 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 }
 
 func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.RemoteProjectID, run.Info.ExperimentId, run.Info.RunId)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectNum, run.Info.ExperimentId, run.Info.RunId)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 
 	encoded, err := json.Marshal(run)
@@ -57,7 +57,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 }
 
 func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.RemoteProjectID, experimentId, runId)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectNum, experimentId, runId)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 
 	req.Header = make(map[string][]string)
@@ -93,7 +93,7 @@ func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*
 		if done {
 			break
 		}
-		url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs?page_token=%s", m.baseUrl, m.cfg.RemoteProjectID, experimentId, token)
+		url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs?page_token=%s", m.baseUrl, m.cfg.CDSWProjectNum, experimentId, token)
 		req := cbhttp.NewRequest(ctx, "GET", url)
 		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
@@ -132,10 +132,10 @@ func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*
 }
 
 func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, name string, createdTs time.Time, tags []RunTag) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs", m.baseUrl, m.cfg.RemoteProjectID, experimentId)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs", m.baseUrl, m.cfg.CDSWProjectNum, experimentId)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
-		"project_id":    m.cfg.RemoteProjectID,
+		"project_id":    m.cfg.CDSWProjectNum,
 		"experiment_id": experimentId,
 	}
 	encoded, err := json.Marshal(body)
@@ -171,10 +171,10 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 }
 
 func (m *PlatformMLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.RemoteProjectID)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectNum)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
-		"project_id": m.cfg.RemoteProjectID,
+		"project_id": m.cfg.CDSWProjectNum,
 		"name":       name,
 	}
 	encoded, err := json.Marshal(body)

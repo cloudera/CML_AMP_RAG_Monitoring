@@ -206,10 +206,10 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 }
 
 func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.RemoteProjectID)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectNum)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
-		"project_id": m.cfg.RemoteProjectID,
+		"project_id": m.cfg.CDSWProjectNum,
 		"name":       name,
 	}
 	encoded, err := json.Marshal(body)

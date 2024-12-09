@@ -43,6 +43,6 @@ type DataStores struct {
 func NewDataStores(cfg *Config, connections *clientbase.Connections) DataStores {
 	return DataStores{
 		Local:  NewMLFlow(cfg.LocalMLFlowBaseUrl, cfg, connections),
-		Remote: NewPlatformMLFlow(cfg.RemoteMLFlowBaseUrl, cfg, connections),
+		Remote: NewPlatformMLFlow(cfg.CDSWMLFlowBaseUrl, cfg, connections),
 	}
 }
