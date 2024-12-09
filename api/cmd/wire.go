@@ -8,7 +8,10 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/sqlite"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers"
+	recexperiments "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/experiments"
 	recmetrics "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/metrics"
+	recruns "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/runs"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/restapi"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/server"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
@@ -28,8 +31,11 @@ func InitializeDependencies() (*dependencies, error) {
 		sqlite.NewMetrics, sqlite.NewDatabase, NewMigration,
 		restapi.NewMetricsAPI, restapi.NewExperimentRunsAPI, restapi.NewExperimentAPI,
 		server.NewSwaggerApiServer,
-		datasource.NewConfigFromEnv, datasource.NewMLFlow,
-		recmetrics.NewConfigFromEnv, recmetrics.NewReconciler, recmetrics.NewReconcilerManager,
+		datasource.NewConfigFromEnv, datasource.NewDataStores,
+		recexperiments.NewConfigFromEnv, recexperiments.NewExperimentReconciler, recexperiments.NewSyncReconciler,
+		recruns.NewConfigFromEnv, recruns.NewRunReconciler,
+		recmetrics.NewConfigFromEnv, recmetrics.NewReconciler,
+		reconcilers.NewReconcilerSet,
 		newDependencies)
 	return &dependencies{}, nil
 }

@@ -16,7 +16,7 @@ import (
 type Reconciler struct {
 	config *Config
 	db     db.Database
-	mlFlow datasource.DataStore
+	mlFlow datasource.DataStores
 }
 
 func (r *Reconciler) Reboot(_ context.Context) {}
@@ -51,7 +51,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 		}
 		// Fetch metrics from MLFlow
-		mlFlowMetrics, err := r.mlFlow.Metrics(ctx, run.RunId)
+		mlFlowMetrics, err := r.mlFlow.Local.Metrics(ctx, run.RunId)
 		if err != nil {
 			log.Printf("failed to fetch metrics for experiment run %d: %s", item.ID, err)
 			continue
@@ -76,7 +76,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			}
 		}
 		// Fetch artifacts from MLFlow
-		mlFlowArtifacts, err := r.mlFlow.Artifacts(ctx, run.RunId, nil)
+		mlFlowArtifacts, err := r.mlFlow.Local.Artifacts(ctx, run.RunId, nil)
 		if err != nil {
 			log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
 			continue
@@ -90,7 +90,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("fetched %d metrics for artifact %s for experiment run %d", len(artifactMetrics), artifact.Path, run.RunId)
 		}
 		// Update the timestamp of the experiment run to indicate that it has been reconciled
-		err = r.db.ExperimentRuns().UpdateExperimentRunTimestamp(ctx, run.Id)
+		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {
 			log.Printf("failed to update experiment run %d timestamp: %s", item.ID, err)
 		}
@@ -100,7 +100,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 
 func (r *Reconciler) fetchArtifacts(ctx context.Context, experimentId string, runId string, artifact datasource.Artifact) ([]db.Metric, error) {
 	if artifact.IsDir {
-		artifacts, err := r.mlFlow.Artifacts(ctx, runId, &artifact.Path)
+		artifacts, err := r.mlFlow.Local.Artifacts(ctx, runId, &artifact.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -114,7 +114,7 @@ func (r *Reconciler) fetchArtifacts(ctx context.Context, experimentId string, ru
 		}
 	}
 	if strings.HasSuffix(artifact.Path, ".json") {
-		artifactBytes, err := r.mlFlow.GetArtifact(ctx, runId, artifact.Path)
+		artifactBytes, err := r.mlFlow.Local.GetArtifact(ctx, runId, artifact.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func NewReconcilerManager(app *app.Instance, cfg *Config, rec *Reconciler) (*rec
 	return reconciler.NewManager[int64](app.Context(), reconcilerConfig, rec), nil
 }
 
-func NewReconciler(config *Config, db db.Database, mlFlow datasource.DataStore) *Reconciler {
+func NewReconciler(config *Config, db db.Database, mlFlow datasource.DataStores) *Reconciler {
 	return &Reconciler{
 		config: config,
 		db:     db,
