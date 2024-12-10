@@ -64,6 +64,8 @@ def start_evaluation_reconciler():
     """Start the evaluation reconciler."""
     logger.info("Starting evaluation reconciler.")
     data_directory = os.path.join(os.getcwd(), "data")
+    if not os.path.exists(data_directory):
+        os.makedirs(data_directory)
     logger.info("Data directory: %s", data_directory)
     worker_thread = threading.Thread(
         target=background_worker,
