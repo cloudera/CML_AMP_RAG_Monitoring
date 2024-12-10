@@ -39,18 +39,18 @@
 # ###########################################################################
 
 import http
+import json
 import logging
 import os
+from pathlib import Path
 import uuid
 from typing import Dict, List, Optional, Union
 import mlflow
-from mlflow.tracking import MlflowClient
 import requests
 
 import opentelemetry.trace
 from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole
-from llama_index.core.chat_engine.types import AgentChatResponse
 
 from pydantic import BaseModel
 
@@ -146,80 +146,6 @@ def feedback(
     return {"success": True}
 
 
-async def log_evaluation_metrics(
-    run: mlflow.ActiveRun,
-    query: Union[str, None] = None,
-    chat_response: Union[str, AgentChatResponse, None] = None,
-) -> None:
-    """Log evaluation metrics for a response"""
-    if query is None or chat_response is None:
-        return False
-    mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
-    try:
-        (
-            relevance,
-            faithfulness,
-            context_relevancy,
-            maliciousness,
-            toxicity,
-            comprehensiveness,
-        ) = await qdrant.evaluate_response(
-            query=query,
-            chat_response=chat_response,
-        )
-
-        logger.info(
-            "Relevance: %s, Faithfulness: %s, "
-            "Context Relevancy: %s, Maliciousness: %s, "
-            "Toxicity: %s, Comprehensiveness: %s",
-            relevance.score,
-            faithfulness.score,
-            context_relevancy.score,
-            maliciousness.score,
-            toxicity.score,
-            comprehensiveness.score,
-        )
-
-        # fetch previous metrics
-        metric_history = mlflowclient.get_metric_history(
-            run_id=run.info.run_id,
-            key="relevance_score",
-        )
-        mlflow.log_metrics(
-            {
-                "relevance_score": relevance.score if relevance is not None else 0,
-                "faithfulness_score": (
-                    faithfulness.score if faithfulness.score is not None else 0
-                ),
-                "context_relevancy_score": (
-                    context_relevancy.score
-                    if context_relevancy.score is not None
-                    else 0.5
-                ),
-                "input_length": len(query.split()),
-                "output_length": len(chat_response.response.split()),
-                "maliciousness_score": (
-                    maliciousness.score if maliciousness.score is not None else -1
-                ),
-                "toxicity_score": toxicity.score if toxicity.score is not None else -1,
-                "comprehensiveness_score": (
-                    comprehensiveness.score
-                    if comprehensiveness.score is not None
-                    else -1
-                ),
-            },
-            step=len(metric_history) + 1,
-            synchronous=True,
-        )
-        logger.info(
-            "Logged evaluation metrics for exp id %s and run id %s",
-            run.info.experiment_id,
-            run.info.run_id,
-        )
-    except Exception as e:
-        logger.error("Failed to log evaluation metrics: %s", e)
-
-
 def register_experiment_and_run(
     experiment_id: str,
     experiment_run_id: str,
@@ -250,6 +176,16 @@ def register_experiment_and_run(
     except Exception as e:
         logger.error("Failed to register experiment and run with MLflow store: %s", e)
         return False
+
+
+def save_to_disk(
+    data,
+    directory: Union[str, Path, os.PathLike],
+    filename: str,
+):
+    """Helper function to save JSON data to disk."""
+    with open(os.path.join(directory, filename), "w", encoding="utf-8") as f:
+        json.dump(data, f)
 
 
 @router.post("/predict", summary="Predict using indexed documents")
@@ -331,10 +267,14 @@ async def predict(
         )
 
         if request.do_evaluate:
-            await log_evaluation_metrics(
-                run=run,
-                query=request.query,
-                chat_response=response,
+            # save response to disk for evaluation reconciler to pick up
+            save_dir = Path(os.path.join(os.getcwd(), "data"))
+            save_to_disk(
+                rag_response.dict(),
+                save_dir,
+                f"{rag_response.id}.json",
             )
+
+    mlflow.end_run()
 
     return rag_response

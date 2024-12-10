@@ -39,19 +39,12 @@
 # ###########################################################################
 
 import logging
-from typing import Tuple
 
 import opentelemetry.trace
 import qdrant_client
 from fastapi import HTTPException
 from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from llama_index.core.chat_engine import CondenseQuestionChatEngine
-from llama_index.core.evaluation import (
-    FaithfulnessEvaluator,
-    RelevancyEvaluator,
-    ContextRelevancyEvaluator,
-    EvaluationResult,
-)
 
 from llama_index.core.chat_engine.types import AgentChatResponse
 from llama_index.core.indices import VectorStoreIndex
@@ -65,9 +58,7 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 from pydantic import BaseModel
 
 from ...services.ragllm import get_embedding_model_and_dims, get_inference_model
-from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessEvaluator
 from pprint import pprint
-import asyncio
 
 logger = logging.getLogger(__name__)
 tracer = opentelemetry.trace.get_tracer(__name__)
@@ -137,59 +128,6 @@ class RagPredictConfiguration(BaseModel):
     top_k: int = 5
     chunk_size: int = 512
     model_name: str = "meta.llama3-70b-instruct-v1:0"
-
-
-@tracer.start_as_current_span("Qdrant evaluate response")
-async def evaluate_response(
-    query: str,
-    chat_response: AgentChatResponse,
-) -> Tuple[
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-]:
-    evaluator_llm = get_inference_model()
-
-    relevancy_evaluator = RelevancyEvaluator(llm=evaluator_llm)
-    faithfulness_evaluator = FaithfulnessEvaluator(llm=evaluator_llm)
-    context_relevancy_evaluator = ContextRelevancyEvaluator(llm=evaluator_llm)
-    maliciousness_evaluator = MaliciousnessEvaluator(llm=evaluator_llm)
-    toxicity_evaluator = ToxicityEvaluator(llm=evaluator_llm)
-    comprehensiveness_evaluator = ComprehensivenessEvaluator(llm=evaluator_llm)
-
-    results = await asyncio.gather(
-        relevancy_evaluator.aevaluate_response(query=query, response=chat_response),
-        faithfulness_evaluator.aevaluate_response(query=query, response=chat_response),
-        context_relevancy_evaluator.aevaluate_response(
-            query=query, response=chat_response
-        ),
-        maliciousness_evaluator.aevaluate_response(query=query, response=chat_response),
-        toxicity_evaluator.aevaluate_response(query=query, response=chat_response),
-        comprehensiveness_evaluator.aevaluate_response(
-            query=query, response=chat_response
-        ),
-    )
-
-    (
-        relevance,
-        faithfulness,
-        context_relevancy,
-        maliciousness,
-        toxicity,
-        comprehensiveness,
-    ) = results
-
-    return (
-        relevance,
-        faithfulness,
-        context_relevancy,
-        maliciousness,
-        toxicity,
-        comprehensiveness,
-    )
 
 
 @tracer.start_as_current_span("Qdrant query")

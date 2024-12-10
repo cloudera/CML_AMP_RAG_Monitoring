@@ -38,16 +38,54 @@
 #
 # ###########################################################################
 
+import logging
+import os
+import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .routers import index
+from .utils.reconciler import background_worker
+from .utils import evaluate_json_data
+
+###################################
+#  Logging
+###################################
+
+logger = logging.getLogger(__name__)
+
+###################################
+# Reconciler
+###################################
+
+
+def start_evaluation_reconciler():
+    """Start the evaluation reconciler."""
+    logger.info("Starting evaluation reconciler.")
+    data_directory = os.path.join(os.getcwd(), "data")
+    logger.info("Data directory: %s", data_directory)
+    worker_thread = threading.Thread(
+        target=background_worker,
+        args=(data_directory, evaluate_json_data),
+        daemon=True,
+    )
+    worker_thread.start()
+    logger.info("Evaluation reconciler started.")
+
+
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    """Initialize and teardown the application's lifespan events."""
+    start_evaluation_reconciler()
+    yield
 
 
 ###################################
 #  App
 ###################################
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 ###################################
