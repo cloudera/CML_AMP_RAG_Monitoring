@@ -203,10 +203,6 @@ async def evaluate_json_data(data):
                 mlflow_run_id,
             )
 
-            # extract keywords from the query and response
-            query_keywords = extract_keywords(query)
-            response_keywords = extract_keywords(response)
-
             logger.info(
                 "Logged keywords for exp id %s and run id %s",
                 mlflow_experiment_id,
