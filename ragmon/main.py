@@ -40,11 +40,14 @@
 
 import logging
 import os
+import sys
 import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.logging import DefaultFormatter
 
+from .config import settings
 from .routers import index
 from .utils.reconciler import background_worker
 from .utils import evaluate_json_data
@@ -54,6 +57,23 @@ from .utils import evaluate_json_data
 ###################################
 
 logger = logging.getLogger(__name__)
+
+
+def _configure_logger() -> None:
+    """Configure this module's setup/teardown logging formatting and verbosity."""
+    # match uvicorn.error's formatting
+    formatter = DefaultFormatter("%(levelprefix)s %(message)s")
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+    logger.setLevel(settings.rag_log_level)
+    # prevent duplicate outputs with the app logger
+    logger.propagate = False
+
+
+_configure_logger()
 
 ###################################
 # Reconciler

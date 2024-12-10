@@ -199,11 +199,12 @@ async def predict(
     with mlflow.start_run(
         experiment_id=curr_exp.experiment_id,
     ) as run:
-        # register experiment and run with MLflow store
-        register_experiment_and_run(
-            experiment_id=curr_exp.experiment_id,
-            experiment_run_id=run.info.run_id,
-        )
+        # deprecated: register experiment and run with MLflow store
+        # register_experiment_and_run(
+        #     experiment_id=curr_exp.experiment_id,
+        #     experiment_run_id=run.info.run_id,
+        # )
+
         # log request params
         mlflow.log_params(
             {
