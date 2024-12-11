@@ -26,12 +26,18 @@ Our list of pre-built metrics is regularly updated. Currently, the following met
 
 ### Pre-requisites
 
-This AMP requires AWS for access to both LLM and embedding models. Please complete the following steps before using the AMP:
+The AMP requires access to LLM and embedding models hosted either on AWS or Cloudera AI Inferencing. These options are mutually exclusive. Complete the setup for one of the following options before proceeding:
+
+**For AWS:**
 
 - The following models need to be configured and accessible via AWS Bedrock.
   - Llama3 70b Instruct V1 (`meta.llama3-70b-instruct-v1:0`)
 - For Embedding, you will need to enable the following model in AWS Bedrock:
   - Cohere English Embedding v3 (`meta.cohere-english-embedding-v3:0`)
+
+**For Cloudera AI Inferencing provide:**
+- Inference model endpoint
+- Embedding model endpoint
 
 ### Common Issues
 
@@ -46,9 +52,18 @@ Follow the [standard instructions](https://docs.cloudera.com/machine-learning/cl
 
 For configuring the project, you will need to provide some environment variables.
 
+**For AWS:**
+
 - `AWS_DEFAULT_REGION` - defaults to `us-west-2`
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
+
+OR
+
+**For Cloudera AI Inferencing:**
+- CAII_DOMAIN
+- CAII_INFERENCE_ENDPOINT_NAME
+- CAII_EMBEDDING_ENDPOINT_NAME
 
 ## Getting Started with the RAG Monitoring Application
 
@@ -76,14 +91,11 @@ For configuring the project, you will need to provide some environment variables
 
 You can run the AMP locally using Docker.
 
-- Set the `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables as above.
+- Set the `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables as above if you are using AWS Bedrock.
+- Set the `CAII_DOMAIN`, `CAII_INFERENCE_ENDPOINT_NAME` and `CAII_EMBEDDING_ENDPOINT_NAME` environment variables if you are using Cloudera AI Inferencing.
 - Run `./local.sh`
 
-This will build and run the AMP. The script will build the AMP image once. If you would like to force a rebuild, you can pass the `BUILD` environment variable set to `true`.
-
-- `BUILD=true ./local.sh`
-
-This is useful if you are making changes to the AMP and want to see the changes reflected when running.
+By default, the UI will be available at `http://localhost:8200`. The port can be customzied by setting the CDSW_APP_PORT variable.
 
 ## The Fine Print
 

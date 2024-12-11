@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+if [ -n "$LOCAL" ]; then
+  echo "LOCAL is set, not refreshing project"
+  exit 0
+fi
+
 # Fetch the latest changes from origin without merging
 git fetch origin
 
