@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+pip install uv
+
 cd ragmon
 uv sync
 
