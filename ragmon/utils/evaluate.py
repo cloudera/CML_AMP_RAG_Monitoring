@@ -199,6 +199,8 @@ async def evaluate_json_data(data):
                 "maliciousness_score": maliciousness.score,
                 "toxicity_score": toxicity.score,
                 "comprehensiveness_score": comprehensiveness.score,
+                "output_length": len(response.split()),
+                "input_length": len(query.split()),
             }
 
             # Log the metrics
