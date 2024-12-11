@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-CDSW_APP_PORT=${CDSW_APP_PORT:8200}
+CDSW_APP_PORT=${CDSW_APP_PORT:-8200}
 
 if [ -z "$AWS_REGION" ] && [ -z "$CAII_DOMAIN" ]; then
   echo "Either AWS_REGION or CAII_DOMAIN must be set"
