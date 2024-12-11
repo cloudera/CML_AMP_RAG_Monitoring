@@ -203,7 +203,7 @@ def main():
         )
         responses.append(response)
     print("Simulated question answering.")
-    print("SImulating feedback logging...")
+    print("Simulating feedback logging...")
     for i in tqdm(range(len(responses))):
         response = responses[i]
         feedback_request = RagFeedbackRequest(
