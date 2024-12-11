@@ -4,8 +4,10 @@ This module contains functions to evaluate the response of a chat engine against
 
 import asyncio
 import logging
-
+import sys
 from typing import Union, Tuple, Sequence
+
+from uvicorn.logging import DefaultFormatter
 
 from llama_index.core.evaluation import (
     FaithfulnessEvaluator,
@@ -24,6 +26,13 @@ from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessE
 from ..config import settings
 
 logger = logging.getLogger(__name__)
+formatter = DefaultFormatter("%(levelprefix)s %(message)s")
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.setLevel(settings.rag_log_level)
 
 
 async def evaluate_response(
@@ -143,7 +152,10 @@ async def evaluate_json_data(data):
     try:
         # set the experiment ID and run ID
         mlflow.set_experiment(experiment_id=mlflow_experiment_id)
-        with mlflow.start_run(run_id=mlflow_run_id) as run:
+        with mlflow.start_run(
+            experiment_id=mlflow_experiment_id,
+            run_id=mlflow_run_id,
+        ) as run:
             if contexts:
                 for i, context in enumerate(contexts):
                     mlflow.log_param(f"context_{i}", context)
@@ -199,12 +211,6 @@ async def evaluate_json_data(data):
 
             logger.info(
                 "Logged evaluation metrics for exp id %s and run id %s",
-                mlflow_experiment_id,
-                mlflow_run_id,
-            )
-
-            logger.info(
-                "Logged keywords for exp id %s and run id %s",
                 mlflow_experiment_id,
                 mlflow_run_id,
             )

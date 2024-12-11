@@ -44,6 +44,7 @@ import logging
 import os
 from pathlib import Path
 import uuid
+import sys
 from typing import Dict, List, Optional, Union
 import mlflow
 import requests
@@ -53,6 +54,7 @@ from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole
 
 from pydantic import BaseModel
+from uvicorn.logging import DefaultFormatter
 
 from ... import exceptions
 from . import qdrant
@@ -60,6 +62,14 @@ from .qdrant import RagMessage
 from ...config import settings
 
 logger = logging.getLogger(__name__)
+formatter = DefaultFormatter("%(levelprefix)s %(message)s")
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.setLevel(settings.rag_log_level)
+
 tracer = opentelemetry.trace.get_tracer(__name__)
 
 mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
@@ -114,14 +124,14 @@ class RagFeedbackRequest(BaseModel):
 @tracer.start_as_current_span("feedback")
 def feedback(
     request: RagFeedbackRequest,
-) -> Dict[str, bool]:
+) -> Dict[str, str]:
     """Log feedback for a response"""
     curr_exp = mlflow.set_experiment(experiment_id=request.experiment_id)
-    with mlflow.start_run(
-        experiment_id=curr_exp.experiment_id,
-        run_id=request.experiment_run_id,
-    ):
-        try:
+    try:
+        with mlflow.start_run(
+            experiment_id=curr_exp.experiment_id,
+            run_id=request.experiment_run_id,
+        ):
             mlflow.log_metrics(
                 {
                     "feedback": request.feedback,
@@ -140,10 +150,10 @@ def feedback(
                 request.experiment_id,
                 request.experiment_run_id,
             )
-        except Exception as e:
-            logger.error("Failed to log feedback: %s", e)
-            return {"success": False}
-    return {"success": True}
+    except Exception as e:
+        logger.error("Failed to log feedback: %s", e)
+        return {"status": "failed"}
+    return {"status": "success"}
 
 
 def register_experiment_and_run(
@@ -196,9 +206,7 @@ async def predict(
 ) -> RagPredictResponse:
     """Predict using indexed documents"""
     curr_exp = mlflow.set_experiment(experiment_name=f"{request.data_source_id}_live")
-    with mlflow.start_run(
-        experiment_id=curr_exp.experiment_id,
-    ) as run:
+    with mlflow.start_run() as run:
         # deprecated: register experiment and run with MLflow store
         # register_experiment_and_run(
         #     experiment_id=curr_exp.experiment_id,
@@ -254,19 +262,6 @@ async def predict(
             mlflow_run_id=run.info.run_id,
         )
 
-        # log response
-        mlflow.log_table(
-            {
-                "response_id": rag_response.id,
-                "input": rag_response.input,
-                "input_length": len(rag_response.input.split()),
-                "output": rag_response.output,
-                "output_length": len(rag_response.output.split()),
-                "source_nodes": rag_response.source_nodes,
-            },
-            artifact_file="live_results.json",
-        )
-
         if request.do_evaluate:
             # save response to disk for evaluation reconciler to pick up
             save_dir = Path(os.path.join(os.getcwd(), "data"))
@@ -275,7 +270,5 @@ async def predict(
                 save_dir,
                 f"{rag_response.id}.json",
             )
-
-    mlflow.end_run()
 
     return rag_response

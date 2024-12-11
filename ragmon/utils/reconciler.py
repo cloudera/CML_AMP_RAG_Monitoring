@@ -5,19 +5,27 @@ Reconciler script to process io request pairs.
 import os
 import json
 import logging
+import sys
 import time
 import threading
 from pathlib import Path
 import argparse
-from typing import Union
 import asyncio
-from typing import Callable
+
+from uvicorn.logging import DefaultFormatter
 
 from .evaluate import evaluate_json_data
 from ..config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
+formatter = DefaultFormatter("%(levelprefix)s %(message)s")
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+logger.setLevel(settings.rag_log_level)
 
 
 async def process_io_pair(file_path, processing_function):
@@ -26,8 +34,13 @@ async def process_io_pair(file_path, processing_function):
         data = json.load(f)
     logger.info("Processing i/o pair: %s", file_path)
     # Process io pair
-    await processing_function(data)
+    response = await processing_function(data)
+    if response["status"] == "failed":
+        logger.error("Failed to process i/o pair: %s", file_path)
+        logger.info("File not deleted: %s", file_path)
+        return
     logger.info("Processed i/o pair: %s", file_path)
+    file_path.unlink()  # Delete the file after processing
 
 
 def background_worker(directory, processing_function):
@@ -37,18 +50,21 @@ def background_worker(directory, processing_function):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     while True:
-        for file_path in directory.iterdir():
-            if file_path.is_file() and file_path.suffix == ".json":
-                try:
-                    loop.run_until_complete(
-                        process_io_pair(
-                            file_path=file_path, processing_function=processing_function
-                        )
+        files_to_process = [
+            file_path
+            for file_path in directory.iterdir()
+            if file_path.is_file() and file_path.suffix == ".json"
+        ]
+        for file_path in files_to_process:
+            try:
+                loop.run_until_complete(
+                    process_io_pair(
+                        file_path=file_path, processing_function=processing_function
                     )
-                    file_path.unlink()  # Delete the file after processing
-                except Exception as e:
-                    logger.error("Error processing file %s: %s", file_path, e)
-        time.sleep(1)
+                )
+            except Exception as e:
+                logger.error("Error processing file %s: %s", file_path, e)
+        time.sleep(15)
 
 
 # Start background worker thread
