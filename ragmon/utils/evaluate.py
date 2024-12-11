@@ -16,6 +16,8 @@ from llama_index.core.evaluation import (
     EvaluationResult,
 )
 from llama_index.llms.bedrock_converse import BedrockConverse
+
+from ragmon.utils.keyword import extract_keywords
 from ..services.ragllm import get_inference_model
 from llama_index.core.chat_engine.types import AgentChatResponse
 
@@ -215,6 +217,10 @@ async def evaluate_json_data(data):
                 mlflow_run_id,
             )
 
+            # extract keywords from the query and response
+            query_keywords = extract_keywords(query)
+            response_keywords = extract_keywords(response)
+
             # log response
             mlflow.log_table(
                 {
@@ -224,8 +230,16 @@ async def evaluate_json_data(data):
                     "output": response,
                     "output_length": len(response.split()),
                     "source_nodes": data["source_nodes"],
+                    "query_keywords": ", ".join(query_keywords or []),
+                    "response_keywords": ", ".join(response_keywords or []),
                 },
                 artifact_file="live_results.json",
+            )
+
+            logger.info(
+                "Logged keywords for exp id %s and run id %s",
+                mlflow_experiment_id,
+                mlflow_run_id,
             )
 
         return {"status": "success", "metrics": metrics, "error": None}
