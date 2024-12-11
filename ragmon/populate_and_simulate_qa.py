@@ -191,7 +191,9 @@ def main():
         "Does CML support GPUs?",
         "does auto-scaling of endpoints work in CML?",
     ]
-    for i, question in tqdm(enumerate(questions)):
+    responses = []
+    for i in tqdm(range(len(questions))):
+        question = questions[i]
         response = get_response(
             RagPredictRequest(
                 data_source_id=index_config.id,
@@ -199,6 +201,11 @@ def main():
                 chat_history=[],  # chat history is not needed for this simulation
             )
         )
+        responses.append(response)
+    print("Simulated question answering.")
+    print("SImulating feedback logging...")
+    for i in tqdm(range(len(responses))):
+        response = responses[i]
         feedback_request = RagFeedbackRequest(
             experiment_id=response.mlflow_experiment_id,
             experiment_run_id=response.mlflow_run_id,

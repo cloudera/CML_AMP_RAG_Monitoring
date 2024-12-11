@@ -38,16 +38,77 @@
 #
 # ###########################################################################
 
+import logging
+import os
+import sys
+import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.logging import DefaultFormatter
+
+from .config import settings
 from .routers import index
+from .utils.reconciler import background_worker
+from .utils import evaluate_json_data
+
+###################################
+#  Logging
+###################################
+
+logger = logging.getLogger(__name__)
+
+
+def _configure_logger() -> None:
+    """Configure this module's setup/teardown logging formatting and verbosity."""
+    # match uvicorn.error's formatting
+    formatter = DefaultFormatter("%(levelprefix)s %(message)s")
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(formatter)
+
+    logger.addHandler(handler)
+    logger.setLevel(settings.rag_log_level)
+    # prevent duplicate outputs with the app logger
+    logger.propagate = False
+
+
+_configure_logger()
+
+###################################
+# Reconciler
+###################################
+
+
+def start_evaluation_reconciler():
+    """Start the evaluation reconciler."""
+    logger.info("Starting evaluation reconciler.")
+    data_directory = os.path.join(os.getcwd(), "data")
+    if not os.path.exists(data_directory):
+        logger.info("Data directory doesn't exist. Creating data directory.")
+        os.makedirs(data_directory)
+    logger.info("Data directory: %s", data_directory)
+    worker_thread = threading.Thread(
+        target=background_worker,
+        args=(data_directory, evaluate_json_data),
+        daemon=True,
+    )
+    worker_thread.start()
+    logger.info("Evaluation reconciler started.")
+
+
+@asynccontextmanager
+async def lifespan(fastapi_app: FastAPI):
+    """Initialize and teardown the application's lifespan events."""
+    start_evaluation_reconciler()
+    yield
 
 
 ###################################
 #  App
 ###################################
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 ###################################

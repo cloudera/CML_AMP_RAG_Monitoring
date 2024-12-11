@@ -40,14 +40,13 @@
 
 import re
 import asyncio
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
+from llama_index.core.evaluation.base import BaseEvaluator, EvaluationResult
 from llama_index.core.llms.llm import LLM
+from llama_index.core.prompts import BasePromptTemplate, PromptTemplate
 from llama_index.core.prompts.mixin import PromptDictType
 from llama_index.core.settings import Settings
-from typing import Optional, Tuple
-from llama_index.core.evaluation import BaseEvaluator, EvaluationResult
-from llama_index.core.prompts import BasePromptTemplate, PromptTemplate
 
 
 def _default_parser_function(output_str: str) -> Tuple[Optional[float], Optional[str]]:
@@ -72,6 +71,8 @@ _DEFAULT_SCORE_THRESHOLD = 2.0
 
 
 class CustomEvaluator(BaseEvaluator):
+    """Class to create a custom evaluator."""
+
     def __init__(
         self,
         llm: Optional[LLM] = None,
