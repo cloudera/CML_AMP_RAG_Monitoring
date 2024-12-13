@@ -43,11 +43,11 @@ nohup uv run fastapi run --host 127.0.0.1 --port $FASTAPI_PORT main.py &>../fast
 
 echo "Waiting for REST API"
 # Wait for FastAPI to boot and settle
-sleep 60
+#sleep 60
 
 # Run the pre-population script
-echo "Pre-populating data"
-nohup uv run populate_and_simulate_qa.py >../populate_and_simulate_qa.log 
+#echo "Pre-populating data"
+#nohup uv run populate_and_simulate_qa.py >../populate_and_simulate_qa.log 
 
 ADDRESS=${ADDRESS:-127.0.0.1}
 

@@ -81,7 +81,7 @@ def log_feedback(request: RagFeedbackRequest):
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
-        timeout=60,
+        timeout=None,
     )
 
     if response.status_code != 200:
