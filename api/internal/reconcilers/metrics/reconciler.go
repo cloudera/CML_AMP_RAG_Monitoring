@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -25,7 +24,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiment run metrics reconciler resync")
+	log.Debugln("beginning experiment run metrics reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 	runs, err := r.db.ExperimentRuns().ListExperimentRunIdsForReconciliation(ctx, maxItems)
@@ -34,13 +33,13 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 		return
 	}
 
-	log.Println(fmt.Sprintf("queueing %d experiment runs for metric reconciliation", len(runs)))
+	log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
 
 	for _, run := range runs {
 		queue.Add(run)
 	}
 
-	log.Println("completing reconciler resync")
+	log.Debugln("completing reconciler resync")
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
@@ -76,19 +75,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			}
 		}
 		// Fetch artifacts from MLFlow
-		mlFlowArtifacts, err := r.mlFlow.Local.Artifacts(ctx, run.RunId, nil)
-		if err != nil {
-			log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
-			continue
-		}
-		for _, artifact := range mlFlowArtifacts {
-			artifactMetrics, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
-			if err != nil {
-				log.Printf("failed to fetch artifact %s for experiment run %d: %s", artifact.Path, item.ID, err)
-				continue
-			}
-			log.Printf("fetched %d metrics for artifact %s for experiment run %d", len(artifactMetrics), artifact.Path, run.RunId)
-		}
+		//mlFlowArtifacts, err := r.mlFlow.Local.Artifacts(ctx, run.RunId, nil)
+		//if err != nil {
+		//	log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
+		//	continue
+		//}
+		//for _, artifact := range mlFlowArtifacts {
+		//	artifactMetrics, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
+		//	if err != nil {
+		//		log.Printf("failed to fetch artifact %s for experiment run %d: %s", artifact.Path, item.ID, err)
+		//		continue
+		//	}
+		//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
+		//}
 		// Update the timestamp of the experiment run to indicate that it has been reconciled
 		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {

@@ -124,7 +124,8 @@ func (m *MLFlow) Metrics(ctx context.Context, runId string) ([]Metric, error) {
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}
-	url := fmt.Sprintf("%s/api/2.0/runs/runs/get?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/runs/get?run_id=%s", m.baseUrl, runId)
+
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
@@ -132,6 +133,7 @@ func (m *MLFlow) Metrics(ctx context.Context, runId string) ([]Metric, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
+		log.Printf("metrics not found for run %s", runId)
 		return []Metric{}, nil
 	}
 	defer resp.Body.Close()
