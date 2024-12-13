@@ -60,6 +60,7 @@ from ... import exceptions
 from . import qdrant
 from .qdrant import RagMessage
 from ...config import settings
+from ...data_types import CreateCustomEvaluatorRequest
 
 logger = logging.getLogger(__name__)
 formatter = DefaultFormatter("%(levelprefix)s %(message)s")
@@ -117,6 +118,29 @@ class RagFeedbackRequest(BaseModel):
     experiment_run_id: str
     feedback: float
     feedback_str: Optional[str] = None
+
+
+@router.post("/add_custom_evaluator", summary="Add a custom evaluator")
+@exceptions.propagates
+@tracer.start_as_current_span("add_custom_evaluator")
+def add_custom_evaluator(
+    request: CreateCustomEvaluatorRequest,
+) -> Dict[str, str]:
+    """Add a custom evaluator"""
+    try:
+        path = Path(
+            os.path.join(os.getcwd(), "evaluators", f"{request.data_source_id}")
+        )
+        path.mkdir(parents=True, exist_ok=True)
+        save_to_disk(
+            request.evaluator_definition,
+            path,
+            f"{request.evaluator_name.replace(" ", "_")}.json",
+        )
+        return {"status": "success"}
+    except Exception as e:
+        logger.error("Failed to add custom evaluator: %s", e)
+        return {"status": "failed"}
 
 
 @router.post("/feedback", summary="Log feedback for a response")

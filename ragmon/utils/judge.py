@@ -191,17 +191,19 @@ CUSTOM_EVAL_TEMPLATE = (
 
 def create_custom_evaluator(
     eval_definition: str,
-    questions: Sequence[str],
+    questions: Union[Sequence[str], str],
     llm: Optional[LLM] = None,
     raise_error: bool = False,
     eval_template: Union[str, BasePromptTemplate, None] = CUSTOM_EVAL_TEMPLATE,
-    score_threshold: float = _DEFAULT_SCORE_THRESHOLD,
     parser_function: Callable[
         [str], Tuple[Optional[float], Optional[str]]
     ] = _default_parser_function,
 ) -> CustomEvaluator:
     """Create a custom evaluator."""
+    if isinstance(questions, str):
+        questions = questions.split("\n")
     questions = "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
+    score_threshold = len(questions)
     eval_template = eval_template.format(
         eval_definition=eval_definition,
         questions=questions,

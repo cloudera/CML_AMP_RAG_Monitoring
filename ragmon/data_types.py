@@ -40,7 +40,7 @@
 
 from pydantic import BaseModel
 from llama_index.core.base.llms.types import MessageRole
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 class RagIndexConfiguration(BaseModel):
@@ -107,3 +107,10 @@ class MLFlowStoreRequest(BaseModel):
     experiment_id: str
     run_ids: List[str] = []
     metric_names: List[str] = []
+
+
+class CreateCustomEvaluatorRequest(BaseModel):
+    data_source_id: int
+    evaluator_name: str
+    evaluator_definition: str
+    evaluator_questions: Union[List[str], str]
