@@ -234,6 +234,8 @@ if experiment_ids:
         for exp_id, collection in zip(experiment_ids, collections)
     }
 
+    st.write(data_source_names)
+
     selected_experiment = st.selectbox(
         "Select a Data Source :material/database:",
         options=experiment_ids,
