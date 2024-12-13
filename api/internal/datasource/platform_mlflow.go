@@ -40,6 +40,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to update run %s: %s", run.Info.RunId, err)
@@ -62,6 +63,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to fetch run %s: %s", runId, err)
@@ -97,6 +99,7 @@ func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*
 		req := cbhttp.NewRequest(ctx, "GET", url)
 		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 		resp, err := m.connections.HttpClient.Do(req)
 		if err != nil {
 			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, err)
@@ -146,6 +149,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to create experiment %s: %s", name, err)
@@ -185,6 +189,7 @@ func (m *PlatformMLFlow) CreateExperiment(ctx context.Context, name string) (str
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to create experiment %s: %s", name, err)
@@ -218,10 +223,11 @@ func (m *PlatformMLFlow) ListExperiments(ctx context.Context, maxItems int64, pa
 		if done {
 			break
 		}
-		url := fmt.Sprintf("%s/api/v2/experiments?page_size=%d&page_token=%s", m.baseUrl, maxItems, token)
+		url := fmt.Sprintf("%s/api/v2/projects/%s/experiments?page_size=%d&page_token=%s", m.baseUrl, m.cfg.CDSWProjectNum, maxItems, token)
 		req := cbhttp.NewRequest(ctx, "GET", url)
 		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 		resp, err := m.connections.HttpClient.Do(req)
 		if err != nil {
 			log.Printf("failed to fetch experiments: %s", err)
@@ -261,10 +267,11 @@ func (m *PlatformMLFlow) ListExperiments(ctx context.Context, maxItems int64, pa
 }
 
 func (m *PlatformMLFlow) GetExperiment(ctx context.Context, experimentId string) (*Experiment, error) {
-	url := fmt.Sprintf("%s/api/2.0/mlflow/experiments/get?experiment_id=%s", m.baseUrl, experimentId)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/get?experiment_id=%s", m.baseUrl, m.cfg.CDSWProjectNum, experimentId)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		log.Printf("failed to fetch experiment %s: %s", experimentId, err)

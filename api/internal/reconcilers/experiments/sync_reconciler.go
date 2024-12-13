@@ -2,7 +2,6 @@ package experiments
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -23,7 +22,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiments reconciler resync")
+	log.Debugln("beginning experiments reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
@@ -35,19 +34,23 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 		queue.Add(id)
 	}
 
-	log.Println(fmt.Sprintf("queueing %d experiments for sync reconciliation", len(ids)))
+	log.Printf("queueing %d experiments for sync reconciliation", len(ids))
 
-	log.Println("completing mlflow sync reconciler resync")
+	log.Debugln("completing mlflow sync reconciler resync")
 }
 
 func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
 	for _, item := range items {
-		log.Printf("reconciling experiment %d", item.ID)
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
 		}
 
+		if experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
+			continue
+		}
+
+		log.Printf("reconciling experiment (%d) %s", item.ID, experiment.ExperimentId)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d from local store: %s", item.ID, err)
@@ -56,7 +59,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 
 		if experiment.RemoteExperimentId == "" {
 			// If the experiment does not exist in the remote store, insert it
-			log.Printf("experiment %d not found in remote store, inserting", item.ID)
+			log.Printf("experiment %s not found in remote store, inserting", experiment.ExperimentId)
 			remoteExperimentId, err := r.dataStores.Remote.CreateExperiment(ctx, local.Name)
 			if err != nil {
 				log.Printf("failed to insert experiment %d into remote store: %s", item.ID, err)
