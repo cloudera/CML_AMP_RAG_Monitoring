@@ -43,7 +43,13 @@ nohup uv run fastapi run --host 127.0.0.1 --port $FASTAPI_PORT main.py &>../fast
 
 echo "Waiting for REST API"
 # Wait for FastAPI to boot and settle
-sleep 60
+
+while true; do
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8200/ | grep -q 200; then
+        break
+    fi
+    sleep 1
+done
 
 # Run the pre-population script
 echo "Pre-populating data"
