@@ -231,11 +231,11 @@ async def predict(
     """Predict using indexed documents"""
     curr_exp = mlflow.set_experiment(experiment_name=f"{request.data_source_id}_live")
     with mlflow.start_run() as run:
-        # deprecated: register experiment and run with MLflow store
-        # register_experiment_and_run(
-        #     experiment_id=curr_exp.experiment_id,
-        #     experiment_run_id=run.info.run_id,
-        # )
+        # register experiment and run with MLflow store
+        register_experiment_and_run(
+            experiment_id=curr_exp.experiment_id,
+            experiment_run_id=run.info.run_id,
+        )
 
         # log request params
         mlflow.log_params(
