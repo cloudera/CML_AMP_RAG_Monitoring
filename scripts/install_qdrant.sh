@@ -5,7 +5,7 @@ QDRANT_TGZ=qdrant.tar.gz
 VERSION=1.11.5
 DL_URL="https://github.com/qdrant/qdrant/releases/download/v$VERSION/qdrant-x86_64-unknown-linux-musl.tar.gz"
 
-mkdir qdrant 2>/dev/null
+mkdir -p qdrant 2>/dev/null
 cd qdrant
 
 ## Install Qdrant ##

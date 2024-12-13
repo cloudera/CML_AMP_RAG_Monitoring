@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-CDSW_APP_PORT=${CDSW_APP_PORT:-8200}
+CDSW_APP_PORT=${CDSW_APP_PORT:-8100}
 
 if [ -z "$AWS_REGION" ] && [ -z "$CAII_DOMAIN" ]; then
   echo "Either AWS_REGION or CAII_DOMAIN must be set"
@@ -26,5 +26,5 @@ if [ -n "$CAII_DOMAIN" ]; then
   fi
 fi
 
-docker build -t ragmon:latest .
-docker run -it --rm $DOCKER_CMD_ENV -e LOCAL=true -e ADDRESS=0.0.0.0 -e CDSW_APP_PORT=$CDSW_APP_PORT -p $CDSW_APP_PORT:$CDSW_APP_PORT ragmon:latest
+docker build --platform=linux/amd64 -t ragmon:latest .
+docker run --platform=linux/amd64 -it --rm $DOCKER_CMD_ENV -e LOCAL=true -e ADDRESS=0.0.0.0 -e CDSW_APP_PORT=$CDSW_APP_PORT -p $CDSW_APP_PORT:$CDSW_APP_PORT ragmon:latest
