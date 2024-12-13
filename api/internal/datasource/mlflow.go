@@ -80,6 +80,7 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 			return nil, err
 		}
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
+		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := m.connections.HttpClient.Do(req)
 		if err != nil {
@@ -208,10 +209,10 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 }
 
 func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectNum)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectID)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
-		"project_id": m.cfg.CDSWProjectNum,
+		"project_id": m.cfg.CDSWProjectID,
 		"name":       name,
 	}
 	encoded, err := json.Marshal(body)

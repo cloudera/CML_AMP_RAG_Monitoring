@@ -33,10 +33,13 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 		log.Printf("failed to fetch experiments from local mlflow: %s", err)
 	}
 	for _, ex := range experiments {
+		if ex.Name == "" || ex.Name == "Default" {
+			continue
+		}
 		queue.Add(ex.ExperimentId)
 	}
 
-	log.Printf("queueing %d experiments for reconciliation", len(experiments))
+	log.Printf("queueing %d local experiments for reconciliation", len(experiments))
 
 	log.Debugln("completing reconciler resync")
 }

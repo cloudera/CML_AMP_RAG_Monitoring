@@ -56,14 +56,14 @@ func NewReconcilerSet(app *app.Instance, experimentsCfg *experiments.Config, exp
 
 func (r *ReconcilerSet) Start() {
 	r.experimentManager.Start()
-	//r.syncManager.Start()
+	r.syncManager.Start()
 	//r.runManager.Start()
 	r.metricsManager.Start()
 }
 
 func (r *ReconcilerSet) Finish() {
 	r.experimentManager.Finish()
-	//r.syncManager.Finish()
+	r.syncManager.Finish()
 	//r.runManager.Finish()
 	r.metricsManager.Finish()
 }
