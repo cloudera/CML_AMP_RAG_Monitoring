@@ -45,7 +45,7 @@ echo "Waiting for REST API"
 # Wait for FastAPI to boot and settle
 
 while true; do
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8200/ | grep -q 200; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8200/health | grep -q 200; then
         break
     fi
     sleep 1
