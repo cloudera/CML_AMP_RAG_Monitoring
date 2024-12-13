@@ -64,7 +64,7 @@ func (e *Experiments) UpdateExperimentCreatedAndTimestamp(ctx context.Context, i
 
 func (e *Experiments) UpdateExperimentUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, ts time.Time) error {
 	query := `
-	UPDATE experiments SET updated=?, updated_at=?
+	UPDATE experiments SET updated=?, updated_ts=?
 	WHERE id = ?
 	`
 	res, err := e.db.ExecContext(ctx, query, updated, ts, id)

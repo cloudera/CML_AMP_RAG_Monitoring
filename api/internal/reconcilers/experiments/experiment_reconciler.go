@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -25,7 +24,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiment reconciler resync")
+	log.Debugln("beginning experiment reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
@@ -37,14 +36,14 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 		queue.Add(ex.ExperimentId)
 	}
 
-	log.Println(fmt.Sprintf("queueing %d experiments for reconciliation", len(experiments)))
+	log.Printf("queueing %d experiments for reconciliation", len(experiments))
 
-	log.Println("completing reconciler resync")
+	log.Debugln("completing reconciler resync")
 }
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
 	for _, item := range items {
-		log.Printf("reconciling experiment %s", item.ID)
+		log.Debugf("reconciling experiment %s", item.ID)
 		// Fetch the experiment MLFlow
 		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)
 		if err != nil {
@@ -81,13 +80,16 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		}
 		// If the experiment exists in the database, compare the updated timestamps
 		lastUpdated := ts(local.LastUpdatedTime)
+		updated := false
 		if experiment.UpdatedTs.Before(lastUpdated) {
-			// Update the flag and timestamp of the experiment to indicate that it requires reconciliation
-			err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, true, lastUpdated)
-			if err != nil {
-				log.Printf("failed to update experiment %s timestamp: %s", item.ID, err)
-			}
+			// Update the flag of the experiment to indicate that it requires reconciliation
+			updated = true
 		}
+		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, updated, lastUpdated)
+		if err != nil {
+			log.Printf("failed to update experiment %s timestamp: %s", item.ID, err)
+		}
+
 		log.Printf("finished reconciling experiment %s ", experiment.ExperimentId)
 	}
 }
