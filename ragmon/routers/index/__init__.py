@@ -128,14 +128,12 @@ def add_custom_evaluator(
 ) -> Dict[str, str]:
     """Add a custom evaluator"""
     try:
-        path = Path(
-            os.path.join(os.getcwd(), "evaluators", f"{request.data_source_id}")
-        )
+        path = Path(os.path.join(os.getcwd(), "custom_evaluators"))
         path.mkdir(parents=True, exist_ok=True)
         save_to_disk(
             request.evaluator_definition,
             path,
-            f"{request.evaluator_name.replace(" ", "_")}.json",
+            f"{request.evaluator_name.replace(' ', '_')}.json",
         )
         return {"status": "success"}
     except Exception as e:

@@ -110,7 +110,6 @@ class MLFlowStoreRequest(BaseModel):
 
 
 class CreateCustomEvaluatorRequest(BaseModel):
-    data_source_id: int
     evaluator_name: str
     evaluator_definition: str
     evaluator_questions: Union[List[str], str]
