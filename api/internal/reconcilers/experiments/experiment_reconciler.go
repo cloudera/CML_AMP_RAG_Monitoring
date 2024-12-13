@@ -39,7 +39,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 		queue.Add(ex.ExperimentId)
 	}
 
-	log.Printf("queueing %d experiments for reconciliation", len(experiments))
+	log.Printf("queueing %d local experiments for reconciliation", len(experiments))
 
 	log.Debugln("completing reconciler resync")
 }

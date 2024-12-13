@@ -59,7 +59,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 
 		if experiment.RemoteExperimentId == "" {
 			// If the experiment does not exist in the remote store, insert it
-			log.Printf("experiment %s not found in remote store, inserting", experiment.ExperimentId)
+			log.Printf("experiment %s has no remote experiment ID, inserting into the remote MLFLow instance", experiment.ExperimentId)
 			remoteExperimentId, err := r.dataStores.Remote.CreateExperiment(ctx, local.Name)
 			if err != nil {
 				log.Printf("failed to insert experiment %d into remote store: %s", item.ID, err)
