@@ -1,15 +1,12 @@
 FROM debian:trixie
-RUN apt-get update && apt-get -y install sqlite3-tools golang python3 python-is-python3 python3-pip wget git procps
+RUN apt-get update && apt-get -y install sqlite3-tools python3 python-is-python3 python3-pip wget git procps
 RUN useradd -d /home/cdsw cdsw
 RUN pip install --break-system-packages uv
 USER cdsw
 COPY --chown=cdsw . /home/cdsw
 WORKDIR /home/cdsw
-RUN scripts/install_qdrant.sh
-RUN scripts/install_py_deps.sh
-RUN scripts/build_api.sh
-ENV CDSW_APP_PORT=8200
+ENV CDSW_APP_PORT=8100
 ENV CDSW_API_URL=none
 ENV CDSW_PROJECT_NUM=0
 ENV LOCAL=true
-CMD ["bash", "-c", "scripts/start_app.sh"]
+CMD ["bash", "-c", "scripts/install_qdrant.sh && scripts/install_golang.sh && scripts/install_py_deps.sh && scripts/build_api.sh && scripts/start_app.sh"]
