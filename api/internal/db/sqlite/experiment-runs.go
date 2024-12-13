@@ -22,8 +22,8 @@ func NewExperimentRuns(instance *lsql.Instance) db.ExperimentRunService {
 
 func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.ExperimentRun) (*db.ExperimentRun, error) {
 	query := `
-	INSERT INTO experiment_runs (experiment_id, run_id)
-	VALUES (?, ?)
+	INSERT INTO experiment_runs (experiment_id, run_id, updated)
+	VALUES (?, ?, 1)
 	`
 	args := []interface{}{run.ExperimentId, run.RunId}
 	id, err := e.db.ExecAndReturnId(ctx, query, args...)
@@ -95,7 +95,7 @@ func (e *ExperimentRuns) ListExperimentRunIdsForReconciliation(ctx context.Conte
 	query := `
 	SELECT id
 	FROM experiment_runs
-	WHERE deleted = 0 AND updated_ts < datetime('now', '-1 minutes')
+	WHERE deleted = 0 AND updated = 1
 	LIMIT ?
 	`
 

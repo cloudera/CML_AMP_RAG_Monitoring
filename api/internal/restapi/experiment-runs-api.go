@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/models"
 	lhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/http"
@@ -50,6 +51,7 @@ func (e ExperimentRunsAPI) PostRuns(ctx context.Context, params runs.PostRunsPar
 	if params.Body.ExperimentRunID == "" {
 		return nil, lhttp.NewBadRequest("experiment_run_id is required")
 	}
+	log.Printf("Creating experiment run %s for experiment %s", params.Body.ExperimentRunID, params.Body.ExperimentID)
 	run, err := e.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
 		ExperimentId: params.Body.ExperimentID,
 		RunId:        params.Body.ExperimentRunID,
