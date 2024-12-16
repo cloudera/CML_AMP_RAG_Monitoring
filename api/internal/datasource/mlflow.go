@@ -81,10 +81,10 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
 		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := m.connections.HttpClient.Do(req)
-		if err != nil {
-			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, err)
-			return nil, err
+		resp, lerr := m.connections.HttpClient.Do(req)
+		if lerr != nil {
+			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, lerr)
+			return nil, lerr
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {

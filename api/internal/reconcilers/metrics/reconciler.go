@@ -48,6 +48,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
+			continue
 		}
 		// Fetch metrics from MLFlow
 		mlFlowMetrics, err := r.mlFlow.Local.Metrics(ctx, run.RunId)
