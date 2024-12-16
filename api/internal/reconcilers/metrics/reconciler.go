@@ -90,7 +90,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
 		//}
 		// Update the timestamp of the experiment run to indicate that it has been reconciled
-		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
+		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, true, time.Now())
 		if err != nil {
 			log.Printf("failed to update experiment run %d timestamp: %s", item.ID, err)
 		}
