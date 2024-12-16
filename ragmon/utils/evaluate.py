@@ -71,23 +71,19 @@ async def evaluate_response(
 
     if isinstance(chat_response, AgentChatResponse):
         results = await asyncio.gather(
-            relevancy_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
-            ),
+            relevancy_evaluator.aevaluate_response(query=query, response=chat_response),
             faithfulness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
             context_relevancy_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
             maliciousness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
-            toxicity_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
-            ),
+            toxicity_evaluator.aevaluate_response(query=query, response=chat_response),
             comprehensiveness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
         )
 

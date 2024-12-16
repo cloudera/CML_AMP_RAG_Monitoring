@@ -108,7 +108,8 @@ async def lifespan(fastapi_app: FastAPI):
 #  App
 ###################################
 
-app = FastAPI(lifespan=lifespan)
+# TODO: add reconciler to app lifecycle
+app = FastAPI()
 
 
 @app.get("/health")
