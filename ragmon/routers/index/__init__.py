@@ -282,7 +282,15 @@ async def predict(
     request: RagPredictRequest,
 ) -> RagPredictResponse:
     """Predict using indexed documents"""
+    if mlflow.active_run() is not None:
+        logger.info(
+            "Run ID: %s is active. Waiting for it to finish.",
+            mlflow.active_run().info.run_id,
+        )
+        while mlflow.active_run() is not None:
+            continue
     curr_exp = mlflow.set_experiment(experiment_name=f"{request.data_source_id}_live")
+    logger.info("Starting new run for experiment: %s", curr_exp.experiment_id)
     with mlflow.start_run() as run:
         # register experiment and run with MLflow store
         register_experiment_and_run(
