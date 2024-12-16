@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"time"
@@ -116,7 +117,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				continue
 			}
 			// Insert the run into the remote store
-			remoteRunId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, ts(run.Info.StartTime), run.Data.Tags)
+			remoteRunId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
 			if err != nil {
 				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
 				continue
@@ -140,7 +141,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 
 		// Update the flag and timestamp of the experiment to indicate that it has finished reconciliation
-		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, false, ts(local.LastUpdatedTime))
+		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, false, util.TimeStamp(local.LastUpdatedTime))
 		if err != nil {
 			log.Printf("failed to update experiment %d timestamp: %s", item.ID, err)
 		}

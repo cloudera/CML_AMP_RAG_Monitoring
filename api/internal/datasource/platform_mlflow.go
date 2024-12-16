@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
@@ -28,6 +29,30 @@ type PlatformExperimentListResponse struct {
 	NextPageToken string               `json:"next_page_token"`
 }
 
+type PlatformRun struct {
+	Id             string          `json:"id"`
+	Name           string          `json:"run_name"`
+	Status         RunStatus       `json:"status"`
+	StartTime      time.Time       `json:"start_time"`
+	EndTime        time.Time       `json:"end_time"`
+	ArtifactUri    string          `json:"artifact_uri"`
+	LifecycleStage string          `json:"lifecycle_stage"`
+	Data           PlatformRunData `json:"data"`
+}
+
+type PlatformMetric struct {
+	Key       string    `json:"key"`
+	Value     float64   `json:"value"`
+	Timestamp time.Time `json:"timestamp"`
+	Step      int       `json:"step"`
+}
+
+type PlatformRunData struct {
+	Metrics []PlatformMetric `json:"metrics"`
+	Params  []Param          `json:"params"`
+	Tags    []RunTag         `json:"tags"`
+}
+
 type PlatformMLFlow struct {
 	MLFlow
 }
@@ -46,21 +71,60 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 
 func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectID, run.Info.ExperimentId, run.Info.RunId)
-	req := cbhttp.NewRequest(ctx, "POST", url)
+	req := cbhttp.NewRequest(ctx, "PATCH", url)
 
-	encoded, err := json.Marshal(run)
-	if err != nil {
-		log.Printf("failed to encode body: %s", err)
-		return err
+	params := make([]Param, 0)
+	for _, param := range run.Data.Params {
+		var val = param.Value
+		if len(val) > 250 {
+			log.Printf("param %s value is too long for platform MLFlow, truncating", param.Key)
+			val = val[:250]
+		}
+		params = append(params, Param{
+			Key:   param.Key,
+			Value: val,
+		})
+	}
+
+	data := PlatformRunData{
+		Metrics: make([]PlatformMetric, 0),
+		Params:  params,
+		Tags:    run.Data.Tags,
+	}
+
+	for _, metric := range run.Data.Metrics {
+		data.Metrics = append(data.Metrics, PlatformMetric{
+			Key:       metric.Key,
+			Value:     metric.Value,
+			Timestamp: util.TimeStamp(metric.Timestamp),
+			Step:      metric.Step,
+		})
+	}
+
+	platformRun := PlatformRun{
+		Id:             run.Info.RunId,
+		Name:           run.Info.Name,
+		Status:         run.Info.Status,
+		StartTime:      time.Unix(run.Info.StartTime, 0),
+		EndTime:        time.Unix(run.Info.EndTime, 0),
+		ArtifactUri:    run.Info.ArtifactUri,
+		LifecycleStage: run.Info.LifecycleStage,
+		Data:           data,
+	}
+
+	encoded, serr := json.Marshal(platformRun)
+	if serr != nil {
+		log.Printf("failed to encode body: %s", serr)
+		return serr
 	}
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
-	resp, err := m.connections.HttpClient.Do(req)
-	if err != nil {
-		log.Printf("failed to update run %s: %s", run.Info.RunId, err)
-		return err
+	resp, lerr := m.connections.HttpClient.Do(req)
+	if lerr != nil {
+		log.Printf("failed to update run %s: %s", run.Info.RunId, lerr)
+		return lerr
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
@@ -95,12 +159,37 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		return nil, err
 	}
 
-	var run Run
+	var run PlatformRun
 	jerr := json.Unmarshal(body, &run)
 	if jerr != nil {
 		return nil, err
 	}
-	return &run, nil
+	data := RunData{
+		Metrics: make([]Metric, 0),
+		Params:  run.Data.Params,
+		Tags:    run.Data.Tags,
+	}
+	for _, metric := range run.Data.Metrics {
+		data.Metrics = append(data.Metrics, Metric{
+			Key:       metric.Key,
+			Value:     metric.Value,
+			Timestamp: metric.Timestamp.Unix(),
+			Step:      metric.Step,
+		})
+	}
+	return &Run{
+		Info: RunInfo{
+			RunId:          runId,
+			Name:           run.Name,
+			ExperimentId:   experimentId,
+			Status:         run.Status,
+			StartTime:      run.StartTime.Unix(),
+			EndTime:        run.EndTime.Unix(),
+			ArtifactUri:    run.ArtifactUri,
+			LifecycleStage: run.LifecycleStage,
+		},
+		Data: data,
+	}, nil
 }
 
 func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, error) {
@@ -176,7 +265,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 		log.Printf("failed to fetch experiments: %s", resp.Status)
 		return "", fmt.Errorf("failed to create experiment %s: %s", name, resp.Status)
 	}
-	var run Run
+	var run PlatformRun
 	respBody, ioerr := io.ReadAll(resp.Body)
 	if ioerr != nil {
 		log.Printf("failed to read body: %s", ioerr)
@@ -187,7 +276,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 		log.Printf("failed to unmarshal body: %s", serr)
 		return "", serr
 	}
-	return run.Info.RunId, nil
+	return run.Id, nil
 }
 
 func (m *PlatformMLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {

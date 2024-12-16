@@ -7,9 +7,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
-	"time"
 )
 
 type ExperimentReconciler struct {
@@ -59,7 +59,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				log.Printf("experiment %s not found in database, inserting", item.ID)
-				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, ts(local.CreatedTime), ts(local.LastUpdatedTime))
+				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 				if err != nil {
 					log.Printf("failed to insert experiment %s: %s", item.ID, err)
 					continue
@@ -73,7 +73,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		}
 		if experiment == nil {
 			log.Printf("experiment %s not found in database, inserting", item.ID)
-			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, ts(local.CreatedTime), ts(local.LastUpdatedTime))
+			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 			if err != nil {
 				log.Printf("failed to insert experiment %s: %s", item.ID, err)
 				continue
@@ -82,7 +82,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 			continue
 		}
 		// If the experiment exists in the database, compare the updated timestamps
-		lastUpdated := ts(local.LastUpdatedTime)
+		lastUpdated := util.TimeStamp(local.LastUpdatedTime)
 		updated := false
 		if experiment.UpdatedTs.Before(lastUpdated) {
 			// Update the flag of the experiment to indicate that it requires reconciliation
@@ -95,12 +95,6 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 
 		log.Printf("finished reconciling experiment %s ", experiment.ExperimentId)
 	}
-}
-
-func ts(millis int64) time.Time {
-	seconds := millis / 1000
-	nanoseconds := (millis % 1000) * 1e6
-	return time.Unix(seconds, nanoseconds)
 }
 
 func NewExperimentReconcilerManager(app *app.Instance, cfg *Config, rec *ExperimentReconciler) (*reconciler.Manager[string], error) {
