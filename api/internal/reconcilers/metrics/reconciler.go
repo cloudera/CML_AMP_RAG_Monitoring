@@ -55,7 +55,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		}
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
 		log.Printf("reconciling metrics for experiment %s run (%d) %s", experiment.RemoteExperimentId, item.ID, run.RemoteRunId)

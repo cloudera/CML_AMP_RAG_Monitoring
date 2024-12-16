@@ -124,7 +124,6 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
 				continue
 			}
-
 			// Check and see if the run already exists in the DB and insert it if not
 			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
 			if dberr != nil && !errors.Is(dberr, sql.ErrNoRows) {
