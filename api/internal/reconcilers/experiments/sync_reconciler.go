@@ -2,6 +2,8 @@ package experiments
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -122,21 +124,34 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
 				continue
 			}
-			// Insert the run into the DB
-			newRun, err := r.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
-				Id:           0,
-				ExperimentId: run.Info.ExperimentId,
-				RunId:        run.Info.RunId,
-				RemoteRunId:  remoteRunId,
-			})
-			if err != nil {
-				log.Printf("failed to insert run %s into DB: %s", run.Info.Name, err)
+
+			// Check and see if the run already exists in the DB and insert it if not
+			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
+			if dberr != nil && !errors.Is(dberr, sql.ErrNoRows) {
+				log.Printf("failed to fetch run %s from DB: %s", run.Info.Name, dberr)
 				continue
 			}
+			var id int64
+			if existing != nil {
+				id = existing.Id
+			} else {
+				// Insert the run into the DB
+				newRun, dberr := r.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
+					Id:           0,
+					ExperimentId: run.Info.ExperimentId,
+					RunId:        run.Info.RunId,
+					RemoteRunId:  remoteRunId,
+				})
+				if dberr != nil {
+					log.Printf("failed to insert run %s into DB: %s", run.Info.Name, dberr)
+					continue
+				}
+				id = newRun.Id
+			}
 			// Flag the run as ready for reconciliation
-			err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, newRun.Id, true, time.Now())
-			if err != nil {
-				log.Printf("failed to update run %d timestamp: %s", newRun.Id, err)
+			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
+			if dberr != nil {
+				log.Printf("failed to update run %d timestamp: %s", id, dberr)
 			}
 		}
 

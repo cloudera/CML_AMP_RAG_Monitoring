@@ -73,18 +73,18 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 			"experiment_ids": []string{experimentId},
 			"page_token":     token,
 		}
-		encoded, err := json.Marshal(body)
-		if err != nil {
-			log.Printf("failed to encode body: %s", err)
-			return nil, err
+		encoded, serr := json.Marshal(body)
+		if serr != nil {
+			log.Printf("failed to encode body: %s", serr)
+			return nil, serr
 		}
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
 		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := m.connections.HttpClient.Do(req)
-		if err != nil {
-			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, err)
-			return nil, err
+		resp, lerr := m.connections.HttpClient.Do(req)
+		if lerr != nil {
+			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, lerr)
+			return nil, lerr
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
@@ -120,7 +120,7 @@ func (m *MLFlow) CreateRun(ctx context.Context, experimentId string, name string
 	panic("implement me")
 }
 
-func (m *MLFlow) Metrics(ctx context.Context, runId string) ([]Metric, error) {
+func (m *MLFlow) Metrics(ctx context.Context, experimentId string, runId string) ([]Metric, error) {
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}
