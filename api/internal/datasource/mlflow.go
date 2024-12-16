@@ -29,12 +29,11 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 }
 
 func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) error {
-	//TODO implement me
-	panic("implement me")
+	panic("local mlflow UpdateRun is not supported")
 }
 
 func (m *MLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
-	url := fmt.Sprintf("%s/api/2.0/mlflow/get?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/runs/get?run_id=%s", m.baseUrl, runId)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {

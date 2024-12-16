@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"time"
@@ -23,7 +24,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning runs reconciler resync")
+	log.Debugln("beginning runs reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
@@ -35,9 +36,9 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 		queue.Add(id)
 	}
 
-	log.Println(fmt.Sprintf("queueing %d run for reconciliation", len(ids)))
+	log.Println(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
 
-	log.Println("completing reconciler resync")
+	log.Debugln("completing reconciler resync")
 }
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
@@ -48,16 +49,39 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to fetch run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
+		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
+		if err != nil {
+			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+			continue
+		}
+		log.Printf("syncing run %s", run.RunId)
 		// Fetch remote run
 		localRun, err := r.dataStores.Local.GetRun(ctx, run.ExperimentId, run.RunId)
 		if err != nil {
 			log.Printf("failed to fetch run %d from local store: %s", item.ID, err)
 			continue
 		}
-		remoteRun, err := r.dataStores.Remote.GetRun(ctx, run.ExperimentId, run.RemoteRunId)
-		if err != nil {
-			log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
-			continue
+		var remoteRun *datasource.Run
+		if run.RemoteRunId == "" {
+			// create the remote run
+			runId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, localRun.Info.Name, util.TimeStamp(localRun.Info.StartTime), localRun.Data.Tags)
+			if err != nil {
+				log.Printf("failed to create run %d in remote store: %s", item.ID, err)
+				continue
+			}
+			newRun, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, runId)
+			if err != nil {
+				log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
+				continue
+			}
+			remoteRun = newRun
+		} else {
+			existing, err := r.dataStores.Remote.GetRun(ctx, run.ExperimentId, run.RemoteRunId)
+			if err != nil {
+				log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
+				continue
+			}
+			remoteRun = existing
 		}
 		// Sync the metrics to the remote store
 		remoteRun.Data = localRun.Data
