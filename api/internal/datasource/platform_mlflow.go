@@ -325,13 +325,13 @@ func (m *PlatformMLFlow) CreateExperiment(ctx context.Context, name string) (str
 		log.Printf("failed to read body: %s", ioerr)
 		return "", ioerr
 	}
-	var experiment Experiment
+	var experiment PlatformExperiment
 	serr := json.Unmarshal(respBody, &experiment)
 	if serr != nil {
 		log.Printf("failed to unmarshal body: %s", serr)
 		return "", serr
 	}
-	return experiment.ExperimentId, nil
+	return experiment.Id, nil
 }
 
 func (m *PlatformMLFlow) ListExperiments(ctx context.Context, maxItems int64, pageToken string) ([]*Experiment, error) {
