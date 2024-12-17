@@ -69,7 +69,7 @@ func (e *ExperimentRuns) GetExperimentRun(ctx context.Context, experimentId stri
 
 func (e *ExperimentRuns) ListExperimentRuns(ctx context.Context, experimentId string) ([]*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
 	WHERE experiment_id = ?
 	`
