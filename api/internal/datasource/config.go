@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"errors"
+	log "github.com/sirupsen/logrus"
 	lconfig "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/config"
 )
 
@@ -28,6 +29,8 @@ func NewConfigFromEnv() (*Config, error) {
 	if cfg.CDSWApiKey == "" {
 		return nil, errors.New("CDSW_APIV2_KEY is required")
 	}
-
+	log.Printf("CDSW_API_URL: %s", cfg.CDSWMLFlowBaseUrl)
+	log.Printf("CDSW_PROJECT_ID: %s", cfg.CDSWProjectID)
+	log.Printf("CDSW_APIV2_KEY: %d tokens", len(cfg.CDSWApiKey))
 	return &cfg, nil
 }
