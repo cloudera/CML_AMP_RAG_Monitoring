@@ -55,10 +55,10 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			continue
 		}
 		if experiment.RemoteExperimentId == "" {
-			log.Printf("experiment %d has no remote experiment id, skipping reconciliation", item.ID)
+			log.Printf("experiment %s(%d) has no remote experiment id, skipping reconciliation", experiment.ExperimentId, item.ID)
 			continue
 		}
-		log.Printf("syncing run %s", run.RunId)
+		log.Printf("experiment %s(%d) has remote experiment id %s, syncing run %s", experiment.ExperimentId, item.ID, experiment.RemoteExperimentId, run.RunId)
 		// Fetch remote run
 		localRun, err := r.dataStores.Local.GetRun(ctx, run.ExperimentId, run.RunId)
 		if err != nil {
