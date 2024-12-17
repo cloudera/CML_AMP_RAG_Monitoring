@@ -9,7 +9,7 @@ type Config struct {
 	LocalMLFlowBaseUrl string `env:"LOCAL_MLFLOW_BASE_URL" envDefault:"http://localhost:5000"`
 	CDSWMLFlowBaseUrl  string `env:"CDSW_API_URL" envDefault:""`
 	CDSWProjectID      string `env:"CDSW_PROJECT_ID" envDefault:""`
-	CDSWApiKey         string `env:"CDSW_API_KEY" envDefault:""`
+	CDSWApiKey         string `env:"CDSW_APIV2_KEY" envDefault:""`
 }
 
 func NewConfigFromEnv() (*Config, error) {
@@ -26,7 +26,7 @@ func NewConfigFromEnv() (*Config, error) {
 		return nil, errors.New("CDSW_PROJECT_ID is required")
 	}
 	if cfg.CDSWApiKey == "" {
-		return nil, errors.New("CDSW_API_KEY is required")
+		return nil, errors.New("CDSW_APIV2_KEY is required")
 	}
 
 	return &cfg, nil
