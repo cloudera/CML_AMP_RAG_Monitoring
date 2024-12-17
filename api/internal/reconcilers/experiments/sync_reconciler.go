@@ -49,7 +49,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
 		}
 
-		if experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
+		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
 			continue
 		}
 
