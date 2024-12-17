@@ -23,7 +23,7 @@ func NewConfigFromEnv() (*Config, error) {
 	}
 
 	if cfg.CDSWMLFlowBaseUrl == "" && cfg.CDSWDomain == "" {
-		return nil, errors.New("one of CDSWDomain or CDSW_API_URL is required")
+		return nil, errors.New("one of CDSW_DOMAIN or CDSW_API_URL is required")
 	}
 	if cfg.CDSWMLFlowBaseUrl == "" {
 		cfg.CDSWMLFlowBaseUrl = cfg.CDSWApiProtocol + "://" + cfg.CDSWDomain
