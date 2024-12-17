@@ -64,6 +64,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		var remoteRun *datasource.Run
 		if run.RemoteRunId == "" {
 			// create the remote run
+			log.Printf("inserting run %s into remote store for experiment %s", localRun.Info.Name, experiment.RemoteExperimentId)
 			runId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, localRun.Info.Name, util.TimeStamp(localRun.Info.StartTime), localRun.Data.Tags)
 			if err != nil {
 				log.Printf("failed to create run %d in remote store: %s", item.ID, err)

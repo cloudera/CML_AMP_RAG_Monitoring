@@ -119,6 +119,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				continue
 			}
 			// Insert the run into the remote store
+			log.Printf("inserting run %s into remote store for experiment %s", run.Info.Name, experiment.RemoteExperimentId)
 			remoteRunId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
 			if err != nil {
 				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
