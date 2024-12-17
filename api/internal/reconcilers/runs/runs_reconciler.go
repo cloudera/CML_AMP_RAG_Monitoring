@@ -74,15 +74,22 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 				log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
 				continue
 			}
+			dberr := r.db.ExperimentRuns().UpdateRemoteRunId(ctx, run.Id, runId)
+			if dberr != nil {
+				log.Printf("failed to update run %d remote run ID: %s", item.ID, dberr)
+				continue
+			}
+			run.RemoteRunId = runId
 			remoteRun = newRun
 		} else {
-			existing, err := r.dataStores.Remote.GetRun(ctx, run.ExperimentId, run.RemoteRunId)
+			existing, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 			if err != nil {
 				log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
 				continue
 			}
 			remoteRun = existing
 		}
+		log.Printf("syncing data for run %s to remote store", run.RunId)
 		// Sync the metrics to the remote store
 		remoteRun.Data = localRun.Data
 		err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
@@ -90,13 +97,32 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
 			continue
 		}
+
+		// fetch back the run to verify the updates
+		verify, verr := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		if verr != nil {
+			log.Printf("failed to fetch run %s from remote store: %s", run.RemoteRunId, verr)
+			continue
+		}
+		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
+			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
+			continue
+		}
+
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation
 		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {
 			log.Printf("failed to update run %d timestamp: %s", item.ID, err)
 			continue
 		}
-		log.Printf("finished reconciling run %d ", item.ID)
+
+		// Update the experiment run to indicate that metrics reconciliation is required
+		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, true)
+		if err != nil {
+			log.Printf("failed to update run %d reconcile metrics flag: %s", item.ID, err)
+			continue
+		}
+		log.Debugf("finished reconciling run %d ", item.ID)
 	}
 }
 

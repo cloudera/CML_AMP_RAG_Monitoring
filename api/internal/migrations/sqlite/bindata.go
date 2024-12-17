@@ -151,6 +151,24 @@ func _7_experiment_runs_remote_run_id_up_sql() ([]byte, error) {
 	)
 }
 
+var __8_experiment_runs_reconcile_metrics_down_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x89\x2f\x2a\xcd\x2b\x4e\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x28\x4a\x4d\xce\xcf\x4b\xce\xcc\x49\x8d\xcf\x4d\x2d\x29\xca\x4c\x2e\x4e\xb0\x06\x04\x00\x00\xff\xff\x95\x8a\x75\x04\x3e\x00\x00\x00")
+
+func _8_experiment_runs_reconcile_metrics_down_sql() ([]byte, error) {
+	return bindata_read(
+		__8_experiment_runs_reconcile_metrics_down_sql,
+		"8_experiment_runs_reconcile_metrics.down.sql",
+	)
+}
+
+var __8_experiment_runs_reconcile_metrics_up_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x04\xc0\xc1\x0a\xc2\x30\x0c\x06\xe0\x57\xf9\xdf\xc3\x53\x66\xbb\x53\x6c\x40\xd2\xf3\x22\x25\x87\xc2\x56\x25\xad\xe0\xe3\xfb\x11\x6b\x7e\x42\x69\xe3\x0c\xf3\xdf\xc7\xa3\x5f\x3e\xd6\x11\xdf\x31\x0d\x94\x12\xee\xc2\xf5\x51\x60\xe1\xed\x3d\x5a\x3f\xfd\xb8\x7c\x45\x6f\xd3\xb0\x89\x70\xa6\x82\x22\x8a\x52\x99\x91\xf2\x4e\x95\x15\xfb\xeb\x9c\x7e\xfb\x07\x00\x00\xff\xff\x7c\x1c\x01\xf1\x5c\x00\x00\x00")
+
+func _8_experiment_runs_reconcile_metrics_up_sql() ([]byte, error) {
+	return bindata_read(
+		__8_experiment_runs_reconcile_metrics_up_sql,
+		"8_experiment_runs_reconcile_metrics.up.sql",
+	)
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -173,20 +191,22 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
-	"1_mutex.down.sql":                          _1_mutex_down_sql,
-	"1_mutex.up.sql":                            _1_mutex_up_sql,
-	"2_experiment_runs.down.sql":                _2_experiment_runs_down_sql,
-	"2_experiment_runs.up.sql":                  _2_experiment_runs_up_sql,
-	"3_metrics.down.sql":                        _3_metrics_down_sql,
-	"3_metrics.up.sql":                          _3_metrics_up_sql,
-	"4_metrics_value.down.sql":                  _4_metrics_value_down_sql,
-	"4_metrics_value.up.sql":                    _4_metrics_value_up_sql,
-	"5_metrics_value_numeric_nullable.down.sql": _5_metrics_value_numeric_nullable_down_sql,
-	"5_metrics_value_numeric_nullable.up.sql":   _5_metrics_value_numeric_nullable_up_sql,
-	"6_experiments.down.sql":                    _6_experiments_down_sql,
-	"6_experiments.up.sql":                      _6_experiments_up_sql,
-	"7_experiment_runs_remote_run_id.down.sql":  _7_experiment_runs_remote_run_id_down_sql,
-	"7_experiment_runs_remote_run_id.up.sql":    _7_experiment_runs_remote_run_id_up_sql,
+	"1_mutex.down.sql":                             _1_mutex_down_sql,
+	"1_mutex.up.sql":                               _1_mutex_up_sql,
+	"2_experiment_runs.down.sql":                   _2_experiment_runs_down_sql,
+	"2_experiment_runs.up.sql":                     _2_experiment_runs_up_sql,
+	"3_metrics.down.sql":                           _3_metrics_down_sql,
+	"3_metrics.up.sql":                             _3_metrics_up_sql,
+	"4_metrics_value.down.sql":                     _4_metrics_value_down_sql,
+	"4_metrics_value.up.sql":                       _4_metrics_value_up_sql,
+	"5_metrics_value_numeric_nullable.down.sql":    _5_metrics_value_numeric_nullable_down_sql,
+	"5_metrics_value_numeric_nullable.up.sql":      _5_metrics_value_numeric_nullable_up_sql,
+	"6_experiments.down.sql":                       _6_experiments_down_sql,
+	"6_experiments.up.sql":                         _6_experiments_up_sql,
+	"7_experiment_runs_remote_run_id.down.sql":     _7_experiment_runs_remote_run_id_down_sql,
+	"7_experiment_runs_remote_run_id.up.sql":       _7_experiment_runs_remote_run_id_up_sql,
+	"8_experiment_runs_reconcile_metrics.down.sql": _8_experiment_runs_reconcile_metrics_down_sql,
+	"8_experiment_runs_reconcile_metrics.up.sql":   _8_experiment_runs_reconcile_metrics_up_sql,
 }
 
 // AssetDir returns the file names below a certain
@@ -232,18 +252,20 @@ type _bintree_t struct {
 }
 
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
-	"1_mutex.down.sql":                          &_bintree_t{_1_mutex_down_sql, map[string]*_bintree_t{}},
-	"1_mutex.up.sql":                            &_bintree_t{_1_mutex_up_sql, map[string]*_bintree_t{}},
-	"2_experiment_runs.down.sql":                &_bintree_t{_2_experiment_runs_down_sql, map[string]*_bintree_t{}},
-	"2_experiment_runs.up.sql":                  &_bintree_t{_2_experiment_runs_up_sql, map[string]*_bintree_t{}},
-	"3_metrics.down.sql":                        &_bintree_t{_3_metrics_down_sql, map[string]*_bintree_t{}},
-	"3_metrics.up.sql":                          &_bintree_t{_3_metrics_up_sql, map[string]*_bintree_t{}},
-	"4_metrics_value.down.sql":                  &_bintree_t{_4_metrics_value_down_sql, map[string]*_bintree_t{}},
-	"4_metrics_value.up.sql":                    &_bintree_t{_4_metrics_value_up_sql, map[string]*_bintree_t{}},
-	"5_metrics_value_numeric_nullable.down.sql": &_bintree_t{_5_metrics_value_numeric_nullable_down_sql, map[string]*_bintree_t{}},
-	"5_metrics_value_numeric_nullable.up.sql":   &_bintree_t{_5_metrics_value_numeric_nullable_up_sql, map[string]*_bintree_t{}},
-	"6_experiments.down.sql":                    &_bintree_t{_6_experiments_down_sql, map[string]*_bintree_t{}},
-	"6_experiments.up.sql":                      &_bintree_t{_6_experiments_up_sql, map[string]*_bintree_t{}},
-	"7_experiment_runs_remote_run_id.down.sql":  &_bintree_t{_7_experiment_runs_remote_run_id_down_sql, map[string]*_bintree_t{}},
-	"7_experiment_runs_remote_run_id.up.sql":    &_bintree_t{_7_experiment_runs_remote_run_id_up_sql, map[string]*_bintree_t{}},
+	"1_mutex.down.sql":                             &_bintree_t{_1_mutex_down_sql, map[string]*_bintree_t{}},
+	"1_mutex.up.sql":                               &_bintree_t{_1_mutex_up_sql, map[string]*_bintree_t{}},
+	"2_experiment_runs.down.sql":                   &_bintree_t{_2_experiment_runs_down_sql, map[string]*_bintree_t{}},
+	"2_experiment_runs.up.sql":                     &_bintree_t{_2_experiment_runs_up_sql, map[string]*_bintree_t{}},
+	"3_metrics.down.sql":                           &_bintree_t{_3_metrics_down_sql, map[string]*_bintree_t{}},
+	"3_metrics.up.sql":                             &_bintree_t{_3_metrics_up_sql, map[string]*_bintree_t{}},
+	"4_metrics_value.down.sql":                     &_bintree_t{_4_metrics_value_down_sql, map[string]*_bintree_t{}},
+	"4_metrics_value.up.sql":                       &_bintree_t{_4_metrics_value_up_sql, map[string]*_bintree_t{}},
+	"5_metrics_value_numeric_nullable.down.sql":    &_bintree_t{_5_metrics_value_numeric_nullable_down_sql, map[string]*_bintree_t{}},
+	"5_metrics_value_numeric_nullable.up.sql":      &_bintree_t{_5_metrics_value_numeric_nullable_up_sql, map[string]*_bintree_t{}},
+	"6_experiments.down.sql":                       &_bintree_t{_6_experiments_down_sql, map[string]*_bintree_t{}},
+	"6_experiments.up.sql":                         &_bintree_t{_6_experiments_up_sql, map[string]*_bintree_t{}},
+	"7_experiment_runs_remote_run_id.down.sql":     &_bintree_t{_7_experiment_runs_remote_run_id_down_sql, map[string]*_bintree_t{}},
+	"7_experiment_runs_remote_run_id.up.sql":       &_bintree_t{_7_experiment_runs_remote_run_id_up_sql, map[string]*_bintree_t{}},
+	"8_experiment_runs_reconcile_metrics.down.sql": &_bintree_t{_8_experiment_runs_reconcile_metrics_down_sql, map[string]*_bintree_t{}},
+	"8_experiment_runs_reconcile_metrics.up.sql":   &_bintree_t{_8_experiment_runs_reconcile_metrics_up_sql, map[string]*_bintree_t{}},
 }}

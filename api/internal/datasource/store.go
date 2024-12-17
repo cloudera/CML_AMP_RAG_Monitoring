@@ -7,7 +7,7 @@ import (
 )
 
 type MetricStore interface {
-	Metrics(ctx context.Context, runId string) ([]Metric, error)
+	Metrics(ctx context.Context, experimentId string, runId string) ([]Metric, error)
 }
 
 type ArtifactStore interface {

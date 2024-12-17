@@ -1,0 +1,1 @@
+ALTER TABLE `experiment_runs` DROP COLUMN `reconcile_metrics`;

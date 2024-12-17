@@ -10,6 +10,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
+	"strconv"
 	"time"
 )
 
@@ -44,7 +45,7 @@ type PlatformMetric struct {
 	Key       string    `json:"key"`
 	Value     float64   `json:"value"`
 	Timestamp time.Time `json:"timestamp"`
-	Step      int       `json:"step"`
+	Step      string    `json:"step"`
 }
 
 type PlatformRunData struct {
@@ -97,7 +98,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 			Key:       metric.Key,
 			Value:     metric.Value,
 			Timestamp: util.TimeStamp(metric.Timestamp),
-			Step:      metric.Step,
+			Step:      strconv.Itoa(metric.Step),
 		})
 	}
 
@@ -162,7 +163,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 	var run PlatformRun
 	jerr := json.Unmarshal(body, &run)
 	if jerr != nil {
-		return nil, err
+		return nil, jerr
 	}
 	data := RunData{
 		Metrics: make([]Metric, 0),
@@ -170,11 +171,16 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		Tags:    run.Data.Tags,
 	}
 	for _, metric := range run.Data.Metrics {
+		step, err := strconv.Atoi(metric.Step)
+		if err != nil {
+			log.Printf("failed to convert step to int: %s", err)
+			return nil, err
+		}
 		data.Metrics = append(data.Metrics, Metric{
 			Key:       metric.Key,
 			Value:     metric.Value,
 			Timestamp: metric.Timestamp.Unix(),
-			Step:      metric.Step,
+			Step:      step,
 		})
 	}
 	return &Run{
@@ -429,7 +435,6 @@ func (m *PlatformMLFlow) GetExperimentByName(ctx context.Context, name string) (
 }
 
 func (m *PlatformMLFlow) GetExperiment(ctx context.Context, experimentId string) (*Experiment, error) {
-	log.Printf("fetching experiment %s, id length is %d runes", experimentId, len(experimentId))
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s", m.baseUrl, m.cfg.CDSWProjectID, experimentId)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	req.Header = make(map[string][]string)
@@ -456,4 +461,17 @@ func (m *PlatformMLFlow) GetExperiment(ctx context.Context, experimentId string)
 	}
 	experiment := experimentResponse.Experiment
 	return &experiment, nil
+}
+
+func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId string) ([]Metric, error) {
+	if runId == "" {
+		return nil, fmt.Errorf("runId is required")
+	}
+
+	run, err := m.GetRun(ctx, experimentId, runId)
+	if err != nil {
+		log.Printf("failed to fetch run %s: %s", runId, err)
+		return nil, err
+	}
+	return run.Data.Metrics, nil
 }
