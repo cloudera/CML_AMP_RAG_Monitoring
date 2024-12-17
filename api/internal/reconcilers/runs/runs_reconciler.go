@@ -54,6 +54,10 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
 			continue
 		}
+		if experiment.RemoteExperimentId == "" {
+			log.Printf("experiment %d has no remote experiment id, skipping reconciliation", item.ID)
+			continue
+		}
 		log.Printf("syncing run %s", run.RunId)
 		// Fetch remote run
 		localRun, err := r.dataStores.Local.GetRun(ctx, run.ExperimentId, run.RunId)
