@@ -247,6 +247,7 @@ func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*
 
 func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, name string, createdTs time.Time, tags []RunTag) (string, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs", m.baseUrl, m.cfg.CDSWProjectID, experimentId)
+	log.Printf("creating run %s for experiment %s using url %s", name, experimentId, url)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
 		"project_id":    m.cfg.CDSWProjectID,
