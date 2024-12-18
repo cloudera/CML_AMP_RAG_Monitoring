@@ -49,8 +49,8 @@ import plotly.graph_objects as go  # interactive charts
 import streamlit as st  # 🎈 data web app development
 
 from qdrant_client import QdrantClient
-from ..data_types import MLFlowStoreRequest
-from ..utils.dashboard import (
+from data_types import MLFlowStoreRequest
+from utils.dashboard import (
     get_experiment_ids,
     get_runs,
     parse_live_results_table,

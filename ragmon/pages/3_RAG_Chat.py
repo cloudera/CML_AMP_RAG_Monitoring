@@ -46,7 +46,7 @@ from qdrant_client import QdrantClient
 import uuid
 import requests
 import json
-from ..data_types import (
+from data_types import (
     RagPredictConfiguration,
     RagPredictRequest,
     RagPredictResponse,

@@ -53,7 +53,7 @@ from llama_index.core.storage import StorageContext
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client.models import Distance, VectorParams
 from services.ragllm import get_embedding_model_and_dims
-from ..data_types import RagIndexConfiguration
+from data_types import RagIndexConfiguration
 import mimetypes
 
 
