@@ -17,7 +17,7 @@ from llama_index.core.evaluation import (
 )
 from llama_index.llms.bedrock_converse import BedrockConverse
 
-from ragmon.utils.keyword import extract_keywords
+from .keyword import extract_keywords
 from ..services.ragllm import get_inference_model
 from llama_index.core.chat_engine.types import AgentChatResponse
 
