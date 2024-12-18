@@ -228,7 +228,7 @@ def show_live_df_component(
 ):
     if not live_results_df.empty:
         live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
-        live_results_df["feedback"] = live_results_df["thumbs_up"].apply(
+        live_results_df["feedback"] = live_results_df["feedback"].apply(
             lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
         )
         st.write("### Detailed Logs")
