@@ -3,6 +3,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 import requests
+import streamlit as st
+import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 
 from ..data_types import MLFlowStoreRequest
@@ -221,12 +223,38 @@ def get_numeric_metrics_df(request: MLFlowStoreRequest):
     return metrics_df
 
 
+def show_live_df_component(
+    live_results_df: pd.DataFrame,
+):
+    if not live_results_df.empty:
+        live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
+        live_results_df["feedback"] = live_results_df["thumbs_up"].apply(
+            lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
+        )
+        st.write("### Detailed Logs")
+        st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
+
+
 def show_i_o_component(
     input_lengths_df: pd.DataFrame,
     output_lengths_df: pd.DataFrame,
     input_kpi_placeholder: DeltaGenerator,
     output_kpi_placeholder: DeltaGenerator,
+    update_timestamp: str,
 ):
+    """
+    Display input and output length KPIs and their respective time series plots.
+
+    Parameters:
+    input_lengths_df (pd.DataFrame): DataFrame containing input lengths and timestamps.
+    output_lengths_df (pd.DataFrame): DataFrame containing output lengths and timestamps.
+    input_kpi_placeholder (DeltaGenerator): Streamlit placeholder for input KPI metric.
+    output_kpi_placeholder (DeltaGenerator): Streamlit placeholder for output KPI metric.
+    update_timestamp (str): Timestamp to uniquely identify the update for Streamlit components.
+
+    Returns:
+    None
+    """
     # Show input and output length KPIs
     if "input_length" in input_lengths_df.columns:
         avg_input_length = np.mean(input_lengths_df["input_length"])
@@ -261,3 +289,260 @@ def show_i_o_component(
                 2,
             ),
         )
+
+    with st.expander(
+        ":material/input:/:material/output: **I/O Overview**",
+        expanded=True,
+    ):
+        fig_col4, fig_col5 = st.columns(2)
+
+        input_lengths_df = input_lengths_df[["input_length", "timestamp"]]
+        agg_input_df = input_lengths_df.groupby(
+            pd.Grouper(key="timestamp", freq="h")  # group by hour
+        )["input_length"].agg(["mean", "max", "min"])
+        with fig_col4:
+            st.markdown(
+                "### Input Length",
+                help="The average number of words in the input.",
+            )
+            fig = go.Figure(
+                data=go.Scatter(
+                    x=agg_input_df.index,
+                    y=agg_input_df["mean"],
+                    mode="markers",
+                    marker=dict(size=5),
+                    fill="tozeroy",
+                    customdata=agg_input_df[["max", "min"]],
+                    hovertemplate="Mean: <b>%{y:.2f}</b> Max: <b>%{customdata[0]:.2f}"
+                    "</b><br>Min: <b>%{customdata[1]:.2f}</b><br>Date: %{x|%b %d, %Y}"
+                    "<br>Time: %{x|%H:%M}<extra></extra>",
+                )
+            )
+            fig.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Mean Input Length (in words)",
+                xaxis={
+                    "tickformat": "%b %d, %Y",
+                    "tickmode": "array",
+                },
+            )
+            st.plotly_chart(fig, key=f"input_length_fig_{update_timestamp}")
+
+        output_lengths_df = output_lengths_df[["output_length", "timestamp"]]
+        agg_output_df = output_lengths_df.groupby(
+            pd.Grouper(key="timestamp", freq="h")  # group by hour
+        )["output_length"].agg(["mean", "max", "min"])
+        with fig_col5:
+            st.markdown(
+                "### Output Length",
+                help="The average number of words in the output.",
+            )
+            fig = go.Figure(
+                data=go.Scatter(
+                    x=agg_output_df.index,
+                    y=agg_output_df["mean"],
+                    mode="markers",
+                    marker=dict(size=5),
+                    fill="tozeroy",
+                    customdata=agg_output_df[["max", "min"]],
+                    hovertemplate="Mean: <b>%{y:.2f}</b> Max: <b>%{customdata[0]:.2f}"
+                    "</b><br>Min: <b>%{customdata[1]:.2f}</b><br>Date: %{x|%b %d, %Y}"
+                    "<br>Time: %{x|%H:%M}<extra></extra>",
+                )
+            )
+            fig.update_layout(
+                xaxis_title="Date",
+                yaxis_title="Mean Output Length (in words)",
+                xaxis={
+                    "tickformat": "%b %d, %Y",
+                    "tickmode": "array",
+                },
+            )
+            st.plotly_chart(fig, key=f"output_length_fig_{update_timestamp}")
+
+
+def show_feedback_component(
+    feedback_df: pd.DataFrame,
+    thumbs_up_placeholder: DeltaGenerator,
+    thumbs_down_placeholder: DeltaGenerator,
+    no_feedback_placeholder: DeltaGenerator,
+    update_timestamp: str,
+):
+    """
+    Display feedback KPI and pie chart of feedback distribution.
+
+    Parameters:
+    feedback_df (pd.DataFrame): DataFrame containing feedback and timestamps.
+    feedback_placeholder (DeltaGenerator): Streamlit placeholder for feedback KPI metric.
+    update_timestamp (str): Timestamp to uniquely identify the update for Streamlit components.
+
+    Returns:
+    None
+    """
+    if "feedback" in feedback_df:
+        thumbs_up_count = feedback_df["feedback"].to_list().count(1)
+        thumbs_down_count = feedback_df["feedback"].to_list().count(0)
+        no_feedback_count = feedback_df["feedback"].isna().sum()
+
+        thumbs_up_placeholder.metric(
+            label="Thumbs Up :material/thumb_up:",
+            help="The number of thumbs up received.",
+            value=thumbs_up_count,
+        )
+
+        thumbs_down_placeholder.metric(
+            label="Thumbs Down :material/thumb_down:",
+            help="The number of thumbs down received.",
+            value=thumbs_down_count,
+        )
+
+        no_feedback_placeholder.metric(
+            label="No Feedback :material/indeterminate_question_box:",
+            help="The number of no feedback received.",
+            value=no_feedback_count,
+        )
+
+        with st.expander("# :material/feedback: **Feedback Overview**", expanded=True):
+            st.markdown(
+                "### Feedback Received",
+                help="Feedback received from users.",
+            )
+            fig = go.Figure(
+                data=go.Pie(
+                    labels=["Thumbs Up", "Thumbs Down", "No Feedback"],
+                    values=[
+                        thumbs_up_count,
+                        thumbs_down_count,
+                        no_feedback_count,
+                    ],
+                    hole=0.5,
+                    hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
+                )
+            )
+            st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
+
+
+def show_numeric_metric_kpi(
+    metric_key: str,
+    metrics_df: pd.DataFrame,
+    kpi_placeholder: DeltaGenerator,
+    label: str,
+    tooltip: str,
+):
+    """
+    Display numeric metric KPIs.
+
+    Parameters:
+    metrics_df (pd.DataFrame): DataFrame containing numeric metrics and timestamps.
+    kpi_placeholder (DeltaGenerator): Streamlit placeholder for numeric metric KPI.
+
+    Returns:
+    None
+    """
+    if metric_key in metrics_df.columns:
+        avg_metric = np.mean(metrics_df[metric_key])
+        metric_scores = metrics_df[metrics_df[metric_key].notna()][metric_key].to_list()
+        # fill in those three columns with respective metrics or KPIs
+        kpi_placeholder.metric(
+            label=label,
+            help=tooltip,
+            value=round(avg_metric, 2),
+            delta=round(
+                (
+                    avg_metric - np.mean(metric_scores[:-1])
+                    if len(metric_scores) > 1
+                    else 0
+                ),
+                2,
+            ),
+        )
+
+
+def show_pie_chart_component(
+    metric_key: str,
+    metrics_df: pd.DataFrame,
+    title: str,
+    tooltip: str,
+    labels: List[str],
+    update_timestamp: str,
+):
+    """
+    Displays a pie chart component in a Streamlit app.
+
+    Parameters:
+    metric_key (str): The key to identify the metric in the DataFrame.
+    metrics_df (pd.DataFrame): The DataFrame containing the metrics data.
+    update_timestamp (str): A timestamp string to ensure the chart is updated.
+    title (str): The title of the pie chart.
+    tooltip (str): The tooltip text for the pie chart title.
+    labels (List[str]): The labels for the pie chart slices.
+
+    Returns:
+    None
+    """
+    if metric_key in metrics_df:
+        st.markdown(f"### {title}", help=tooltip)
+        fig = go.Figure(
+            data=go.Pie(
+                labels=labels,
+                values=[
+                    metrics_df[metric_key].to_list().count(1),
+                    metrics_df[metric_key].to_list().count(0),
+                    metrics_df[metric_key].isna().sum(),
+                ],
+                hole=0.5,
+                hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
+            )
+        )
+        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+
+
+def show_time_series_component(
+    metric_key: str,
+    metrics_df: pd.DataFrame,
+    title: str,
+    tooltip: str,
+    update_timestamp: str,
+    frequency: str = "h",
+):
+    """
+    Displays a time series component in a Streamlit app.
+
+    Parameters:
+    metric_key (str): The key to identify the metric in the DataFrame.
+    metrics_df (pd.DataFrame): The DataFrame containing the metrics data.
+    update_timestamp (str): A timestamp string to ensure the chart is updated.
+    title (str): The title of the time series plot.
+    tooltip (str): The tooltip text for the time series plot title.
+
+    Returns:
+    None
+    """
+    if metric_key in metrics_df:
+        st.markdown(f"### {title}", help=tooltip)
+        metrics_df = metrics_df[[metric_key, "timestamp"]]
+        agg_df = metrics_df.groupby(
+            pd.Grouper(key="timestamp", freq=frequency)  # group by frequency
+        )[metric_key].agg(["mean", "max", "min"])
+        fig = go.Figure(
+            data=go.Scatter(
+                x=agg_df.index,
+                y=agg_df["mean"],
+                mode="markers",
+                marker=dict(size=5),
+                fill="tozeroy",
+                customdata=agg_df[["max", "min"]],
+                hovertemplate="Mean: <b>%{y:.2f}</b> Max: <b>%{customdata[0]:.2f}"
+                "</b><br>Min: <b>%{customdata[1]:.2f}</b><br>Date: %{x|%b %d, %Y}"
+                "<br>Time: %{x|%H:%M}<extra></extra>",
+            )
+        )
+        fig.update_layout(
+            xaxis_title="Date",
+            yaxis_title=f"Mean {title}",
+            xaxis={
+                "tickformat": "%b %d, %Y",
+                "tickmode": "array",
+            },
+        )
+        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
