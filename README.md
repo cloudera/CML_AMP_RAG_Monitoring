@@ -89,16 +89,6 @@ OR
 
 - Access raw input, output, and context data for detailed analysis.
 
-## Local Development
-
-You can run the AMP locally using Docker.
-
-- Set the `AWS_DEFAULT_REGION`, `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables as above if you are using AWS Bedrock.
-- Set the `CAII_DOMAIN`, `CAII_INFERENCE_ENDPOINT_NAME` and `CAII_EMBEDDING_ENDPOINT_NAME` environment variables if you are using Cloudera AI Inferencing.
-- Run `./local.sh`
-
-By default, the UI will be available at `http://localhost:8200`. The port can be customzied by setting the CDSW_APP_PORT variable.
-
 ## The Fine Print
 
 IMPORTANT: Please read the following before proceeding. This AMP includes or otherwise depends on certain third party software packages. Information about such third party software packages are made available in the notice file associated with this AMP. By configuring and launching this AMP, you will cause such third party software packages to be downloaded and installed into your environment, in some instances, from third parties' websites. For each third party software package, please see the notice file and the applicable websites for more information, including the applicable license terms.
