@@ -38,22 +38,19 @@
 #
 # ###########################################################################
 
-from typing import List  # to simulate a real time data, time loop
 import time
 import os
 from pathlib import Path
-import logging
 import json
 import warnings
 import numpy as np
 import pandas as pd  # read csv, df manipulation
 import plotly.graph_objects as go  # interactive charts
 import streamlit as st  # 🎈 data web app development
-import requests  # to pull data from metric store
 
 from qdrant_client import QdrantClient
-from data_types import MLFlowStoreRequest
-from ragmon.utils.dashboard import (
+from ..data_types import MLFlowStoreRequest
+from ..utils.dashboard import (
     get_experiment_ids,
     get_runs,
     parse_live_results_table,
