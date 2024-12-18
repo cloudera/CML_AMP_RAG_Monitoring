@@ -2,7 +2,7 @@ from keybert import KeyBERT
 from llama_index.llms.bedrock_converse import BedrockConverse
 from typing import List
 
-from ragmon.services.ragllm import get_inference_model
+from ..services.ragllm import get_inference_model
 
 EXTRACT_KEYWORDS_PROMPT = """I have the following document:
 {input}
