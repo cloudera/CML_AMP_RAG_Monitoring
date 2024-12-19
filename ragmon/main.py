@@ -50,7 +50,7 @@ from uvicorn.logging import DefaultFormatter
 from .config import settings
 from .routers import index
 from .utils.reconciler import background_worker
-from .utils import evaluate_json_data
+from .utils.evaluate import evaluate_json_data
 
 ###################################
 #  Logging
