@@ -1,5 +1,5 @@
 FROM debian:trixie
-RUN apt-get update && apt-get -y install sqlite3-tools python3 python-is-python3 python3-pip wget git procps
+RUN apt-get update && apt-get -y install sqlite3-tools python3 python-is-python3 python3-pip wget git procps curl
 RUN useradd -d /home/cdsw cdsw
 RUN pip install --break-system-packages uv
 USER cdsw
