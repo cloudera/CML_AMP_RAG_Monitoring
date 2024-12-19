@@ -7,7 +7,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 
-from ..data_types import MLFlowStoreRequest
+from data_types import MLFlowStoreRequest
 
 table_cols_to_show = [
     "response_id",
