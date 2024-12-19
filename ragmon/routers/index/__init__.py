@@ -347,6 +347,19 @@ async def predict(
             mlflow_run_id=run.info.run_id,
         )
 
+        # log response
+        mlflow.log_table(
+            {
+                "response_id": rag_response.id,
+                "input": rag_response.input,
+                "input_length": len(rag_response.input.split()),
+                "output": rag_response.output,
+                "output_length": len(rag_response.output.split()),
+                "source_nodes": rag_response.source_nodes,
+            },
+            artifact_file="live_results.json",
+        )
+
         if request.do_evaluate:
             # save response to disk for evaluation reconciler to pick up
             await log_evaluation_metrics(
