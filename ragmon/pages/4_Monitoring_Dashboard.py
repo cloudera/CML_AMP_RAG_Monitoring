@@ -130,6 +130,8 @@ if experiment_ids:
 
     # select run
     runs = get_runs(selected_experiment)
+    st.write("Runs")
+    st.write(runs)
 
     if not runs:
         st.write("No Metrics Logged Yet")
@@ -234,29 +236,6 @@ if experiment_ids:
         precision_df = get_numeric_metrics_df(precision_request)
         recall_df = get_numeric_metrics_df(recall_request)
         feedback_df = get_numeric_metrics_df(feedback_request)
-
-        st.write("Faithfulness DF")
-        st.dataframe(faithfulness_df)
-        st.write("Relevance DF")
-        st.dataframe(relevance_df)
-        st.write("Context Relevancy DF")
-        st.dataframe(context_relevancy_df)
-        st.write("Input Lengths DF")
-        st.dataframe(input_lengths_df)
-        st.write("Output Lengths DF")
-        st.dataframe(output_lengths_df)
-        st.write("Maliciousness DF")
-        st.dataframe(maliciousness_df)
-        st.write("Toxicity DF")
-        st.dataframe(toxicity_df)
-        st.write("Comprehensiveness DF")
-        st.dataframe(comprehensiveness_df)
-        st.write("Precision DF")
-        st.dataframe(precision_df)
-        st.write("Recall DF")
-        st.dataframe(recall_df)
-        st.write("Feedback DF")
-        st.dataframe(feedback_df)
 
         with placeholder.container():
 
