@@ -204,6 +204,7 @@ def get_numeric_metrics_df(request: MLFlowStoreRequest):
     """
     metric_name = request.metric_names[0]
     metrics_response = get_metrics(request)
+    st.write(metrics_response)
     if metrics_response != []:
         metric_response_ids = [x["experiment_run_id"] for x in metrics_response]
         metric_scores = [
