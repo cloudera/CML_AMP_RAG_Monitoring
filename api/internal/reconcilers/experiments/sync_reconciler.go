@@ -37,8 +37,9 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 		queue.Add(id)
 	}
 
-	log.Printf("queueing %d experiments for sync reconciliation", len(ids))
-
+	if len(ids) > 0 {
+		log.Printf("queueing %d experiments for sync reconciliation", len(ids))
+	}
 	log.Debugln("completing mlflow sync reconciler resync")
 }
 
@@ -46,7 +47,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 	for _, item := range items {
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d for sync reconciliation: %s", item.ID, err)
 		}
 
 		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
@@ -56,7 +57,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		log.Printf("reconciling experiment (%d) %s", item.ID, experiment.ExperimentId)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d from local store: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d from local store for sync reconciliation: %s", item.ID, err)
 			continue
 		}
 
@@ -109,20 +110,35 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 		for _, run := range localRuns {
 			found := false
+			updated := false
 			for _, remoteRun := range remoteRuns {
 				if run.Info.Name == remoteRun.Info.Name {
+					log.Printf("run %s(%s) exists in remote store with ID %s", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
 					found = true
+					if run.Info.StartTime > remoteRun.Info.StartTime {
+						log.Printf("run %s(%s) exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
+						updated = true
+					}
 					break
 				}
 			}
 			if found {
-				continue
+				if !updated {
+					continue
+				}
+				log.Printf("run %s exists in remote store but is out of date", run.Info.Name)
 			}
-			// Insert the run into the remote store
-			remoteRunId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
-			if err != nil {
-				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
-				continue
+			var remoteRunId string
+			if !found {
+				// Insert the run into the remote store
+				id, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
+				if err != nil {
+					log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
+					continue
+				}
+				remoteRunId = id
+			} else {
+				remoteRunId = run.Info.RunId
 			}
 			// Check and see if the run already exists in the DB and insert it if not
 			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
