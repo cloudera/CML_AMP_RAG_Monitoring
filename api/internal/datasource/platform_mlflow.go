@@ -33,7 +33,7 @@ type PlatformExperimentListResponse struct {
 type PlatformRun struct {
 	Id             string          `json:"id"`
 	Name           string          `json:"run_name"`
-	Status         RunStatus       `json:"status"`
+	Status         string          `json:"status"`
 	StartTime      time.Time       `json:"start_time"`
 	EndTime        time.Time       `json:"end_time"`
 	ArtifactUri    string          `json:"artifact_uri"`
@@ -102,10 +102,24 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 		})
 	}
 
+	var status string
+	switch run.Info.Status {
+	case RunStatusRunning:
+		status = "EXPERIMENT_RUN_RUNNING"
+	case RunStatusScheduled:
+		status = "EXPERIMENT_RUN_SCHEDULED"
+	case RunStatusFinished:
+		status = "EXPERIMENT_RUN_FINISHED"
+	case RunStatusFailed:
+		status = "EXPERIMENT_RUN_FAILED"
+	case RunStatusKilled:
+		status = "EXPERIMENT_RUN_KILLED"
+	}
+
 	platformRun := PlatformRun{
 		Id:             run.Info.RunId,
 		Name:           run.Info.Name,
-		Status:         run.Info.Status,
+		Status:         status,
 		StartTime:      time.Unix(run.Info.StartTime, 0),
 		EndTime:        time.Unix(run.Info.EndTime, 0),
 		ArtifactUri:    run.Info.ArtifactUri,
@@ -188,7 +202,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			RunId:          runId,
 			Name:           run.Name,
 			ExperimentId:   experimentId,
-			Status:         run.Status,
+			Status:         RunStatus(run.Status),
 			StartTime:      run.StartTime.Unix(),
 			EndTime:        run.EndTime.Unix(),
 			ArtifactUri:    run.ArtifactUri,
