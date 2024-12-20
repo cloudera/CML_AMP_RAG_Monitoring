@@ -38,26 +38,37 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	if err != nil {
 		log.Printf("failed to fetch experiments from local mlflow: %s", err)
 	}
+	queued := 0
 	for _, ex := range experiments {
 		if ex.Name == "" || ex.Name == "Default" {
 			continue
 		}
 		// If the experiment is not in the database, add it to the queue
 		reconcile := true
+		found := false
 		for _, local := range localExperiments {
 			if ex.ExperimentId == local.ExperimentId {
+				found = true
 				if ex.LastUpdatedTime <= local.UpdatedTs.UnixMilli() {
 					reconcile = false
+				} else {
+					log.Printf("experiment %s with ID %s found in remote mlflow but is out-of-date, queueing for update", ex.Name, ex.ExperimentId)
 				}
 				break
 			}
 		}
+		if !found {
+			log.Printf("experiment %s with ID %s not found in remote, queueing for creation", ex.Name, ex.ExperimentId)
+		}
 		if reconcile {
+			queued++
 			queue.Add(ex.ExperimentId)
 		}
 	}
 
-	log.Printf("queueing %d local experiments for reconciliation", len(experiments))
+	if queued > 0 {
+		log.Printf("queueing %d local experiments for reconciliation", queued)
+	}
 
 	log.Debugln("completing reconciler resync")
 }
@@ -104,6 +115,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		updated := false
 		if experiment.UpdatedTs.Before(lastUpdated) {
 			// Update the flag of the experiment to indicate that it requires reconciliation
+			log.Printf("experiment %s is out-of-date, flagging for sync reconciliation", experiment.ExperimentId)
 			updated = true
 		}
 		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, updated, lastUpdated)

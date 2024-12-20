@@ -36,8 +36,9 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 		queue.Add(id)
 	}
 
-	log.Println(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
-
+	if len(ids) > 0 {
+		log.Println(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
+	}
 	log.Debugln("completing reconciler resync")
 }
 
