@@ -32,8 +32,9 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 		return
 	}
 
-	log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
-
+	if len(runs) > 0 {
+		log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
+	}
 	for _, run := range runs {
 		queue.Add(run)
 	}
@@ -42,8 +43,8 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+	log.Printf("reconciling %d experiment runs for metric", len(items))
 	for _, item := range items {
-		log.Debugf("reconciling metrics for experiment run %d", item.ID)
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, dberr)
@@ -81,7 +82,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			if err != nil {
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
-				log.Printf("inserted numeric metric %s(%d) for experiment run %d", m.Name, m.Id, run.Id)
+				log.Printf("inserted numeric metric %s(%d) for experiment run %s(%d)", m.Name, m.Id, run.RemoteRunId, run.Id)
 			}
 		}
 		// Fetch artifacts from MLFlow
@@ -98,12 +99,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		//	}
 		//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
 		//}
-		// Update the timestamp of the experiment run to indicate that it has been reconciled
-		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
+		// Update the metrics flag of the experiment run to indicate that it has been reconciled
+		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, false)
 		if err != nil {
 			log.Printf("failed to update experiment run %d for metrics reconciliation: %s", item.ID, err)
 		}
-		log.Debugf("reconciling metrics for experiment %s and run %s", run.ExperimentId, run.RunId)
+		log.Printf("finished reconciling metrics for experiment %s and run %s", run.ExperimentId, run.RunId)
 	}
 }
 
