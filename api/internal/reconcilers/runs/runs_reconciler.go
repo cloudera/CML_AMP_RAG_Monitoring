@@ -96,6 +96,11 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		}
 		log.Printf("syncing data for run %s to remote store", run.RunId)
 		// Sync the metrics to the remote store
+		remoteRun.Info.Name = localRun.Info.Name
+		remoteRun.Info.Status = localRun.Info.Status
+		remoteRun.Info.StartTime = util.TimeStamp(localRun.Info.StartTime).Unix()
+		remoteRun.Info.EndTime = util.TimeStamp(localRun.Info.EndTime).Unix()
+		remoteRun.Info.LifecycleStage = localRun.Info.LifecycleStage
 		remoteRun.Data = localRun.Data
 		err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 		if err != nil {
