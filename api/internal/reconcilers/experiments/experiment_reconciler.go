@@ -28,6 +28,12 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
+	// fetch the locally stored experiments to use as a filter
+	localExperiments, err := r.db.Experiments().ListExperiments(ctx)
+	if err != nil {
+		log.Printf("failed to fetch experiments from database: %s", err)
+	}
+
 	experiments, err := r.dataStores.Local.ListExperiments(ctx, maxItems, "")
 	if err != nil {
 		log.Printf("failed to fetch experiments from local mlflow: %s", err)
@@ -36,7 +42,19 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 		if ex.Name == "" || ex.Name == "Default" {
 			continue
 		}
-		queue.Add(ex.ExperimentId)
+		// If the experiment is not in the database, add it to the queue
+		reconcile := true
+		for _, local := range localExperiments {
+			if ex.ExperimentId == local.ExperimentId {
+				if ex.LastUpdatedTime <= local.UpdatedTs.UnixMilli() {
+					reconcile = false
+				}
+				break
+			}
+		}
+		if reconcile {
+			queue.Add(ex.ExperimentId)
+		}
 	}
 
 	log.Printf("queueing %d local experiments for reconciliation", len(experiments))

@@ -46,7 +46,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 	for _, item := range items {
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d for sync reconciliation: %s", item.ID, err)
 		}
 
 		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
@@ -56,7 +56,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		log.Printf("reconciling experiment (%d) %s", item.ID, experiment.ExperimentId)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d from local store: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d from local store for sync reconciliation: %s", item.ID, err)
 			continue
 		}
 
