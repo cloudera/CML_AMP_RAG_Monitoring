@@ -134,7 +134,7 @@ def add_custom_evaluator(
         path = Path(os.path.join(os.getcwd(), "custom_evaluators"))
         path.mkdir(parents=True, exist_ok=True)
         save_to_disk(
-            request.evaluator_definition,
+            request.dict(),
             path,
             f"{request.evaluator_name.replace(' ', '_')}.json",
         )
