@@ -3,6 +3,21 @@ set -eo pipefail
 
 CDSW_APP_PORT=${CDSW_APP_PORT:-8100}
 
+if [ -z "$CDSW_API_URL" ] ; then
+  echo "CDSW_API_URL"
+  exit 1
+fi
+
+if [ -z "$CDSW_PROJECT_ID" ] ; then
+  echo "CDSW_PROJECT_ID must be set"
+  exit 1
+fi
+
+if [ -z "$CDSW_API_KEY" ] ; then
+  echo "CDSW_API_KEY must be set"
+  exit 1
+fi
+
 if [ -z "$AWS_REGION" ] && [ -z "$CAII_DOMAIN" ]; then
   echo "Either AWS_REGION or CAII_DOMAIN must be set"
   exit 1
@@ -27,4 +42,4 @@ if [ -n "$CAII_DOMAIN" ]; then
 fi
 
 docker build --platform=linux/amd64 -t ragmon:latest .
-docker run --platform=linux/amd64 -it --rm $DOCKER_CMD_ENV -e LOCAL=true -e ADDRESS=0.0.0.0 -e CDSW_APP_PORT=$CDSW_APP_PORT -p $CDSW_APP_PORT:$CDSW_APP_PORT ragmon:latest
+docker run --platform=linux/amd64 -it --rm "$DOCKER_CMD_ENV" -e LOCAL=true -e ADDRESS=0.0.0.0 -e CDSW_API_URL="$CDSW_API_URL" -e CDSW_PROJECT_ID="$CDSW_PROJECT_ID" -e CDSW_APP_PORT="$CDSW_APP_PORT" -p "$CDSW_APP_PORT":"$CDSW_APP_PORT" ragmon:latest

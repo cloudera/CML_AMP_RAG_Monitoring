@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/models"
 	lhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/http"
@@ -41,6 +42,7 @@ func (e ExperimentRunsAPI) PostRunsList(ctx context.Context, params runs.PostRun
 }
 
 func (e ExperimentRunsAPI) PostRuns(ctx context.Context, params runs.PostRunsParams) (*runs.PostRunsOK, *lhttp.HttpError) {
+	log.Debugf("deprecated POST handler to register an experiment run invoked.")
 	if params.Body == nil {
 		return nil, lhttp.NewBadRequest("body is required")
 	}
@@ -50,17 +52,14 @@ func (e ExperimentRunsAPI) PostRuns(ctx context.Context, params runs.PostRunsPar
 	if params.Body.ExperimentRunID == "" {
 		return nil, lhttp.NewBadRequest("experiment_run_id is required")
 	}
-	run, err := e.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
-		ExperimentId: params.Body.ExperimentID,
-		RunId:        params.Body.ExperimentRunID,
-	})
+	run, err := e.db.ExperimentRuns().GetExperimentRun(ctx, params.Body.ExperimentID, params.Body.ExperimentRunID)
 	if err != nil {
 		return nil, lhttp.NewInternalError(err.Error())
 	}
 	return &runs.PostRunsOK{
 		Payload: &models.ExperimentRun{
-			ExperimentID:    run.ExperimentId,
-			ExperimentRunID: run.RunId,
+			ExperimentID:    params.Body.ExperimentID,
+			ExperimentRunID: params.Body.ExperimentRunID,
 			ID:              run.Id,
 		},
 	}, nil

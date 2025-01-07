@@ -1,7 +1,7 @@
 # RAG Monitoring
 
 <p align="center">
-  <img src="st_app/resources/logos/RAG-Monitoring-icon.png" alt="RAG Monitoring">
+  <img src="ragmon/resources/logos/RAG-Monitoring-icon.png" alt="RAG Monitoring">
 </p>
 
 ### What is RAG Monitoring?
@@ -36,6 +36,7 @@ The AMP requires access to LLM and embedding models hosted either on AWS or Clou
   - Cohere English Embedding v3 (`meta.cohere-english-embedding-v3:0`)
 
 **For Cloudera AI Inferencing provide:**
+
 - Inference model endpoint
 - Embedding model endpoint
 
@@ -61,6 +62,7 @@ For configuring the project, you will need to provide some environment variables
 OR
 
 **For Cloudera AI Inferencing:**
+
 - CAII_DOMAIN
 - CAII_INFERENCE_ENDPOINT_NAME
 - CAII_EMBEDDING_ENDPOINT_NAME

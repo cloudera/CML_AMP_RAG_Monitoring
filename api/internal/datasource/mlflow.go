@@ -29,12 +29,11 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 }
 
 func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) error {
-	//TODO implement me
-	panic("implement me")
+	panic("local mlflow UpdateRun is not supported")
 }
 
 func (m *MLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
-	url := fmt.Sprintf("%s/api/2.0/mlflow/get?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/runs/get?run_id=%s", m.baseUrl, runId)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
@@ -74,17 +73,18 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 			"experiment_ids": []string{experimentId},
 			"page_token":     token,
 		}
-		encoded, err := json.Marshal(body)
-		if err != nil {
-			log.Printf("failed to encode body: %s", err)
-			return nil, err
+		encoded, serr := json.Marshal(body)
+		if serr != nil {
+			log.Printf("failed to encode body: %s", serr)
+			return nil, serr
 		}
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
+		req.Header = make(map[string][]string)
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := m.connections.HttpClient.Do(req)
-		if err != nil {
-			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, err)
-			return nil, err
+		resp, lerr := m.connections.HttpClient.Do(req)
+		if lerr != nil {
+			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, lerr)
+			return nil, lerr
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
@@ -120,11 +120,12 @@ func (m *MLFlow) CreateRun(ctx context.Context, experimentId string, name string
 	panic("implement me")
 }
 
-func (m *MLFlow) Metrics(ctx context.Context, runId string) ([]Metric, error) {
+func (m *MLFlow) Metrics(ctx context.Context, experimentId string, runId string) ([]Metric, error) {
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}
-	url := fmt.Sprintf("%s/api/2.0/runs/runs/get?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/runs/get?run_id=%s", m.baseUrl, runId)
+
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
@@ -132,6 +133,7 @@ func (m *MLFlow) Metrics(ctx context.Context, runId string) ([]Metric, error) {
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
+		log.Printf("metrics not found for run %s", runId)
 		return []Metric{}, nil
 	}
 	defer resp.Body.Close()
@@ -206,10 +208,10 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 }
 
 func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {
-	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectNum)
+	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectID)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	body := map[string]interface{}{
-		"project_id": m.cfg.CDSWProjectNum,
+		"project_id": m.cfg.CDSWProjectID,
 		"name":       name,
 	}
 	encoded, err := json.Marshal(body)

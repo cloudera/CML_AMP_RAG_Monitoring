@@ -59,7 +59,6 @@ def get_response(request: RagPredictRequest) -> RagPredictResponse:
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
-        timeout=None,
     )
 
     if response.status_code != 200:
@@ -81,7 +80,6 @@ def log_feedback(request: RagFeedbackRequest):
             "Content-Type": "application/json",
             "Accept": "application/json",
         },
-        timeout=60,
     )
 
     if response.status_code != 200:

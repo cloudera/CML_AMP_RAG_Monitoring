@@ -50,7 +50,7 @@ from uvicorn.logging import DefaultFormatter
 from .config import settings
 from .routers import index
 from .utils.reconciler import background_worker
-from .utils import evaluate_json_data
+from .utils.evaluate import evaluate_json_data
 
 ###################################
 #  Logging
@@ -108,7 +108,13 @@ async def lifespan(fastapi_app: FastAPI):
 #  App
 ###################################
 
-app = FastAPI(lifespan=lifespan)
+# TODO: add reconciler to app lifecycle
+app = FastAPI()
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 
 ###################################

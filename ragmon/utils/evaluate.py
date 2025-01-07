@@ -17,7 +17,7 @@ from llama_index.core.evaluation import (
 )
 from llama_index.llms.bedrock_converse import BedrockConverse
 
-from ragmon.utils.keyword import extract_keywords
+from .keyword import extract_keywords
 from ..services.ragllm import get_inference_model
 from llama_index.core.chat_engine.types import AgentChatResponse
 
@@ -71,23 +71,19 @@ async def evaluate_response(
 
     if isinstance(chat_response, AgentChatResponse):
         results = await asyncio.gather(
-            relevancy_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
-            ),
+            relevancy_evaluator.aevaluate_response(query=query, response=chat_response),
             faithfulness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
             context_relevancy_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
             maliciousness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
-            toxicity_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
-            ),
+            toxicity_evaluator.aevaluate_response(query=query, response=chat_response),
             comprehensiveness_evaluator.aevaluate_response(
-                query=query, response=chat_response, contexts=contexts
+                query=query, response=chat_response
             ),
         )
 

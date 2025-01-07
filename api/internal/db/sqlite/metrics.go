@@ -42,7 +42,7 @@ func (r *Metrics) CreateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 				}
 			}
 			if tagsMatch {
-				log.Printf("Metric %s already exists for experiment %s and run %s : %d", m.Name, m.ExperimentId, m.RunId, existingMetric.Id)
+				log.Debugf("Metric %s already exists for experiment %s and run %s : %d", m.Name, m.ExperimentId, m.RunId, existingMetric.Id)
 				return existingMetric, nil
 			}
 		}

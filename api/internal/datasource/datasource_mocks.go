@@ -11,7 +11,7 @@ type MlFlowMock struct {
 
 var _ MetricStore = &MlFlowMock{}
 
-func (m MlFlowMock) Metrics(_ context.Context, runId string) ([]Metric, error) {
+func (m MlFlowMock) Metrics(_ context.Context, experimentId string, runId string) ([]Metric, error) {
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}

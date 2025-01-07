@@ -8,12 +8,12 @@ import (
 )
 
 type Config struct {
-	Enabled           bool          `env:"MLFLOW_RECONCILER_ENABLED" envDefault:"true"`
-	ResyncFrequency   time.Duration `env:"MLFLOW_RECONCILER_RESYNC_FREQUENCY" envDefault:"5s"`
-	GCResyncFrequency time.Duration `env:"MLFLOW_RECONCILER_GC_RESYNC_FREQUENCY" envDefault:"1m"`
-	ResyncMaxItems    int           `env:"MLFLOW_RECONCILER_RESYNC_MAX_ITEMS" envDefault:"1000"`
-	MaxWorkers        int           `env:"MLFLOW_RECONCILER_MAX_WORKERS" envDefault:"1"`
-	RunMaxItems       int           `env:"MLFLOW_RECONCILER_RUN_MAX_ITEMS" envDefault:"1"`
+	Enabled           bool          `env:"MLFLOW_RUN_RECONCILER_ENABLED" envDefault:"true"`
+	ResyncFrequency   time.Duration `env:"MLFLOW_RUN_RECONCILER_RESYNC_FREQUENCY" envDefault:"9s"`
+	GCResyncFrequency time.Duration `env:"MLFLOW_RUN_RECONCILER_GC_RESYNC_FREQUENCY" envDefault:"1m"`
+	ResyncMaxItems    int           `env:"MLFLOW_RUN_RECONCILER_RESYNC_MAX_ITEMS" envDefault:"1000"`
+	MaxWorkers        int           `env:"MLFLOW_RUN_RECONCILER_MAX_WORKERS" envDefault:"1"`
+	RunMaxItems       int           `env:"MLFLOW_RUN_RECONCILER_RUN_MAX_ITEMS" envDefault:"1"`
 }
 
 func NewConfigFromEnv() (*Config, error) {

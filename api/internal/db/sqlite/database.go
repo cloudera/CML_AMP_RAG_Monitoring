@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
@@ -21,6 +22,12 @@ func NewInstance(cfg *lsql.Config) *lsql.Instance {
 	instance, err := lsql.NewInstance(cfg)
 	if err != nil {
 		log.Printf("failed to create database instance: %s", err)
+	}
+	if cfg.Engine == "sqlite" {
+		_, err = instance.ExecContext(context.Background(), "PRAGMA synchronous=OFF;")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	return instance
 }

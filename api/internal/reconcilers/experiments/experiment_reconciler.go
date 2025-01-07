@@ -4,13 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
-	"time"
 )
 
 type ExperimentReconciler struct {
@@ -25,26 +24,58 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiment reconciler resync")
+	log.Debugln("beginning experiment reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
+
+	// fetch the locally stored experiments to use as a filter
+	localExperiments, err := r.db.Experiments().ListExperiments(ctx)
+	if err != nil {
+		log.Printf("failed to fetch experiments from database: %s", err)
+	}
 
 	experiments, err := r.dataStores.Local.ListExperiments(ctx, maxItems, "")
 	if err != nil {
 		log.Printf("failed to fetch experiments from local mlflow: %s", err)
 	}
+	queued := 0
 	for _, ex := range experiments {
-		queue.Add(ex.ExperimentId)
+		if ex.Name == "" || ex.Name == "Default" {
+			continue
+		}
+		// If the experiment is not in the database, add it to the queue
+		reconcile := true
+		found := false
+		for _, local := range localExperiments {
+			if ex.ExperimentId == local.ExperimentId {
+				found = true
+				if ex.LastUpdatedTime <= local.UpdatedTs.UnixMilli() {
+					reconcile = false
+				} else {
+					log.Printf("experiment %s with ID %s found in remote mlflow but is out-of-date, queueing for update", ex.Name, ex.ExperimentId)
+				}
+				break
+			}
+		}
+		if !found {
+			log.Printf("experiment %s with ID %s not found in remote, queueing for creation", ex.Name, ex.ExperimentId)
+		}
+		if reconcile {
+			queued++
+			queue.Add(ex.ExperimentId)
+		}
 	}
 
-	log.Println(fmt.Sprintf("queueing %d experiments for reconciliation", len(experiments)))
+	if queued > 0 {
+		log.Printf("queueing %d local experiments for reconciliation", queued)
+	}
 
-	log.Println("completing reconciler resync")
+	log.Debugln("completing reconciler resync")
 }
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
 	for _, item := range items {
-		log.Printf("reconciling experiment %s", item.ID)
+		log.Debugf("reconciling experiment %s", item.ID)
 		// Fetch the experiment MLFlow
 		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)
 		if err != nil {
@@ -57,7 +88,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				log.Printf("experiment %s not found in database, inserting", item.ID)
-				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, ts(local.CreatedTime), ts(local.LastUpdatedTime))
+				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 				if err != nil {
 					log.Printf("failed to insert experiment %s: %s", item.ID, err)
 					continue
@@ -71,7 +102,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		}
 		if experiment == nil {
 			log.Printf("experiment %s not found in database, inserting", item.ID)
-			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, ts(local.CreatedTime), ts(local.LastUpdatedTime))
+			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 			if err != nil {
 				log.Printf("failed to insert experiment %s: %s", item.ID, err)
 				continue
@@ -80,22 +111,20 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 			continue
 		}
 		// If the experiment exists in the database, compare the updated timestamps
-		lastUpdated := ts(local.LastUpdatedTime)
+		lastUpdated := util.TimeStamp(local.LastUpdatedTime)
+		updated := false
 		if experiment.UpdatedTs.Before(lastUpdated) {
-			// Update the flag and timestamp of the experiment to indicate that it requires reconciliation
-			err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, true, lastUpdated)
-			if err != nil {
-				log.Printf("failed to update experiment %s timestamp: %s", item.ID, err)
-			}
+			// Update the flag of the experiment to indicate that it requires reconciliation
+			log.Printf("experiment %s is out-of-date, flagging for sync reconciliation", experiment.ExperimentId)
+			updated = true
 		}
+		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, updated, lastUpdated)
+		if err != nil {
+			log.Printf("failed to update experiment %s timestamp: %s", item.ID, err)
+		}
+
 		log.Printf("finished reconciling experiment %s ", experiment.ExperimentId)
 	}
-}
-
-func ts(millis int64) time.Time {
-	seconds := millis / 1000
-	nanoseconds := (millis % 1000) * 1e6
-	return time.Unix(seconds, nanoseconds)
 }
 
 func NewExperimentReconcilerManager(app *app.Instance, cfg *Config, rec *ExperimentReconciler) (*reconciler.Manager[string], error) {

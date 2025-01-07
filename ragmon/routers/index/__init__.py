@@ -47,11 +47,13 @@ import uuid
 import sys
 from typing import Dict, List, Optional, Union
 import mlflow
+from mlflow.tracking import MlflowClient
 import requests
 
 import opentelemetry.trace
 from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole
+from llama_index.core.chat_engine.types import AgentChatResponse
 
 from pydantic import BaseModel
 from uvicorn.logging import DefaultFormatter
@@ -59,6 +61,7 @@ from uvicorn.logging import DefaultFormatter
 from ... import exceptions
 from . import qdrant
 from .qdrant import RagMessage
+from ...utils.evaluate import evaluate_response
 from ...config import settings
 from ...data_types import CreateCustomEvaluatorRequest
 
@@ -178,6 +181,80 @@ def feedback(
     return {"status": "success"}
 
 
+async def log_evaluation_metrics(
+    run: mlflow.ActiveRun,
+    query: Union[str, None] = None,
+    chat_response: Union[str, AgentChatResponse, None] = None,
+) -> None:
+    """Log evaluation metrics for a response"""
+    if query is None or chat_response is None:
+        return False
+    mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
+    try:
+        (
+            relevance,
+            faithfulness,
+            context_relevancy,
+            maliciousness,
+            toxicity,
+            comprehensiveness,
+        ) = await evaluate_response(
+            query=query,
+            chat_response=chat_response,
+        )
+
+        logger.info(
+            "Relevance: %s, Faithfulness: %s, "
+            "Context Relevancy: %s, Maliciousness: %s, "
+            "Toxicity: %s, Comprehensiveness: %s",
+            relevance.score,
+            faithfulness.score,
+            context_relevancy.score,
+            maliciousness.score,
+            toxicity.score,
+            comprehensiveness.score,
+        )
+
+        # fetch previous metrics
+        metric_history = mlflowclient.get_metric_history(
+            run_id=run.info.run_id,
+            key="relevance_score",
+        )
+        mlflow.log_metrics(
+            {
+                "relevance_score": relevance.score if relevance is not None else 0,
+                "faithfulness_score": (
+                    faithfulness.score if faithfulness.score is not None else 0
+                ),
+                "context_relevancy_score": (
+                    context_relevancy.score
+                    if context_relevancy.score is not None
+                    else 0.5
+                ),
+                "input_length": len(query.split()),
+                "output_length": len(chat_response.response.split()),
+                "maliciousness_score": (
+                    maliciousness.score if maliciousness.score is not None else -1
+                ),
+                "toxicity_score": toxicity.score if toxicity.score is not None else -1,
+                "comprehensiveness_score": (
+                    comprehensiveness.score
+                    if comprehensiveness.score is not None
+                    else -1
+                ),
+            },
+            step=len(metric_history) + 1,
+            synchronous=True,
+        )
+        logger.info(
+            "Logged evaluation metrics for exp id %s and run id %s",
+            run.info.experiment_id,
+            run.info.run_id,
+        )
+    except Exception as e:
+        logger.error("Failed to log evaluation metrics: %s", e)
+
+
 def register_experiment_and_run(
     experiment_id: str,
     experiment_run_id: str,
@@ -227,7 +304,15 @@ async def predict(
     request: RagPredictRequest,
 ) -> RagPredictResponse:
     """Predict using indexed documents"""
+    if mlflow.active_run() is not None:
+        logger.info(
+            "Run ID: %s is active. Waiting for it to finish.",
+            mlflow.active_run().info.run_id,
+        )
+        while mlflow.active_run() is not None:
+            continue
     curr_exp = mlflow.set_experiment(experiment_name=f"{request.data_source_id}_live")
+    logger.info("Starting new run for experiment: %s", curr_exp.experiment_id)
     with mlflow.start_run() as run:
         # register experiment and run with MLflow store
         register_experiment_and_run(
@@ -284,13 +369,25 @@ async def predict(
             mlflow_run_id=run.info.run_id,
         )
 
+        # log response
+        mlflow.log_table(
+            {
+                "response_id": rag_response.id,
+                "input": rag_response.input,
+                "input_length": len(rag_response.input.split()),
+                "output": rag_response.output,
+                "output_length": len(rag_response.output.split()),
+                "source_nodes": rag_response.source_nodes,
+            },
+            artifact_file="live_results.json",
+        )
+
         if request.do_evaluate:
             # save response to disk for evaluation reconciler to pick up
-            save_dir = Path(os.path.join(os.getcwd(), "data"))
-            save_to_disk(
-                rag_response.dict(),
-                save_dir,
-                f"{rag_response.id}.json",
+            await log_evaluation_metrics(
+                run=run,
+                query=request.query,
+                chat_response=response,
             )
 
     return rag_response

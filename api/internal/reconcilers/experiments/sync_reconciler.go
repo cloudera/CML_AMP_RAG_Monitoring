@@ -2,10 +2,12 @@ package experiments
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"time"
@@ -23,7 +25,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiments reconciler resync")
+	log.Debugln("beginning experiments reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
@@ -35,28 +37,33 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 		queue.Add(id)
 	}
 
-	log.Println(fmt.Sprintf("queueing %d experiments for sync reconciliation", len(ids)))
-
-	log.Println("completing mlflow sync reconciler resync")
+	if len(ids) > 0 {
+		log.Printf("queueing %d experiments for sync reconciliation", len(ids))
+	}
+	log.Debugln("completing mlflow sync reconciler resync")
 }
 
 func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
 	for _, item := range items {
-		log.Printf("reconciling experiment %d", item.ID)
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d for sync reconciliation: %s", item.ID, err)
 		}
 
+		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
+			continue
+		}
+
+		log.Printf("reconciling experiment (%d) %s", item.ID, experiment.ExperimentId)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d from local store: %s", item.ID, err)
+			log.Printf("failed to fetch experiment %d from local store for sync reconciliation: %s", item.ID, err)
 			continue
 		}
 
 		if experiment.RemoteExperimentId == "" {
 			// If the experiment does not exist in the remote store, insert it
-			log.Printf("experiment %d not found in remote store, inserting", item.ID)
+			log.Printf("experiment %s has no remote experiment ID, inserting into the remote MLFLow instance", experiment.ExperimentId)
 			remoteExperimentId, err := r.dataStores.Remote.CreateExperiment(ctx, local.Name)
 			if err != nil {
 				log.Printf("failed to insert experiment %d into remote store: %s", item.ID, err)
@@ -103,41 +110,68 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 		for _, run := range localRuns {
 			found := false
+			updated := false
 			for _, remoteRun := range remoteRuns {
 				if run.Info.Name == remoteRun.Info.Name {
+					log.Printf("run %s(%s) exists in remote store with ID %s", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
 					found = true
+					if run.Info.StartTime > remoteRun.Info.StartTime {
+						log.Printf("run %s(%s) exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
+						updated = true
+					}
 					break
 				}
 			}
 			if found {
+				if !updated {
+					continue
+				}
+				log.Printf("run %s exists in remote store but is out of date", run.Info.Name)
+			}
+			var remoteRunId string
+			if !found {
+				// Insert the run into the remote store
+				id, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
+				if err != nil {
+					log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
+					continue
+				}
+				remoteRunId = id
+			} else {
+				remoteRunId = run.Info.RunId
+			}
+			// Check and see if the run already exists in the DB and insert it if not
+			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
+			if dberr != nil && !errors.Is(dberr, sql.ErrNoRows) {
+				log.Printf("failed to fetch run %s from DB: %s", run.Info.Name, dberr)
 				continue
 			}
-			// Insert the run into the remote store
-			remoteRunId, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, ts(run.Info.StartTime), run.Data.Tags)
-			if err != nil {
-				log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
-				continue
-			}
-			// Insert the run into the DB
-			newRun, err := r.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
-				Id:           0,
-				ExperimentId: run.Info.ExperimentId,
-				RunId:        run.Info.RunId,
-				RemoteRunId:  remoteRunId,
-			})
-			if err != nil {
-				log.Printf("failed to insert run %s into DB: %s", run.Info.Name, err)
-				continue
+			var id int64
+			if existing != nil {
+				id = existing.Id
+			} else {
+				// Insert the run into the DB
+				newRun, dberr := r.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
+					Id:           0,
+					ExperimentId: run.Info.ExperimentId,
+					RunId:        run.Info.RunId,
+					RemoteRunId:  remoteRunId,
+				})
+				if dberr != nil {
+					log.Printf("failed to insert run %s into DB: %s", run.Info.Name, dberr)
+					continue
+				}
+				id = newRun.Id
 			}
 			// Flag the run as ready for reconciliation
-			err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, newRun.Id, true, time.Now())
-			if err != nil {
-				log.Printf("failed to update run %d timestamp: %s", newRun.Id, err)
+			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
+			if dberr != nil {
+				log.Printf("failed to update run %d timestamp: %s", id, dberr)
 			}
 		}
 
 		// Update the flag and timestamp of the experiment to indicate that it has finished reconciliation
-		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, false, ts(local.LastUpdatedTime))
+		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, false, util.TimeStamp(local.LastUpdatedTime))
 		if err != nil {
 			log.Printf("failed to update experiment %d timestamp: %s", item.ID, err)
 		}

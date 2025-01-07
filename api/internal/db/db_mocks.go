@@ -13,6 +13,21 @@ type ExperimentRunsMock struct {
 	ExperimentRuns []*ExperimentRun
 }
 
+func (e *ExperimentRunsMock) UpdateExperimentRunReconcileMetrics(ctx context.Context, id int64, reconcileMetrics bool) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentRunsMock) ListExperimentRunIdsForMetricReconciliation(ctx context.Context, maxItems int64) ([]int64, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (e *ExperimentRunsMock) UpdateRemoteRunId(ctx context.Context, id int64, remoteRunId string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (e *ExperimentRunsMock) CreateExperimentRun(_ context.Context, run *ExperimentRun) (*ExperimentRun, error) {
 	e.ExperimentRuns = append(e.ExperimentRuns, run)
 	return run, nil
