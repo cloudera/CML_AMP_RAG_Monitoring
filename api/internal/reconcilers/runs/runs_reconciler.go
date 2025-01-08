@@ -37,7 +37,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	}
 
 	if len(ids) > 0 {
-		log.Println(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
+		log.Debugln(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
 	}
 	log.Debugln("completing reconciler resync")
 }
@@ -115,11 +115,29 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to fetch run %s from remote store: %s", run.RemoteRunId, verr)
 			continue
 		}
+		if verify.Info.Name != remoteRun.Info.Name || verify.Info.Status != remoteRun.Info.Status || verify.Info.StartTime != remoteRun.Info.StartTime || verify.Info.EndTime != remoteRun.Info.EndTime || verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
+			log.Printf("failed to verify run %s info in remote store", run.RemoteRunId)
+			if verify.Info.Name != remoteRun.Info.Name {
+				log.Printf("name mismatch: %s != %s", verify.Info.Name, remoteRun.Info.Name)
+			}
+			if verify.Info.Status != remoteRun.Info.Status {
+				log.Printf("status mismatch: %s != %s", verify.Info.Status, remoteRun.Info.Status)
+			}
+			if verify.Info.StartTime != remoteRun.Info.StartTime {
+				log.Printf("start time mismatch: %d != %d", verify.Info.StartTime, remoteRun.Info.StartTime)
+			}
+			if verify.Info.EndTime != remoteRun.Info.EndTime {
+				log.Printf("end time mismatch: %d != %d", verify.Info.EndTime, remoteRun.Info.EndTime)
+			}
+			if verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
+				log.Printf("lifecycle stage mismatch: %s != %s", verify.Info.LifecycleStage, remoteRun.Info.LifecycleStage)
+			}
+			continue
+		}
 		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
 			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
 			continue
 		}
-
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation
 		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {

@@ -78,7 +78,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	for _, param := range run.Data.Params {
 		var val = param.Value
 		if len(val) > 250 {
-			log.Printf("param %s value is too long for platform MLFlow, truncating", param.Key)
+			log.Debugf("param %s value is too long for platform MLFlow, truncating", param.Key)
 			val = val[:250]
 		}
 		params = append(params, Param{
@@ -145,9 +145,14 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("failed to update run %s: %s", run.Info.RunId, resp.Status)
 	}
-	_, ioerr := io.ReadAll(resp.Body)
+	buff, ioerr := io.ReadAll(resp.Body)
 	if ioerr != nil {
 		return ioerr
+	}
+	var updatedRun PlatformRun
+	jerr := json.Unmarshal(buff, &updatedRun)
+	if jerr != nil {
+		return jerr
 	}
 	return nil
 }
@@ -203,8 +208,8 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			Name:           run.Name,
 			ExperimentId:   experimentId,
 			Status:         RunStatus(run.Status),
-			StartTime:      run.StartTime.Unix(),
-			EndTime:        run.EndTime.Unix(),
+			StartTime:      run.StartTime.UnixMilli(),
+			EndTime:        run.EndTime.UnixMilli(),
 			ArtifactUri:    run.ArtifactUri,
 			LifecycleStage: run.LifecycleStage,
 		},

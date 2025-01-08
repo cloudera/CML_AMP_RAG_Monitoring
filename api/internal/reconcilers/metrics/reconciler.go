@@ -33,7 +33,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	}
 
 	if len(runs) > 0 {
-		log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
+		log.Debugf("queueing %d experiment runs for metric reconciliation", len(runs))
 	}
 	for _, run := range runs {
 		queue.Add(run)
