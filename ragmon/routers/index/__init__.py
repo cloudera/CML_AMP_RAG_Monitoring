@@ -311,6 +311,7 @@ async def predict(
             id=str(uuid.uuid4()),
             input=request.query,
             output=response.response,
+            data_source_id=request.data_source_id,
             source_nodes=response_source_nodes,
             chat_history=new_history,
             mlflow_experiment_id=curr_exp.experiment_id,

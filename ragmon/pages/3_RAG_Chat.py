@@ -134,6 +134,7 @@ def show_feedback_component():
         fb_button = st.feedback(key="feedback_{last_response.id}")
         if fb_button == 1:
             feedback_request = RagFeedbackRequest(
+                response_id=last_response.response_id,
                 experiment_id=last_response.mlflow_experiment_id,
                 experiment_run_id=last_response.mlflow_run_id,
                 feedback=1.0,
@@ -145,6 +146,7 @@ def show_feedback_component():
             st.rerun()
         elif fb_button == 0:
             feedback_request = RagFeedbackRequest(
+                response_id=last_response.response_id,
                 experiment_id=last_response.mlflow_experiment_id,
                 experiment_run_id=last_response.mlflow_run_id,
                 feedback=0.0,

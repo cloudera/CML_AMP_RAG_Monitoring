@@ -90,10 +90,11 @@ class RagPredictResponse(BaseModel):
     id: str
     input: str
     output: str
+    data_source_id: int
     source_nodes: List[RagPredictSourceNode] = []
     chat_history: List[RagMessage]
-    mlflow_experiment_id: str
-    mlflow_run_id: str
+    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: Optional[str] = None
 
 
 class RagFeedbackRequest(BaseModel):
