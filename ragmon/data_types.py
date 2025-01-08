@@ -97,10 +97,16 @@ class RagPredictResponse(BaseModel):
 
 
 class RagFeedbackRequest(BaseModel):
+    response_id: str
+    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: Optional[str] = None
+    feedback: float  # 0.0 or 1.0
+    feedback_str: Optional[str] = None
+
+
+class MLflowStoreIdentifier(BaseModel):
     experiment_id: str
     experiment_run_id: str
-    feedback: float  # 0.0 or 1.0\
-    feedback_str: Optional[str] = None
 
 
 class MLFlowStoreRequest(BaseModel):

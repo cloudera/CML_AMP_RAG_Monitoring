@@ -62,6 +62,13 @@ from ... import exceptions
 from . import qdrant
 from .qdrant import RagMessage
 from ...utils.evaluate import evaluate_response
+from ...data_types import (
+    RagPredictRequest,
+    RagPredictSourceNode,
+    RagPredictResponse,
+    RagFeedbackRequest,
+    MLflowStoreIdentifier,
+)
 from ...config import settings
 
 logger = logging.getLogger(__name__)
@@ -84,44 +91,6 @@ router = APIRouter(
 )
 
 
-class RagPredictRequest(BaseModel):
-    data_source_id: int
-    chat_history: list[RagMessage]
-    query: str
-    configuration: qdrant.RagPredictConfiguration = qdrant.RagPredictConfiguration()
-    do_evaluate: bool = True
-
-
-class RagPredictSourceNode(BaseModel):
-    node_id: str
-    doc_id: str
-    source_file_name: str
-    score: float
-    content: str
-
-
-class RagPredictResponse(BaseModel):
-    id: str
-    input: str
-    output: str
-    source_nodes: List[RagPredictSourceNode] = []
-    chat_history: list[RagMessage]
-    mlflow_experiment_id: str
-    mlflow_run_id: str
-
-
-class MLflowStoreIdentifier(BaseModel):
-    experiment_id: str
-    experiment_run_id: str
-
-
-class RagFeedbackRequest(BaseModel):
-    experiment_id: str
-    experiment_run_id: str
-    feedback: float
-    feedback_str: Optional[str] = None
-
-
 @router.post("/feedback", summary="Log feedback for a response")
 @exceptions.propagates
 @tracer.start_as_current_span("feedback")
@@ -129,34 +98,35 @@ def feedback(
     request: RagFeedbackRequest,
 ) -> Dict[str, str]:
     """Log feedback for a response"""
-    curr_exp = mlflow.set_experiment(experiment_id=request.experiment_id)
-    try:
-        with mlflow.start_run(
-            experiment_id=curr_exp.experiment_id,
-            run_id=request.experiment_run_id,
-        ):
-            mlflow.log_metrics(
-                {
-                    "feedback": request.feedback,
-                },
-                synchronous=False,
-            )
-            mlflow.log_table(
-                {
-                    "run_id": request.experiment_run_id,
-                    "feedback_str": request.feedback_str,
-                },
-                artifact_file="user_feedback.json",
-            )
-            logger.info(
-                "Logged feedback for exp id %s and run id %s",
-                request.experiment_id,
-                request.experiment_run_id,
-            )
-    except Exception as e:
-        logger.error("Failed to log feedback: %s", e)
-        return {"status": "failed"}
-    return {"status": "success"}
+    pass
+    # curr_exp = mlflow.set_experiment(experiment_id=request.experiment_id)
+    # try:
+    #     with mlflow.start_run(
+    #         experiment_id=curr_exp.experiment_id,
+    #         run_id=request.experiment_run_id,
+    #     ):
+    #         mlflow.log_metrics(
+    #             {
+    #                 "feedback": request.feedback,
+    #             },
+    #             synchronous=False,
+    #         )
+    #         mlflow.log_table(
+    #             {
+    #                 "run_id": request.experiment_run_id,
+    #                 "feedback_str": request.feedback_str,
+    #             },
+    #             artifact_file="user_feedback.json",
+    #         )
+    #         logger.info(
+    #             "Logged feedback for exp id %s and run id %s",
+    #             request.experiment_id,
+    #             request.experiment_run_id,
+    #         )
+    # except Exception as e:
+    #     logger.error("Failed to log feedback: %s", e)
+    #     return {"status": "failed"}
+    # return {"status": "success"}
 
 
 async def log_evaluation_metrics(
