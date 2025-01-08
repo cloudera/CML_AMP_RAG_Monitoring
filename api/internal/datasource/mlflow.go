@@ -28,7 +28,7 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 	}
 }
 
-func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) error {
+func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
 	panic("local mlflow UpdateRun is not supported")
 }
 

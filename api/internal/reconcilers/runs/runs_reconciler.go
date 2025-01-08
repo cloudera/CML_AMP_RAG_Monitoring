@@ -98,23 +98,16 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		// Sync the metrics to the remote store
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
-		remoteRun.Info.StartTime = util.TimeStamp(localRun.Info.StartTime).UnixMilli()
-		remoteRun.Info.EndTime = util.TimeStamp(localRun.Info.EndTime).UnixMilli()
+		remoteRun.Info.EndTime = localRun.Info.EndTime
 		remoteRun.Info.LifecycleStage = localRun.Info.LifecycleStage
 		remoteRun.Data = localRun.Data
 		log.Printf("updating run %s in remote store with name %s, status %s, start time %d, end time %d, stage %s", run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), remoteRun.Info.StartTime, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
-		err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+		verify, err := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 		if err != nil {
 			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
 			continue
 		}
 
-		// fetch back the run to verify the updates
-		verify, verr := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
-		if verr != nil {
-			log.Printf("failed to fetch run %s from remote store: %s", run.RemoteRunId, verr)
-			continue
-		}
 		if verify.Info.Name != remoteRun.Info.Name || verify.Info.Status != remoteRun.Info.Status || verify.Info.StartTime != remoteRun.Info.StartTime || verify.Info.EndTime != remoteRun.Info.EndTime || verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
 			log.Printf("failed to verify run %s info in remote store", run.RemoteRunId)
 			if verify.Info.Name != remoteRun.Info.Name {

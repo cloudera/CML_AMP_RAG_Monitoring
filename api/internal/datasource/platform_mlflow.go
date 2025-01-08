@@ -70,7 +70,7 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 	}
 }
 
-func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
+func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectID, run.Info.ExperimentId, run.Info.RunId)
 	req := cbhttp.NewRequest(ctx, "PATCH", url)
 
@@ -120,9 +120,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 		Id:             run.Info.RunId,
 		Name:           run.Info.Name,
 		Status:         status,
-		StartTime:      time.UnixMilli(run.Info.StartTime),
 		EndTime:        time.UnixMilli(run.Info.EndTime),
-		ArtifactUri:    run.Info.ArtifactUri,
 		LifecycleStage: run.Info.LifecycleStage,
 		Data:           data,
 	}
@@ -130,7 +128,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	encoded, serr := json.Marshal(platformRun)
 	if serr != nil {
 		log.Printf("failed to encode body: %s", serr)
-		return serr
+		return nil, serr
 	}
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
@@ -139,22 +137,34 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	resp, lerr := m.connections.HttpClient.Do(req)
 	if lerr != nil {
 		log.Printf("failed to update run %s: %s", run.Info.RunId, lerr)
-		return lerr
+		return nil, lerr
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("failed to update run %s: %s", run.Info.RunId, resp.Status)
+		return nil, fmt.Errorf("failed to update run %s: %s", run.Info.RunId, resp.Status)
 	}
 	buff, ioerr := io.ReadAll(resp.Body)
 	if ioerr != nil {
-		return ioerr
+		return nil, ioerr
 	}
 	var updatedRun PlatformRun
 	jerr := json.Unmarshal(buff, &updatedRun)
 	if jerr != nil {
-		return jerr
+		return nil, jerr
 	}
-	return nil
+	return &Run{
+		Info: RunInfo{
+			RunId:          updatedRun.Id,
+			Name:           updatedRun.Name,
+			ExperimentId:   run.Info.ExperimentId,
+			Status:         RunStatus(updatedRun.Status),
+			StartTime:      updatedRun.StartTime.UnixMilli(),
+			EndTime:        updatedRun.EndTime.UnixMilli(),
+			ArtifactUri:    updatedRun.ArtifactUri,
+			LifecycleStage: updatedRun.LifecycleStage,
+		},
+		Data: RunData{},
+	}, nil
 }
 
 func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
@@ -270,6 +280,8 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 	body := map[string]interface{}{
 		"project_id":    m.cfg.CDSWProjectID,
 		"experiment_id": experimentId,
+		"start_time":    createdTs.UnixMilli(),
+		"tags":          tags,
 	}
 	encoded, jerr := json.Marshal(body)
 	if jerr != nil {

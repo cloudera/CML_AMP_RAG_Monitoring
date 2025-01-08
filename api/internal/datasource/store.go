@@ -25,7 +25,7 @@ type RunStore interface {
 	GetRun(ctx context.Context, experimentId string, runId string) (*Run, error)
 	ListRuns(ctx context.Context, experimentId string) ([]*Run, error)
 	CreateRun(ctx context.Context, experimentId string, name string, createdTs time.Time, tags []RunTag) (string, error)
-	UpdateRun(ctx context.Context, run *Run) error
+	UpdateRun(ctx context.Context, run *Run) (*Run, error)
 }
 
 type DataStore interface {
