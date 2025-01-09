@@ -326,6 +326,11 @@ async def predict(
 
         if request.do_evaluate:
             # save response to disk for evaluation reconciler to pick up
+            save_to_disk(
+                data=rag_response.dict(),
+                directory=settings.reconciler.data_dir,
+                filename=f"{rag_response.id}.json",
+            )
             await log_evaluation_metrics(
                 run=run,
                 query=request.query,
