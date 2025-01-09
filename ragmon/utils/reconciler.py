@@ -35,12 +35,15 @@ async def process_io_pair(file_path, processing_function):
     logger.info("Processing i/o pair: %s", file_path)
     # Process io pair
     response = await processing_function(data)
+    # save the response
+    data = response.dict()["data"]
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
     if response["status"] == "failed":
         logger.error("Failed to process i/o pair: %s", file_path)
         logger.info("File not deleted: %s", file_path)
         return
     logger.info("Processed i/o pair: %s", file_path)
-    file_path.unlink()  # Delete the file after processing
 
 
 def background_worker(directory, processing_function):

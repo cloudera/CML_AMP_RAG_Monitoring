@@ -95,6 +95,7 @@ class RagPredictResponse(BaseModel):
     chat_history: List[RagMessage]
     mlflow_experiment_id: Optional[str] = None
     mlflow_run_id: Optional[str] = None
+    metrics_logged_status: Optional[str] = None
 
 
 class RagFeedbackRequest(BaseModel):

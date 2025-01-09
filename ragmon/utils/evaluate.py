@@ -37,6 +37,10 @@ logger.addHandler(handler)
 logger.setLevel(settings.rag_log_level)
 
 
+def table_name_from(data_source_id: int):
+    return f"index_{data_source_id}"
+
+
 async def evaluate_response(
     query: str,
     chat_response: Union[str, AgentChatResponse],
@@ -140,6 +144,7 @@ async def evaluate_json_data(data):
     """
     mlflow_experiment_id = data["mlflow_experiment_id"]
     mlflow_run_id = data["mlflow_run_id"]
+    response_id = data["id"]
     query = data["input"]
     response = data["output"]
     contexts = []
@@ -149,103 +154,111 @@ async def evaluate_json_data(data):
 
     try:
         # set the experiment ID and run ID
-        mlflow.set_experiment(experiment_id=mlflow_experiment_id)
-        with mlflow.start_run(
-            experiment_id=mlflow_experiment_id,
-            run_id=mlflow_run_id,
-        ) as run:
-            if contexts:
-                for i, context in enumerate(contexts):
-                    mlflow.log_param(f"context_{i}", context)
-
-            # Evaluate the response
-            mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
-            (
-                relevance,
-                faithfulness,
-                context_relevancy,
-                maliciousness,
-                toxicity,
-                comprehensiveness,
-            ) = await evaluate_response(query, response, contexts)
-
-            # Log the evaluation results
-            logger.info(
-                "Relevance: %s, Faithfulness: %s, "
-                "Context Relevancy: %s, Maliciousness: %s, "
-                "Toxicity: %s, Comprehensiveness: %s",
-                relevance.score,
-                faithfulness.score,
-                context_relevancy.score,
-                maliciousness.score,
-                toxicity.score,
-                comprehensiveness.score,
+        if mlflow_experiment_id:
+            mlflow.set_experiment(experiment_id=mlflow_experiment_id)
+        else:
+            mlflow_experiment_id = mlflow.create_experiment(
+                name=f"{data['data_source_id']}_live"
             )
-            # fetch previous metrics
-            metric_history = mlflowclient.get_metric_history(
-                run_id=run.info.run_id,
-                key="relevance_score",
+            data["mlflow_experiment_id"] = mlflow_experiment_id
+        if mlflow_run_id:
+            run = mlflow.start_run(
+                experiment_id=mlflow_experiment_id,
+                run_id=mlflow_run_id,
             )
+        else:
+            run = mlflow.start_run(experiment_id=mlflow_experiment_id)
+            data["mlflow_run_id"] = run.info.run_id
+        if contexts:
+            for i, context in enumerate(contexts):
+                mlflow.log_param(f"context_{i}", context)
 
-            # create metric dictionary and do not add metrics which are none or empty
-            metrics = {
-                "relevance_score": relevance.score,
-                "faithfulness_score": faithfulness.score,
-                "context_relevancy_score": context_relevancy.score,
-                "maliciousness_score": maliciousness.score,
-                "toxicity_score": toxicity.score,
-                "comprehensiveness_score": comprehensiveness.score,
-                "output_length": len(response.split()),
-                "input_length": len(query.split()),
-            }
+        # Evaluate the response
+        (
+            relevance,
+            faithfulness,
+            context_relevancy,
+            maliciousness,
+            toxicity,
+            comprehensiveness,
+        ) = await evaluate_response(query, response, contexts)
 
-            # Log the metrics
-            for key, value in metrics.items():
-                if value is not None:
-                    mlflow.log_metric(
-                        key,
-                        value,
-                        step=len(metric_history) + 1,
-                        synchronous=False,
-                    )
+        # Log the evaluation results
+        logger.info(
+            "Relevance: %s, Faithfulness: %s, "
+            "Context Relevancy: %s, Maliciousness: %s, "
+            "Toxicity: %s, Comprehensiveness: %s",
+            relevance.score,
+            faithfulness.score,
+            context_relevancy.score,
+            maliciousness.score,
+            toxicity.score,
+            comprehensiveness.score,
+        )
+        # fetch previous metrics
 
-            logger.info(
-                "Logged evaluation metrics for exp id %s and run id %s",
-                mlflow_experiment_id,
-                mlflow_run_id,
-            )
+        # create metric dictionary and do not add metrics which are none or empty
+        metrics = {
+            "relevance_score": relevance.score,
+            "faithfulness_score": faithfulness.score,
+            "context_relevancy_score": context_relevancy.score,
+            "maliciousness_score": maliciousness.score,
+            "toxicity_score": toxicity.score,
+            "comprehensiveness_score": comprehensiveness.score,
+            "output_length": len(response.split()),
+            "input_length": len(query.split()),
+        }
 
-            # extract keywords from the query and response
-            query_keywords = extract_keywords(query)
-            response_keywords = extract_keywords(response)
+        # Log the metrics
+        for key, value in metrics.items():
+            if value is not None:
+                mlflow.log_metric(
+                    key,
+                    value,
+                    synchronous=False,
+                )
 
-            # log response
-            mlflow.log_table(
-                {
-                    "response_id": data["id"],
-                    "input": query,
-                    "input_length": len(query.split()),
-                    "output": response,
-                    "output_length": len(response.split()),
-                    "source_nodes": data["source_nodes"],
-                    "query_keywords": ", ".join(query_keywords or []),
-                    "response_keywords": ", ".join(response_keywords or []),
-                },
-                artifact_file="live_results.json",
-            )
-
-            logger.info(
-                "Logged keywords for exp id %s and run id %s",
-                mlflow_experiment_id,
-                mlflow_run_id,
-            )
-
-        return {"status": "success", "metrics": metrics, "error": None}
-    except Exception as e:
-        logger.error(
-            "Failed to log evaluation metrics for exp id %s and run id %s with error: %s",
+        logger.info(
+            "Logged evaluation metrics for exp id %s and run id %s",
             mlflow_experiment_id,
             mlflow_run_id,
+        )
+
+        # extract keywords from the query and response
+        query_keywords = extract_keywords(query)
+        response_keywords = extract_keywords(response)
+
+        # log response
+        mlflow.log_table(
+            {
+                "response_id": data["id"],
+                "input": query,
+                "input_length": len(query.split()),
+                "output": response,
+                "output_length": len(response.split()),
+                "source_nodes": data["source_nodes"],
+                "query_keywords": ", ".join(query_keywords or []),
+                "response_keywords": ", ".join(response_keywords or []),
+            },
+            artifact_file="live_results.json",
+        )
+
+        logger.info(
+            "Logged keywords for exp id %s and run id %s",
+            mlflow_experiment_id,
+            mlflow_run_id,
+        )
+
+        mlflow.end_run()
+
+        data["metrics_logged_status"] = "success"
+
+        return {"status": "success", "metrics": metrics, "data": data, "error": None}
+    except Exception as e:
+        logger.error(
+            "Failed to log evaluation metrics for response with id %s with error: %s",
+            response_id,
             e,
         )
-        return {"status": "failed", "metrics": None, "error": str(e)}
+        data["metrics_logged_status"] = "failed"
+        return {"status": "failed", "metrics": None, "data": data, "error": str(e)}
