@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "!=3.9.7,>=3.9,<3.13"
 fastapi = {extras = ["standard"], version = "^0.115.3"}
-mlflow = "2.16.2"
+mlflow = "2.19.0"
 opentelemetry-exporter-otlp-proto-http = "1.27.0"
 opentelemetry-instrumentation-fastapi = "0.48b0"
 opentelemetry-instrumentation-logging = "0.48b0"

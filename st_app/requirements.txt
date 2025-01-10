@@ -1171,12 +1171,12 @@ matplotlib==3.9.2 ; python_version >= "3.9" and python_full_version != "3.9.7" a
 mdurl==0.1.2 ; python_version >= "3.9" and python_full_version != "3.9.7" and python_version < "3.13" \
     --hash=sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8 \
     --hash=sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba
-mlflow-skinny==2.16.2 ; python_version >= "3.9" and python_full_version != "3.9.7" and python_version < "3.13" \
-    --hash=sha256:c4064506ee8b590dea5dc3a139a890d50996d8ab511fbd34b0266bf69ebaa9d8 \
-    --hash=sha256:c6faf8bddcba3d2bbde45c954c89575b93c4bef1d5e7e026d98fd9966015038c
-mlflow==2.16.2 ; python_version >= "3.9" and python_full_version != "3.9.7" and python_version < "3.13" \
-    --hash=sha256:322512bcdd13d87039cd60ebcd4370ce16115fb5360905010978575202e57876 \
-    --hash=sha256:7ed8f1d27e719a19592d9582e4415aa76abb3de53c524d6b9c66cbf5e00a1023
+mlflow-skinny==2.19.0 ; python_version >= "3.9" and python_full_version != "3.9.7" and python_version < "3.13" \
+    --hash=sha256:55a464082ecd48961f73f9a0a58b8d44bf2e77bd32632998f1dffd43ef48623c \
+    --hash=sha256:72c652545460db09dc5716241d2fcd9a211b7875444632fbe2d0b62a1f057694
+mlflow==2.19.0 ; python_version >= "3.9" and python_full_version != "3.9.7" and python_version < "3.13" \
+    --hash=sha256:875364a9c37d2e6e5b6256a3cee314e1e6ada0c253f46b6fcb37d986a2dc2514 \
+    --hash=sha256:b860e9d2599a32460968a0a90efdf960b6a6237a08bff44cc5508830017cf70e
 multidict==6.1.0 ; python_version >= "3.9" and python_version < "3.13" and python_full_version != "3.9.7" \
     --hash=sha256:052e10d2d37810b99cc170b785945421141bf7bb7d2f8799d431e7db229c385f \
     --hash=sha256:06809f4f0f7ab7ea2cabf9caca7d79c22c0758b58a71f9d32943ae13c7ace056 \

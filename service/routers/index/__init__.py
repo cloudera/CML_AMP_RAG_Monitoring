@@ -44,9 +44,10 @@ import os
 import uuid
 from typing import Dict, List, Optional, Union
 import mlflow
-from mlflow.tracking import MlflowClient
+from mlflow.metrics.genai import answer_relevance, relevance, faithfulness
 import requests
 
+import pandas as pd
 import opentelemetry.trace
 from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole
@@ -146,7 +147,7 @@ def feedback(
     return {"success": True}
 
 
-async def log_evaluation_metrics(
+def log_evaluation_metrics(
     run: mlflow.ActiveRun,
     query: Union[str, None] = None,
     chat_response: Union[str, AgentChatResponse, None] = None,
@@ -154,62 +155,49 @@ async def log_evaluation_metrics(
     """Log evaluation metrics for a response"""
     if query is None or chat_response is None:
         return False
-    mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
+    # mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
     try:
-        (
-            relevance,
-            faithfulness,
-            context_relevancy,
-            maliciousness,
-            toxicity,
-            comprehensiveness,
-        ) = await qdrant.evaluate_response(
-            query=query,
-            chat_response=chat_response,
+        contexts = ""
+        for i, source_node in enumerate(chat_response.source_nodes):
+            contexts += f"\nNode {i+1}==============================\n{source_node.get_text()}\n"
+        eval_data = pd.DataFrame(
+            {
+                "inputs": [query],
+                "predictions": (
+                    [chat_response.response]
+                    if isinstance(chat_response, AgentChatResponse)
+                    else [chat_response]
+                ),
+                "context": [contexts],
+            }
         )
-
-        logger.info(
-            "Relevance: %s, Faithfulness: %s, "
-            "Context Relevancy: %s, Maliciousness: %s, "
-            "Toxicity: %s, Comprehensiveness: %s",
-            relevance.score,
-            faithfulness.score,
-            context_relevancy.score,
-            maliciousness.score,
-            toxicity.score,
-            comprehensiveness.score,
+        bedrock_model = "bedrock:/cohere.command-r-v1:0"
+        faithfulness_metric = faithfulness(
+            model=bedrock_model,
         )
-
-        # fetch previous metrics
-        metric_history = mlflowclient.get_metric_history(
-            run_id=run.info.run_id,
-            key="relevance_score",
+        relevance_metric = relevance(
+            model=bedrock_model,
+        )
+        answer_relevance_metric = answer_relevance(
+            model=bedrock_model,
+        )
+        results = mlflow.evaluate(
+            data=eval_data,
+            model_type="question-answering",
+            evaluators="default",
+            predictions="predictions",
+            extra_metrics=[
+                faithfulness_metric,
+                relevance_metric,
+                answer_relevance_metric,
+            ],
         )
         mlflow.log_metrics(
             {
-                "relevance_score": relevance.score if relevance is not None else 0,
-                "faithfulness_score": (
-                    faithfulness.score if faithfulness.score is not None else 0
-                ),
-                "context_relevancy_score": (
-                    context_relevancy.score
-                    if context_relevancy.score is not None
-                    else 0.5
-                ),
                 "input_length": len(query.split()),
                 "output_length": len(chat_response.response.split()),
-                "maliciousness_score": (
-                    maliciousness.score if maliciousness.score is not None else -1
-                ),
-                "toxicity_score": toxicity.score if toxicity.score is not None else -1,
-                "comprehensiveness_score": (
-                    comprehensiveness.score
-                    if comprehensiveness.score is not None
-                    else -1
-                ),
             },
-            step=len(metric_history) + 1,
-            synchronous=True,
+            run_id=run.info.run_id,
         )
         logger.info(
             "Logged evaluation metrics for exp id %s and run id %s",
@@ -331,7 +319,7 @@ async def predict(
         )
 
         if request.do_evaluate:
-            await log_evaluation_metrics(
+            log_evaluation_metrics(
                 run=run,
                 query=request.query,
                 chat_response=response,
