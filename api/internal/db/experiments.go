@@ -26,5 +26,5 @@ type ExperimentService interface {
 	UpdateRemoteExperimentId(ctx context.Context, id int64, remoteExperimentId string) error
 	UpdateExperimentCreatedAndTimestamp(ctx context.Context, id int64, created bool, ts time.Time) error
 	UpdateExperimentUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, ts time.Time) error
-	CreateExperiment(ctx context.Context, experimentId string, createdTs time.Time, updatedTs time.Time) (*Experiment, error)
+	CreateExperiment(ctx context.Context, experimentId string, name string, createdTs time.Time, updatedTs time.Time) (*Experiment, error)
 }

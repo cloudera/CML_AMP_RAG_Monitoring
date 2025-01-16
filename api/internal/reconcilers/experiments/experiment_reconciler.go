@@ -88,7 +88,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				log.Printf("mlflow experiment %s with ID %s not found in database, inserting", local.Name, item.ID)
-				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
+				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, local.Name, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 				if err != nil {
 					log.Printf("failed to insert experiment %s with ID %s: %s", local.Name, item.ID, err)
 					continue
@@ -102,7 +102,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		}
 		if experiment == nil {
 			log.Printf("mlflow experiment %s with ID %s not found in database, inserting", local.Name, item.ID)
-			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
+			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, local.Name, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 			if err != nil {
 				log.Printf("failed to insert experiment %s: %s", item.ID, err)
 				continue
