@@ -30,20 +30,17 @@ logger.setLevel(settings.rag_log_level)
 
 async def process_io_pair(file_path, processing_function):
     """Callback function to process a io saved in a file."""
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, "r") as f:
         data = json.load(f)
-    logger.info("Processing i/o pair: %s", file_path)
     # Process io pair
     response = await processing_function(data)
     # save the response
-    data = response.dict()["data"]
-    with open(file_path, "w", encoding="utf-8") as f:
+    data = response["data"]
+    with open(file_path, "w") as f:
         json.dump(data, f, indent=2)
     if response["status"] == "failed":
-        logger.error("Failed to process i/o pair: %s", file_path)
-        logger.info("File not deleted: %s", file_path)
+        logger.error("Failed to process i/o pair: %s. Will retry", file_path)
         return
-    logger.info("Processed i/o pair: %s", file_path)
 
 
 def background_worker(directory, processing_function):
@@ -88,7 +85,10 @@ if __name__ == "__main__":
         description="Reconciler script to process io request pairs."
     )
     parser.add_argument(
-        "--data-dir", type=str, default="data", help="Directory to save JSON files"
+        "--data-dir",
+        type=str,
+        default=os.path.join("data", "responses"),
+        help="Directory to save JSON files",
     )
     args = parser.parse_args()
 
