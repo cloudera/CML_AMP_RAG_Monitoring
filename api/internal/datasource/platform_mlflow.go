@@ -41,6 +41,40 @@ type PlatformRun struct {
 	Data           PlatformRunData `json:"data"`
 }
 
+func FromPlatformStatus(status string) RunStatus {
+	switch status {
+	case "EXPERIMENT_RUN_RUNNING":
+		return RunStatusRunning
+	case "EXPERIMENT_RUN_SCHEDULED":
+		return RunStatusScheduled
+	case "EXPERIMENT_RUN_FINISHED":
+		return RunStatusFinished
+	case "EXPERIMENT_RUN_FAILED":
+		return RunStatusFailed
+	case "EXPERIMENT_RUN_KILLED":
+		return RunStatusKilled
+	default:
+		return RunStatusScheduled
+	}
+}
+
+func ToPlatformStatus(status RunStatus) string {
+	switch status {
+	case RunStatusRunning:
+		return "EXPERIMENT_RUN_RUNNING"
+	case RunStatusScheduled:
+		return "EXPERIMENT_RUN_SCHEDULED"
+	case RunStatusFinished:
+		return "EXPERIMENT_RUN_FINISHED"
+	case RunStatusFailed:
+		return "EXPERIMENT_RUN_FAILED"
+	case RunStatusKilled:
+		return "EXPERIMENT_RUN_KILLED"
+	default:
+		return "EXPERIMENT_RUN_SCHEDULED"
+	}
+}
+
 type PlatformMetric struct {
 	Key       string    `json:"key"`
 	Value     float64   `json:"value"`
@@ -102,24 +136,10 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 		})
 	}
 
-	var status string
-	switch run.Info.Status {
-	case RunStatusRunning:
-		status = "EXPERIMENT_RUN_RUNNING"
-	case RunStatusScheduled:
-		status = "EXPERIMENT_RUN_SCHEDULED"
-	case RunStatusFinished:
-		status = "EXPERIMENT_RUN_FINISHED"
-	case RunStatusFailed:
-		status = "EXPERIMENT_RUN_FAILED"
-	case RunStatusKilled:
-		status = "EXPERIMENT_RUN_KILLED"
-	}
-
 	platformRun := PlatformRun{
 		Id:             run.Info.RunId,
 		Name:           run.Info.Name,
-		Status:         status,
+		Status:         ToPlatformStatus(run.Info.Status),
 		EndTime:        time.UnixMilli(run.Info.EndTime),
 		LifecycleStage: run.Info.LifecycleStage,
 		Data:           data,
@@ -157,7 +177,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			RunId:          updatedRun.Id,
 			Name:           updatedRun.Name,
 			ExperimentId:   run.Info.ExperimentId,
-			Status:         RunStatus(updatedRun.Status),
+			Status:         FromPlatformStatus(updatedRun.Status),
 			StartTime:      updatedRun.StartTime.UnixMilli(),
 			EndTime:        updatedRun.EndTime.UnixMilli(),
 			ArtifactUri:    updatedRun.ArtifactUri,
@@ -217,7 +237,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			RunId:          runId,
 			Name:           run.Name,
 			ExperimentId:   experimentId,
-			Status:         RunStatus(run.Status),
+			Status:         FromPlatformStatus(run.Status),
 			StartTime:      run.StartTime.UnixMilli(),
 			EndTime:        run.EndTime.UnixMilli(),
 			ArtifactUri:    run.ArtifactUri,
@@ -313,6 +333,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 		log.Printf("failed to unmarshal body: %s", serr)
 		return "", serr
 	}
+
 	return run.Id, nil
 }
 
