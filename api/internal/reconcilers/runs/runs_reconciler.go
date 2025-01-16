@@ -131,7 +131,6 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			if verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
 				log.Printf("lifecycle stage mismatch: %s != %s", verify.Info.LifecycleStage, remoteRun.Info.LifecycleStage)
 			}
-			continue
 		}
 		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
 			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
