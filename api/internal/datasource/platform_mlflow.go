@@ -280,7 +280,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 	body := map[string]interface{}{
 		"project_id":    m.cfg.CDSWProjectID,
 		"experiment_id": experimentId,
-		"start_time":    createdTs.UnixMilli(),
+		"start_time":    createdTs,
 		"tags":          tags,
 	}
 	encoded, jerr := json.Marshal(body)
