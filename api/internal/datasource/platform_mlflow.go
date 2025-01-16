@@ -32,6 +32,17 @@ type PlatformExperimentListResponse struct {
 
 type PlatformRun struct {
 	Id             string          `json:"id"`
+	Name           string          `json:"name"`
+	Status         string          `json:"status"`
+	StartTime      time.Time       `json:"start_time"`
+	EndTime        time.Time       `json:"end_time"`
+	ArtifactUri    string          `json:"artifact_uri"`
+	LifecycleStage string          `json:"lifecycle_stage"`
+	Data           PlatformRunData `json:"data"`
+}
+
+type CreatePlatformRun struct {
+	Id             string          `json:"id"`
 	Name           string          `json:"run_name"`
 	Status         string          `json:"status"`
 	StartTime      time.Time       `json:"start_time"`
@@ -136,7 +147,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 		})
 	}
 
-	platformRun := PlatformRun{
+	platformRun := CreatePlatformRun{
 		Id:             run.Info.RunId,
 		Name:           run.Info.Name,
 		Status:         ToPlatformStatus(run.Info.Status),
