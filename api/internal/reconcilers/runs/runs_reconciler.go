@@ -102,9 +102,15 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		remoteRun.Info.LifecycleStage = localRun.Info.LifecycleStage
 		remoteRun.Data = localRun.Data
 		log.Printf("updating run %s in remote store with name %s, status %s, start time %d, end time %d, stage %s", run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), remoteRun.Info.StartTime, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
-		verify, err := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+		_, err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 		if err != nil {
 			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
+			continue
+		}
+
+		verify, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		if err != nil {
+			log.Printf("failed to fetch run %d in remote store: %s", item.ID, err)
 			continue
 		}
 
