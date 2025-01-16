@@ -161,6 +161,9 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 		log.Printf("failed to encode body: %s", serr)
 		return nil, serr
 	}
+
+	log.Printf("submitting json %s", encoded)
+
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
@@ -178,6 +181,9 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	if ioerr != nil {
 		return nil, ioerr
 	}
+
+	log.Printf("received json %s", buff)
+
 	var updatedRun PlatformRun
 	jerr := json.Unmarshal(buff, &updatedRun)
 	if jerr != nil {
@@ -219,6 +225,8 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 	if ioerr != nil {
 		return nil, err
 	}
+
+	log.Printf("received json %s", body)
 
 	var run PlatformRun
 	jerr := json.Unmarshal(body, &run)
