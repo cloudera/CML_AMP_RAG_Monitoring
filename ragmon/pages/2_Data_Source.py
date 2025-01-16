@@ -175,9 +175,7 @@ def create_collection(
 
     # Save the collection configuration to a JSON file
     collections = get_collections()
-    mlflow_exp_id = mlflow.create_experiment(
-        f"{table_name_from(len(collections) + 1)}_live"
-    )
+    mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
         "name": name,

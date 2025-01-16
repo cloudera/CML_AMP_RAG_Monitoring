@@ -57,7 +57,7 @@ from uvicorn.logging import DefaultFormatter
 
 from ... import exceptions
 from . import qdrant
-from ...utils.evaluate import evaluate_response
+from ...utils import save_to_disk
 from ...data_types import (
     RagPredictRequest,
     RagPredictSourceNode,
@@ -82,7 +82,6 @@ logger.setLevel(settings.rag_log_level)
 tracer = opentelemetry.trace.get_tracer(__name__)
 
 mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
-mlflow.llama_index.autolog()
 
 router = APIRouter(
     prefix="/index",
@@ -127,90 +126,6 @@ def feedback(
         logger.info("Feedback queued for response %s", request.response_id)
 
         return {"status": "success"}
-
-
-async def log_evaluation_metrics(
-    run: mlflow.ActiveRun,
-    query: Union[str, None] = None,
-    chat_response: Union[str, AgentChatResponse, None] = None,
-) -> None:
-    """Log evaluation metrics for a response"""
-    if query is None or chat_response is None:
-        return False
-    mlflowclient = MlflowClient(tracking_uri=settings.mlflow.tracking_uri)
-    try:
-        (
-            relevance,
-            faithfulness,
-            context_relevancy,
-            maliciousness,
-            toxicity,
-            comprehensiveness,
-        ) = await evaluate_response(
-            query=query,
-            chat_response=chat_response,
-        )
-
-        logger.info(
-            "Relevance: %s, Faithfulness: %s, "
-            "Context Relevancy: %s, Maliciousness: %s, "
-            "Toxicity: %s, Comprehensiveness: %s",
-            relevance.score,
-            faithfulness.score,
-            context_relevancy.score,
-            maliciousness.score,
-            toxicity.score,
-            comprehensiveness.score,
-        )
-
-        # fetch previous metrics
-        metric_history = mlflowclient.get_metric_history(
-            run_id=run.info.run_id,
-            key="relevance_score",
-        )
-        mlflow.log_metrics(
-            {
-                "relevance_score": relevance.score if relevance is not None else 0,
-                "faithfulness_score": (
-                    faithfulness.score if faithfulness.score is not None else 0
-                ),
-                "context_relevancy_score": (
-                    context_relevancy.score
-                    if context_relevancy.score is not None
-                    else 0.5
-                ),
-                "input_length": len(query.split()),
-                "output_length": len(chat_response.response.split()),
-                "maliciousness_score": (
-                    maliciousness.score if maliciousness.score is not None else -1
-                ),
-                "toxicity_score": toxicity.score if toxicity.score is not None else -1,
-                "comprehensiveness_score": (
-                    comprehensiveness.score
-                    if comprehensiveness.score is not None
-                    else -1
-                ),
-            },
-            step=len(metric_history) + 1,
-            synchronous=True,
-        )
-        logger.info(
-            "Logged evaluation metrics for exp id %s and run id %s",
-            run.info.experiment_id,
-            run.info.run_id,
-        )
-    except Exception as e:
-        logger.error("Failed to log evaluation metrics: %s", e)
-
-
-def save_to_disk(
-    data,
-    directory: Union[str, Path, os.PathLike],
-    filename: str,
-):
-    """Helper function to save JSON data to disk."""
-    with open(os.path.join(directory, filename), "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
 
 
 @router.post("/predict", summary="Predict using indexed documents")

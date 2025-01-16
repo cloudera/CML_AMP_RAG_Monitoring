@@ -38,10 +38,6 @@ logger.addHandler(handler)
 logger.setLevel(settings.rag_log_level)
 
 
-def table_name_from(data_source_id: int):
-    return f"index_{data_source_id}"
-
-
 async def evaluate_response(
     query: str,
     chat_response: Union[str, AgentChatResponse],
@@ -141,7 +137,9 @@ async def evaluate_json_data(data):
         data: The JSON data to evaluate.
 
     Returns:
-        data: The evaluated JSON data.
+        Dictionary containing the status and the evaluated JSON data.
+            data: The evaluated JSON data.
+            status: The status of the evaluation.
     """
     data = RagPredictResponse(**data)
     if (

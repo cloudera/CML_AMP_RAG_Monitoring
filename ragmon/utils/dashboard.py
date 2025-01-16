@@ -1,5 +1,6 @@
 import json
 from typing import List
+from functools import reduce
 import numpy as np
 import pandas as pd
 import requests
@@ -229,12 +230,23 @@ def get_numeric_metrics_df(request: MLFlowStoreRequest):
 
 def show_live_df_component(
     live_results_df: pd.DataFrame,
+    metrics_dfs: List[pd.DataFrame],
 ):
     if not live_results_df.empty:
-        live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
-        live_results_df["feedback"] = live_results_df["feedback"].apply(
-            lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
+        if metrics_dfs:
+            metrics_dfs = [live_results_df] + metrics_dfs
+            live_results_df = reduce(
+                lambda left, right: pd.merge(left, right, on="run_id", how="left"),
+                metrics_dfs,
+            )
+        live_results_df = live_results_df.drop_duplicates(
+            subset=["response_id"], keep="last"
         )
+        live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
+        if "feedback" in live_results_df.columns:
+            live_results_df["feedback"] = live_results_df["feedback"].apply(
+                lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
+            )
         st.write("### Detailed Logs")
         st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
 

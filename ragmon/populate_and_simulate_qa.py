@@ -121,9 +121,7 @@ def main():
 
     # Function to get or create a Qdrant vector store
     client = QdrantClient(host="localhost", port=6333)
-    mlflow_exp_id = mlflow.create_experiment(
-        f"{table_name_from(len(collections) + 1)}_live"
-    )
+    mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
         "name": "CML Docs",
