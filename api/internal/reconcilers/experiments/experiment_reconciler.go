@@ -58,7 +58,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 			}
 		}
 		if !found {
-			log.Printf("experiment %s with ID %s not found in remote, queueing for creation", ex.Name, ex.ExperimentId)
+			log.Printf("experiment %s with mlflow experiment ID %s not found in remote, queueing for creation", ex.Name, ex.ExperimentId)
 		}
 		if reconcile {
 			queued++
@@ -75,39 +75,39 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
 	for _, item := range items {
-		log.Debugf("reconciling experiment %s", item.ID)
 		// Fetch the experiment MLFlow
 		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
 			continue
 		}
+		log.Debugf("reconciling mlflow experiment with ID %s, name %s", item.ID, local.Name)
 		// Fetch the experiment from the database
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, item.ID)
 		// If the experiment does not exist in the database, insert it
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				log.Printf("experiment %s not found in database, inserting", item.ID)
+				log.Printf("mlflow experiment ID %s not found in database, inserting", item.ID)
 				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 				if err != nil {
 					log.Printf("failed to insert experiment %s: %s", item.ID, err)
 					continue
 				}
-				log.Printf("finished creating experiment %s ", ex.ExperimentId)
+				log.Printf("finished creating experiment with mlflow ID %s.  Database ID is %d", ex.ExperimentId, ex.Id)
 				continue
 			} else {
-				log.Printf("failed to fetch experiment %s for reconciliation: %s", item.ID, err)
+				log.Printf("failed to fetch experiment with mlflow ID %s for reconciliation: %s", item.ID, err)
 				continue
 			}
 		}
 		if experiment == nil {
-			log.Printf("experiment %s not found in database, inserting", item.ID)
+			log.Printf("mlflow experiment ID %s not found in database, inserting", item.ID)
 			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
 			if err != nil {
 				log.Printf("failed to insert experiment %s: %s", item.ID, err)
 				continue
 			}
-			log.Printf("finished creating experiment %s ", ex.ExperimentId)
+			log.Printf("finished creating experiment mlflow ID %s.  Database ID is %d", ex.ExperimentId, ex.Id)
 			continue
 		}
 		// If the experiment exists in the database, compare the updated timestamps
@@ -115,7 +115,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		updated := false
 		if experiment.UpdatedTs.Before(lastUpdated) {
 			// Update the flag of the experiment to indicate that it requires reconciliation
-			log.Printf("experiment %s is out-of-date, flagging for sync reconciliation", experiment.ExperimentId)
+			log.Printf("experiment %s (database ID %d) is out-of-date, flagging for sync reconciliation", experiment.ExperimentId, experiment.Id)
 			updated = true
 		}
 		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, updated, lastUpdated)
