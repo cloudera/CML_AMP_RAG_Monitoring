@@ -54,7 +54,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			continue
 		}
 
-		log.Printf("reconciling experiment (%d) %s", item.ID, experiment.ExperimentId)
+		log.Printf("reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, item.ID)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d from local store for sync reconciliation: %s", item.ID, err)
@@ -63,35 +63,35 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 
 		if experiment.RemoteExperimentId == "" {
 			// If the experiment does not exist in the remote store, insert it
-			log.Printf("experiment %s has no remote experiment ID, inserting into the remote MLFLow instance", experiment.ExperimentId)
+			log.Printf("experiment %s with experiment ID %s and database ID %d has no remote experiment ID, inserting into the remote MLFLow instance", experiment.Name, experiment.ExperimentId, item.ID)
 			remoteExperimentId, err := r.dataStores.Remote.CreateExperiment(ctx, local.Name)
 			if err != nil {
-				log.Printf("failed to insert experiment %d into remote store: %s", item.ID, err)
+				log.Printf("failed to insert experiment %s with experiment ID %s and database ID %d into remote store: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 				continue
 			}
 			err = r.db.Experiments().UpdateRemoteExperimentId(ctx, experiment.Id, remoteExperimentId)
 			if err != nil {
-				log.Printf("failed to update experiment %d remote experiment ID: %s", item.ID, err)
+				log.Printf("failed to update experiment %s with experiment ID %s and database ID %d remote experiment ID: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 				continue
 			}
 			ex, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 			if err != nil {
-				log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
+				log.Printf("failed to fetch experiment %s with experiment ID %s and database ID %d for reconciliation: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 			}
 			experiment = ex
 		}
 		remoteExperiment, err := r.dataStores.Remote.GetExperiment(ctx, experiment.RemoteExperimentId)
 		if err != nil {
-			log.Errorf("failed to fetch experiment %d from remote store: %s", item.ID, err)
+			log.Errorf("failed to fetch experiment %s with experiment ID %s and database ID %d from remote store: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 			continue
 		}
 
 		// sync the experiment from the local store to the remote store
 		if remoteExperiment == nil {
-			log.Printf("experiment %d not found in remote store, inserting", item.ID)
+			log.Printf("experiment %s with experiment ID %s and database ID %d not found in remote store, inserting", experiment.Name, experiment.ExperimentId, item.ID)
 			remoteExperimentId, err := r.dataStores.Remote.CreateExperiment(ctx, local.Name)
 			if err != nil {
-				log.Printf("failed to insert experiment %d into remote store: %s", item.ID, err)
+				log.Printf("failed to insert experiment %s with experiment ID %s and database ID %d into remote store: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 				continue
 			}
 			err = r.db.Experiments().UpdateRemoteExperimentId(ctx, experiment.Id, remoteExperimentId)
@@ -100,12 +100,12 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		// Fetch the experiment runs from local MLFlow
 		localRuns, err := r.dataStores.Local.ListRuns(ctx, experiment.ExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch local runs for experiment %d: %s", item.ID, err)
+			log.Printf("failed to fetch local runs for experiment %s with experiment ID %s and database ID %d: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 			continue
 		}
 		remoteRuns, err := r.dataStores.Remote.ListRuns(ctx, experiment.RemoteExperimentId)
 		if err != nil {
-			log.Printf("failed to fetch local runs for experiment %d: %s", item.ID, err)
+			log.Printf("failed to fetch local runs for experiment %s with experiment ID %s and database ID %d: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
 			continue
 		}
 		for _, run := range localRuns {
@@ -113,10 +113,10 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			updated := false
 			for _, remoteRun := range remoteRuns {
 				if run.Info.Name == remoteRun.Info.Name {
-					log.Printf("run %s(%s) exists in remote store with ID %s", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
+					log.Printf("run %s with run ID %s exists in remote store with run ID %s", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
 					found = true
 					if run.Info.StartTime > remoteRun.Info.StartTime {
-						log.Printf("run %s(%s) exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
+						log.Printf("run %s with run ID %s exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
 						updated = true
 					}
 					break
@@ -126,14 +126,14 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				if !updated {
 					continue
 				}
-				log.Printf("run %s exists in remote store but is out of date", run.Info.Name)
+				log.Printf("run %s with run ID %s exists in remote store but is out of date", run.Info.Name, run.Info.RunId)
 			}
 			var remoteRunId string
 			if !found {
 				// Insert the run into the remote store
 				id, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
 				if err != nil {
-					log.Printf("failed to insert run %s into remote store: %s", run.Info.Name, err)
+					log.Printf("failed to insert run %s with run ID %s into remote store: %s", run.Info.Name, run.Info.RunId, err)
 					continue
 				}
 				remoteRunId = id
@@ -143,7 +143,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			// Check and see if the run already exists in the DB and insert it if not
 			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
 			if dberr != nil && !errors.Is(dberr, sql.ErrNoRows) {
-				log.Printf("failed to fetch run %s from DB: %s", run.Info.Name, dberr)
+				log.Printf("failed to fetch run %s with run ID %s from DB: %s", run.Info.Name, run.Info.RunId, dberr)
 				continue
 			}
 			var id int64
@@ -158,7 +158,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 					RemoteRunId:  remoteRunId,
 				})
 				if dberr != nil {
-					log.Printf("failed to insert run %s into DB: %s", run.Info.Name, dberr)
+					log.Printf("failed to insert run %s with run ID %s into DB: %s", run.Info.Name, run.Info.RunId, dberr)
 					continue
 				}
 				id = newRun.Id
@@ -166,7 +166,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			// Flag the run as ready for reconciliation
 			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
 			if dberr != nil {
-				log.Printf("failed to update run %d timestamp: %s", id, dberr)
+				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)
 			}
 		}
 
@@ -175,7 +175,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		if err != nil {
 			log.Printf("failed to update experiment %d timestamp: %s", item.ID, err)
 		}
-		log.Printf("finished reconciling experiment %s ", experiment.ExperimentId)
+		log.Printf("finished reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
 }
 
