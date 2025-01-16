@@ -169,6 +169,24 @@ func _8_experiment_runs_reconcile_metrics_up_sql() ([]byte, error) {
 	)
 }
 
+var __9_experiments_name_down_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x29\x4e\x50\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\xc8\x4b\xcc\x4d\x4d\xb0\x06\x04\x00\x00\xff\xff\xd1\xba\x7f\x40\x2d\x00\x00\x00")
+
+func _9_experiments_name_down_sql() ([]byte, error) {
+	return bindata_read(
+		__9_experiments_name_down_sql,
+		"9_experiments_name.down.sql",
+	)
+}
+
+var __9_experiments_name_up_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x29\x4e\x50\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\xc8\x4b\xcc\x4d\x4d\x50\x08\x73\x0c\x72\xf6\x70\x0c\xd2\x30\x34\x30\xd0\xb4\x06\x04\x00\x00\xff\xff\xee\xc6\x30\x0a\x39\x00\x00\x00")
+
+func _9_experiments_name_up_sql() ([]byte, error) {
+	return bindata_read(
+		__9_experiments_name_up_sql,
+		"9_experiments_name.up.sql",
+	)
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -207,6 +225,8 @@ var _bindata = map[string]func() ([]byte, error){
 	"7_experiment_runs_remote_run_id.up.sql":       _7_experiment_runs_remote_run_id_up_sql,
 	"8_experiment_runs_reconcile_metrics.down.sql": _8_experiment_runs_reconcile_metrics_down_sql,
 	"8_experiment_runs_reconcile_metrics.up.sql":   _8_experiment_runs_reconcile_metrics_up_sql,
+	"9_experiments_name.down.sql":                  _9_experiments_name_down_sql,
+	"9_experiments_name.up.sql":                    _9_experiments_name_up_sql,
 }
 
 // AssetDir returns the file names below a certain
@@ -268,4 +288,6 @@ var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
 	"7_experiment_runs_remote_run_id.up.sql":       &_bintree_t{_7_experiment_runs_remote_run_id_up_sql, map[string]*_bintree_t{}},
 	"8_experiment_runs_reconcile_metrics.down.sql": &_bintree_t{_8_experiment_runs_reconcile_metrics_down_sql, map[string]*_bintree_t{}},
 	"8_experiment_runs_reconcile_metrics.up.sql":   &_bintree_t{_8_experiment_runs_reconcile_metrics_up_sql, map[string]*_bintree_t{}},
+	"9_experiments_name.down.sql":                  &_bintree_t{_9_experiments_name_down_sql, map[string]*_bintree_t{}},
+	"9_experiments_name.up.sql":                    &_bintree_t{_9_experiments_name_up_sql, map[string]*_bintree_t{}},
 }}
