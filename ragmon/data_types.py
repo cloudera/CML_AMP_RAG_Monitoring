@@ -133,7 +133,13 @@ class MLFlowStoreRequest(BaseModel):
     metric_names: List[str] = []
 
 
+class EvaluationExample(BaseModel):
+    input: str
+    evaluation: str
+
+
 class CreateCustomEvaluatorRequest(BaseModel):
     evaluator_name: str
     evaluator_definition: str
     evaluator_questions: Union[List[str], str]
+    evaluator_examples: List[EvaluationExample] = []
