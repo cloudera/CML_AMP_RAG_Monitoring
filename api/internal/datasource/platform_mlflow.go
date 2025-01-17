@@ -31,14 +31,13 @@ type PlatformExperimentListResponse struct {
 }
 
 type PlatformRun struct {
-	Id             string          `json:"id"`
-	Name           string          `json:"name"`
-	Status         string          `json:"status"`
-	StartTime      time.Time       `json:"start_time"`
-	EndTime        time.Time       `json:"end_time"`
-	ArtifactUri    string          `json:"artifact_uri"`
-	LifecycleStage string          `json:"lifecycle_stage"`
-	Data           PlatformRunData `json:"data"`
+	Id          string          `json:"id"`
+	Name        string          `json:"name"`
+	Status      string          `json:"status"`
+	StartTime   time.Time       `json:"start_time"`
+	EndTime     time.Time       `json:"end_time"`
+	ArtifactUri string          `json:"artifact_uri"`
+	Data        PlatformRunData `json:"data"`
 }
 
 //
@@ -149,12 +148,11 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	}
 
 	platformRun := PlatformRun{
-		Id:             run.Info.RunId,
-		Name:           run.Info.Name,
-		Status:         ToPlatformStatus(run.Info.Status),
-		EndTime:        time.UnixMilli(run.Info.EndTime),
-		LifecycleStage: run.Info.LifecycleStage,
-		Data:           data,
+		Id:      run.Info.RunId,
+		Name:    run.Info.Name,
+		Status:  ToPlatformStatus(run.Info.Status),
+		EndTime: time.UnixMilli(run.Info.EndTime),
+		Data:    data,
 	}
 
 	encoded, serr := json.Marshal(platformRun)
@@ -199,7 +197,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			StartTime:      updatedRun.StartTime.UnixMilli(),
 			EndTime:        updatedRun.EndTime.UnixMilli(),
 			ArtifactUri:    updatedRun.ArtifactUri,
-			LifecycleStage: updatedRun.LifecycleStage,
+			LifecycleStage: run.Info.LifecycleStage,
 		},
 		Data: RunData{},
 	}, nil
@@ -261,7 +259,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			StartTime:      run.StartTime.UnixMilli(),
 			EndTime:        run.EndTime.UnixMilli(),
 			ArtifactUri:    run.ArtifactUri,
-			LifecycleStage: run.LifecycleStage,
+			LifecycleStage: "active",
 		},
 		Data: data,
 	}, nil
