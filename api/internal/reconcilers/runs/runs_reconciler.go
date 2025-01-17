@@ -95,7 +95,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			remoteRun = existing
 		}
 		log.Printf("syncing data for run %s to remote store", run.RunId)
-		// Sync the metrics to the remote store
+		// Sync the run to the remote store
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
 		remoteRun.Info.EndTime = localRun.Info.EndTime
@@ -131,9 +131,6 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			}
 			if verify.Info.EndTime != remoteRun.Info.EndTime {
 				log.Printf("end time mismatch: %d != %d", verify.Info.EndTime, remoteRun.Info.EndTime)
-			}
-			if verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
-				log.Printf("lifecycle stage mismatch: %s != %s", verify.Info.LifecycleStage, remoteRun.Info.LifecycleStage)
 			}
 		}
 		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
