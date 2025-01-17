@@ -40,18 +40,6 @@ type PlatformRun struct {
 	Data        PlatformRunData `json:"data"`
 }
 
-//
-//type CreatePlatformRun struct {
-//	Id             string          `json:"id"`
-//	Name           string          `json:"run_name"`
-//	Status         string          `json:"status"`
-//	StartTime      time.Time       `json:"start_time"`
-//	EndTime        time.Time       `json:"end_time"`
-//	ArtifactUri    string          `json:"artifact_uri"`
-//	LifecycleStage string          `json:"lifecycle_stage"`
-//	Data           PlatformRunData `json:"data"`
-//}
-
 func FromPlatformStatus(status string) RunStatus {
 	switch status {
 	case "EXPERIMENT_RUN_RUNNING":
@@ -122,10 +110,10 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	params := make([]Param, 0)
 	for _, param := range run.Data.Params {
 		var val = param.Value
-		if len(val) > 250 {
-			log.Debugf("param %s value is too long for platform MLFlow, truncating", param.Key)
-			val = val[:250]
-		}
+		//if len(val) > 250 {
+		//	log.Debugf("param %s value is too long for platform MLFlow, truncating", param.Key)
+		//	val = val[:250]
+		//}
 		params = append(params, Param{
 			Key:   param.Key,
 			Value: val,
