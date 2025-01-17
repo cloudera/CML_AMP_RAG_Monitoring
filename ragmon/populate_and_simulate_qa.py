@@ -4,7 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 from tqdm import tqdm
-
+import mlflow
 import requests
 from llama_index.core import Settings
 from llama_index.core.indices import VectorStoreIndex
@@ -21,6 +21,7 @@ from services.ragllm import get_embedding_model_and_dims
 file_path = Path(os.path.realpath(__file__))
 main_dir = file_path.parents[1]
 st_app_dir = os.path.join(main_dir, "ragmon")
+data_dir = os.path.join(st_app_dir, "data")
 sys.path.append(st_app_dir)
 
 from data_types import (
@@ -29,9 +30,12 @@ from data_types import (
     RagPredictRequest,
     RagPredictResponse,
 )
+from config import settings
 
-COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
-SOURCE_FILES_DIR = os.path.join(st_app_dir, "source_files")
+mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
+
+COLLECTIONS_JSON = os.path.join(data_dir, "collections", "collections.json")
+SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
 SAMPLE_DATA_DIR = os.path.join(main_dir, "sample_data")
 
 # Create the source files directory
@@ -117,6 +121,7 @@ def main():
 
     # Function to get or create a Qdrant vector store
     client = QdrantClient(host="localhost", port=6333)
+    mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
         "name": "CML Docs",
@@ -124,6 +129,7 @@ def main():
         "distance_metric": "Cosine",
         "chunk_size": 512,
         "chunk_overlap": 0,
+        "mlflow_exp_id": mlflow_exp_id,
     }
     index_config = RagIndexConfiguration(**collection_config)
     client = QdrantClient(url="http://localhost:6333")
@@ -205,8 +211,9 @@ def main():
     for i in tqdm(range(len(responses))):
         response = responses[i]
         feedback_request = RagFeedbackRequest(
-            experiment_id=response.mlflow_experiment_id,
-            experiment_run_id=response.mlflow_run_id,
+            response_id=response.id,
+            mlflow_experiment_id=response.mlflow_experiment_id,
+            mlflow_run_id=response.mlflow_run_id,
             feedback=i % 2,
         )
         log_feedback(feedback_request)

@@ -68,7 +68,9 @@ warnings.filterwarnings("ignore")
 # get resources directory
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
-COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
+data_dir = os.path.join(st_app_dir, "data")
+cols_dir = os.path.join(data_dir, "collections")
+COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
 
 
 def get_collections():
@@ -402,4 +404,15 @@ if experiment_ids:
                         frequency="h",
                     )
 
-            show_live_df_component(live_results_df)
+            show_live_df_component(
+                live_results_df,
+                metrics_dfs=[
+                    faithfulness_df.drop(columns=["timestamp"]),
+                    relevance_df.drop(columns=["timestamp"]),
+                    context_relevancy_df.drop(columns=["timestamp"]),
+                    maliciousness_df.drop(columns=["timestamp"]),
+                    toxicity_df.drop(columns=["timestamp"]),
+                    comprehensiveness_df.drop(columns=["timestamp"]),
+                    feedback_df.drop(columns=["timestamp"]),
+                ],
+            )
