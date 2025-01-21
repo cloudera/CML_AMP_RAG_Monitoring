@@ -44,12 +44,12 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
 	for _, item := range items {
-		log.Printf("reconciling run %d", item.ID)
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
+		log.Printf("reconciling run %s with experiment ID %s, remote run ID %s, and database ID %d", run.ExperimentId, run.RunId, run.RemoteRunId, item.ID)
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
