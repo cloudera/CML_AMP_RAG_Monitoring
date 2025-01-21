@@ -40,6 +40,16 @@ type PlatformRun struct {
 	Data        PlatformRunData `json:"data"`
 }
 
+type PlatformRunUpdate struct {
+	Id          string          `json:"id"`
+	Name        string          `json:"name"`
+	Status      int64           `json:"status"`
+	StartTime   time.Time       `json:"start_time"`
+	EndTime     time.Time       `json:"end_time"`
+	ArtifactUri string          `json:"artifact_uri"`
+	Data        PlatformRunData `json:"data"`
+}
+
 func FromPlatformStatus(status string) RunStatus {
 	switch status {
 	case "EXPERIMENT_RUN_RUNNING":
@@ -135,10 +145,24 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 		})
 	}
 
-	platformRun := PlatformRun{
+	var status int64
+	switch run.Info.Status {
+	case RunStatusRunning:
+		status = 0
+	case RunStatusScheduled:
+		status = 1
+	case RunStatusFinished:
+		status = 2
+	case RunStatusFailed:
+		status = 3
+	case RunStatusKilled:
+		status = 4
+	}
+
+	platformRun := PlatformRunUpdate{
 		Id:      run.Info.RunId,
 		Name:    run.Info.Name,
-		Status:  ToPlatformStatus(run.Info.Status),
+		Status:  status,
 		EndTime: time.UnixMilli(run.Info.EndTime),
 		Data:    data,
 	}
