@@ -555,5 +555,22 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 }
 
 func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
-	panic("upload to local mlflow not supported")
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
+	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
+	form := cbhttp.FormFields(map[string]string{remotePath: string(data)})
+	req := cbhttp.NewRequest(ctx, "PUT", url, form)
+	req.Header = make(map[string][]string)
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Do(req)
+	if lerr != nil {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr)
+		return lerr
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+		return fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+	}
+	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
+	return nil
 }
