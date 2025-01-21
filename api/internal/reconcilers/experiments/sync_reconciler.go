@@ -180,7 +180,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 }
 
 func NewSyncReconcilerManager(app *app.Instance, cfg *Config, rec *SyncReconciler) (*reconciler.Manager[int64], error) {
-	log.Println("experiment run metrics reconciler initializing")
+	log.Println("experiment sync reconciler initializing")
 	reconcilerConfig, err := reconciler.NewConfig(cfg.ResyncFrequency, cfg.MaxWorkers, cfg.RunMaxItems)
 
 	if err != nil {

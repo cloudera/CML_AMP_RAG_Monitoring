@@ -144,15 +144,15 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	var status int64
 	switch run.Info.Status {
 	case RunStatusRunning:
-		status = 0
-	case RunStatusScheduled:
 		status = 1
-	case RunStatusFinished:
+	case RunStatusScheduled:
 		status = 2
-	case RunStatusFailed:
+	case RunStatusFinished:
 		status = 3
-	case RunStatusKilled:
+	case RunStatusFailed:
 		status = 4
+	case RunStatusKilled:
+		status = 5
 	}
 
 	platformRun := PlatformRunUpdate{
@@ -232,9 +232,6 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 	if ioerr != nil {
 		return nil, err
 	}
-
-	log.Printf("received json %s", body)
-
 	var run PlatformRun
 	jerr := json.Unmarshal(body, &run)
 	if jerr != nil {
