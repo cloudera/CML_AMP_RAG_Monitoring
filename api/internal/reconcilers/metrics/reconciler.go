@@ -85,20 +85,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 				log.Printf("inserted numeric metric %s(%d) for experiment run %s(%d)", m.Name, m.Id, run.RemoteRunId, run.Id)
 			}
 		}
-		// Fetch artifacts from MLFlow
-		//mlFlowArtifacts, err := r.mlFlow.Local.Artifacts(ctx, run.RunId, nil)
-		//if err != nil {
-		//	log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
-		//	continue
-		//}
-		//for _, artifact := range mlFlowArtifacts {
-		//	artifactMetrics, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
-		//	if err != nil {
-		//		log.Printf("failed to fetch artifact %s for experiment run %d: %s", artifact.Path, item.ID, err)
-		//		continue
-		//	}
-		//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
-		//}
+
 		// Update the metrics flag of the experiment run to indicate that it has been reconciled
 		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, false)
 		if err != nil {

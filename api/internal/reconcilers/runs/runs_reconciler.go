@@ -9,6 +9,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
+	"strings"
 	"time"
 )
 
@@ -106,37 +107,63 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		remoteStart := time.UnixMilli(remoteRun.Info.StartTime)
 		log.Printf("updating run %s in remote store with name %s, status %s, local start time %s (%d), remote start time %s (%d), end time %s (%d), stage %s",
 			run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), start, localRun.Info.StartTime, remoteStart, remoteRun.Info.StartTime, end, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
-		_, err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+		updatedRun, err := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 		if err != nil {
 			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
 			continue
 		}
 
-		verify, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
-		if err != nil {
-			log.Printf("failed to fetch run %d in remote store: %s", item.ID, err)
-			continue
-		}
-
-		if verify.Info.Name != remoteRun.Info.Name || verify.Info.Status != remoteRun.Info.Status || verify.Info.StartTime != remoteRun.Info.StartTime || verify.Info.EndTime != remoteRun.Info.EndTime || verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
-			log.Printf("failed to verify run %s info in remote store", run.RemoteRunId)
-			if verify.Info.Name != remoteRun.Info.Name {
-				log.Printf("name mismatch: %s != %s", verify.Info.Name, remoteRun.Info.Name)
+		if updatedRun.Info.Name != remoteRun.Info.Name || updatedRun.Info.Status != remoteRun.Info.Status || updatedRun.Info.StartTime != remoteRun.Info.StartTime || updatedRun.Info.EndTime != remoteRun.Info.EndTime || updatedRun.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
+			log.Printf("failed to updatedRun run %s info in remote store", run.RemoteRunId)
+			if updatedRun.Info.Name != remoteRun.Info.Name {
+				log.Printf("name mismatch: %s != %s", updatedRun.Info.Name, remoteRun.Info.Name)
 			}
-			if verify.Info.Status != remoteRun.Info.Status {
-				log.Printf("status mismatch: %s != %s", verify.Info.Status, remoteRun.Info.Status)
+			if updatedRun.Info.Status != remoteRun.Info.Status {
+				log.Printf("status mismatch: %s != %s", updatedRun.Info.Status, remoteRun.Info.Status)
 			}
-			if verify.Info.StartTime != remoteRun.Info.StartTime {
-				log.Printf("start time mismatch: %d != %d", verify.Info.StartTime, remoteRun.Info.StartTime)
+			if updatedRun.Info.StartTime != remoteRun.Info.StartTime {
+				log.Printf("start time mismatch: %d != %d", updatedRun.Info.StartTime, remoteRun.Info.StartTime)
 			}
-			if verify.Info.EndTime != remoteRun.Info.EndTime {
-				log.Printf("end time mismatch: %d != %d", verify.Info.EndTime, remoteRun.Info.EndTime)
+			if updatedRun.Info.EndTime != remoteRun.Info.EndTime {
+				log.Printf("end time mismatch: %d != %d", updatedRun.Info.EndTime, remoteRun.Info.EndTime)
 			}
 		}
-		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
+		if len(updatedRun.Data.Metrics) != len(remoteRun.Data.Metrics) {
 			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
 			continue
 		}
+
+		// sync the metric artifacts
+		// first, fetch artifacts from local MLFlow
+		mlFlowArtifacts, err := r.dataStores.Local.Artifacts(ctx, run.RunId, nil)
+		if err != nil {
+			log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
+			continue
+		}
+		for _, artifact := range mlFlowArtifacts {
+			log.Printf("syncing artifact %s for experiment run %d", artifact.Path, item.ID)
+			if !strings.HasSuffix(artifact.Path, ".json") {
+				log.Printf("skipping non-json artifact %s for experiment run %s with database ID %d", artifact.Path, localRun.Info.Name, item.ID)
+				continue
+			}
+			// TODO: filter the json to only sync metric artifacts
+			metricArtifacts, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
+			if err != nil {
+				log.Printf("failed to fetch artifact %s for experiment run %s with database ID %d: %s", artifact.Path, localRun.Info.Name, item.ID, err)
+				continue
+			}
+			for path, data := range metricArtifacts {
+				// sync the artifact to the remote store
+				uerr := r.dataStores.Remote.UploadArtifact(ctx, experiment.RemoteExperimentId, run.RemoteRunId, path, data)
+				if uerr != nil {
+					log.Printf("failed to save artifact %s for experiment run %s with database ID %d: %s", path, localRun.Info.Name, item.ID, uerr)
+					continue
+				}
+				log.Printf("saved artifact %s for experiment run %s with database ID %d", path, localRun.Info.Name, item.ID)
+			}
+			//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
+		}
+
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation
 		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {
@@ -152,6 +179,31 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		}
 		log.Debugf("finished reconciling run %d ", item.ID)
 	}
+}
+
+func (r *RunReconciler) fetchArtifacts(ctx context.Context, experimentId string, runId string, artifact datasource.Artifact) (map[string][]byte, error) {
+	if artifact.IsDir {
+		artifacts, err := r.dataStores.Local.Artifacts(ctx, runId, &artifact.Path)
+		if err != nil {
+			return nil, err
+		}
+		result := make(map[string][]byte)
+		for _, a := range artifacts {
+			children, err := r.fetchArtifacts(ctx, experimentId, runId, a)
+			if err != nil {
+				return nil, err
+			}
+			for k, v := range children {
+				result[k] = v
+			}
+		}
+		return result, nil
+	}
+	data, err := r.dataStores.Local.GetArtifact(ctx, runId, artifact.Path)
+	if err != nil {
+		return nil, err
+	}
+	return map[string][]byte{artifact.Path: data}, nil
 }
 
 func NewRunReconcilerManager(app *app.Instance, cfg *Config, rec *RunReconciler) (*reconciler.Manager[int64], error) {

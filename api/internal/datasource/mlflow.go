@@ -207,6 +207,10 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 	return body, nil
 }
 
+func (m *MLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
+	panic("upload to local mlflow not supported")
+}
+
 func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments", m.baseUrl, m.cfg.CDSWProjectID)
 	req := cbhttp.NewRequest(ctx, "POST", url)

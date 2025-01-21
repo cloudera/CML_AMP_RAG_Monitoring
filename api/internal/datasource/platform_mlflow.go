@@ -110,10 +110,6 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	params := make([]Param, 0)
 	for _, param := range run.Data.Params {
 		var val = param.Value
-		//if len(val) > 250 {
-		//	log.Debugf("param %s value is too long for platform MLFlow, truncating", param.Key)
-		//	val = val[:250]
-		//}
 		params = append(params, Param{
 			Key:   param.Key,
 			Value: val,
@@ -532,4 +528,8 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 		return nil, err
 	}
 	return run.Data.Metrics, nil
+}
+
+func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
+	panic("upload to local mlflow not supported")
 }
