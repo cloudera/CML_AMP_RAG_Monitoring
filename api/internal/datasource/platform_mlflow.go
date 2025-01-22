@@ -555,6 +555,7 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	form := cbhttp.FormFields(formData)
 	req := cbhttp.NewRequest(ctx, "POST", url, form)
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	log.Printf("request: %v", req)
 	resp, lerr := m.connections.HttpClient.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr)
