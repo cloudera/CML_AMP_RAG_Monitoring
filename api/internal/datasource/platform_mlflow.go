@@ -579,6 +579,9 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
+		if resp != nil {
+			log.Printf("response: %v", resp)
+		}
 		return lerr
 	}
 	defer resp.Body.Close()
