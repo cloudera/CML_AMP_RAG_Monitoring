@@ -10,6 +10,8 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -550,30 +552,37 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
 	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
 	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
-	//var requestBody bytes.Buffer
-	//writer := multipart.NewWriter(&requestBody)
-	//err := writer.WriteField(remotePath, string(data))
-	//if err != nil {
-	//	return err
-	//}
-	//err = writer.Close()
-	//if err != nil {
-	//	return err
-	//}
-	//req, err := http.NewRequest("PUT", url, &requestBody)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//// Set the Content-Type header to the multipart writer's content type
-	//req.Header.Set("Content-Type", writer.FormDataContentType())
-	//req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	part, err := writer.CreateFormFile(remotePath, path)
+	if err != nil {
+		log.Fatalf("failed to create form file: %v", err)
+	}
 
-	form := cbhttp.FormFields(map[string]string{remotePath: string(data)})
-	req := cbhttp.NewRequest(ctx, "PUT", url, form)
+	_, err = io.Copy(part, bytes.NewReader(data))
+	if err != nil {
+		log.Fatalf("failed to copy file content: %v", err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("PUT", url, &requestBody)
+	if err != nil {
+		return err
+	}
+
+	// Set the Content-Type header to the multipart writer's content type
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	// Send the request using the default HTTP client
+	//formData := map[string]string{remotePath: data}
+	//form := cbhttp.FormFields(formData)
+	//req := cbhttp.NewRequest(ctx, "PUT", url, form)
+	//req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	log.Printf("request: %v", req)
-	resp, lerr := m.connections.HttpClient.Do(req)
+	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
 		return lerr
