@@ -48,36 +48,42 @@ logo_path = os.path.join(
     file_path.parents[0], "resources", "logos", "RAG-Monitoring-icon.png"
 )
 
+
 # Setup the navigation
 def setup_navigation():
     pg = st.navigation(
-            [
-                st.Page("pages/1_Home.py", title="Home"),
-                st.Page(
-                    "pages/2_Data_Source.py",
-                    title="Data Sources",
-                ),
-                st.Page(
-                    "pages/3_RAG_Chat.py",
-                    title="RAG Chat",
-                ),
-                st.Page(
-                    "pages/4_Monitoring_Dashboard.py",
-                    title="Monitoring Dashboard",
-                ),
-                st.Page(
-                    "pages/5_Leave_Feedback.py",
-                    title="Leave Feedback",
-                ),
-            ],
-            position="hidden",
-        )
+        [
+            st.Page("pages/1_Home.py", title="Home"),
+            st.Page(
+                "pages/2_Data_Source.py",
+                title="Data Sources",
+            ),
+            st.Page(
+                "pages/3_RAG_Chat.py",
+                title="RAG Chat",
+            ),
+            st.Page(
+                "pages/4_Monitoring_Dashboard.py",
+                title="Monitoring Dashboard",
+            ),
+            st.Page(
+                "pages/5_Custom_Evaluators.py",
+                title="Custom Evaluators",
+            ),
+            st.Page(
+                "pages/6_Leave_Feedback.py",
+                title="Leave Feedback",
+            ),
+        ],
+        position="hidden",
+    )
     centered_pages = ["Home"]
     st.set_page_config(
         layout="centered" if pg.title in centered_pages else "wide",
         page_title="RAG Monitoring AMP",
     )
     pg.run()
+
 
 # Setup the sidebar
 def setup_sidebar():
@@ -101,12 +107,17 @@ def setup_sidebar():
             icon=":material/monitoring:",
         )
         st.page_link(
-            "pages/5_Leave_Feedback.py",
+            "pages/5_Custom_Evaluators.py",
+            label="Custom Evaluators",
+            icon=":material/custom_typography:",
+        )
+        st.page_link(
+            "pages/6_Leave_Feedback.py",
             label="Leave Feedback",
             icon=":material/comment:",
         )
 
+
 # Main function to orchestrate the setup
 setup_navigation()
 setup_sidebar()
-

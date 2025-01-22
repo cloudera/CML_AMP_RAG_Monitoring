@@ -173,7 +173,7 @@ def add_custom_evaluator(
         save_to_disk(
             request.dict(),
             path,
-            f"{request.evaluator_name.replace(' ', '_')}.json",
+            f"{request.name.lower().replace(' ', '_')}.json",
         )
         return {"status": "success"}
     except Exception as e:
@@ -254,7 +254,7 @@ async def log_evaluation_metrics(
             for name, result in custom_eval_results.items():
                 logger.info("%s: %s", name, result.score)
                 mlflow.log_metric(
-                    key=name,
+                    key=f"{name.lower()}_score",
                     value=result.score,
                     step=len(mlflowclient.get_metric_history(run.info.run_id, name)),
                     synchronous=True,

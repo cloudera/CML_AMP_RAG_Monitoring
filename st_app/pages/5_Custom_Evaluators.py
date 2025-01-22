@@ -11,6 +11,9 @@ custom_evals_dir = Path(os.path.join(os.getcwd(), "custom_evaluators"))
 
 def get_custom_evaluators():
     custom_evaluators = []
+    if not custom_evals_dir.exists():
+        return custom_evaluators
+
     for file in os.listdir(custom_evals_dir):
         if file.endswith(".json"):
             # read the json file
@@ -34,8 +37,7 @@ def add_custom_evaluator(request: CreateCustomEvaluatorRequest):
         timeout=60,
     )
 
-    if response.status_code != 200:
-        st.error(f"Failed to add custom evaluator: {response.text}")
+    if response.json().get("status") != "success":
         return False
 
     return True
@@ -54,6 +56,7 @@ def create_evaluator_modal():
         )
         if add_custom_evaluator(request):
             st.success("Custom Evaluator Created")
+            st.rerun()
         else:
             st.error("Failed to create custom evaluator")
 
@@ -62,12 +65,9 @@ st.title("Custom Evaluators")
 st.markdown(
     """
     Custom evaluators are used to evaluate the quality of the generated responses. 
-    You can create custom evaluators by defining a set of questions and an evaluator function.
+    You can create custom evaluators by defining the evaluator and a set of questions.
     """
 )
-
-if st.button("Create Custom Evaluator", key="create_evaluator"):
-    create_evaluator_modal()
 
 custom_evaluators = get_custom_evaluators()
 
@@ -76,10 +76,13 @@ with custom_evaluators_placeholder:
     if custom_evaluators:
         for evaluator in custom_evaluators:
             evaluator_json = CreateCustomEvaluatorRequest(**evaluator)
-            with st.expander(f"{evaluator_json.name}"):
+            with st.expander(f"**:material/function: {evaluator_json.name}**"):
                 st.write("**Definition**")
                 st.caption(evaluator_json.eval_definition)
                 st.write("**Questions**")
                 st.caption(evaluator_json.questions)
     else:
         st.write("No custom evaluators found")
+
+if st.button("Create Custom Evaluator", key="create_evaluator"):
+    create_evaluator_modal()
