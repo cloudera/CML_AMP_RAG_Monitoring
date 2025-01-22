@@ -50,17 +50,21 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to fetch run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling run %s with experiment ID %s, remote run ID %s, and database ID %d", run.ExperimentId, run.RunId, run.RemoteRunId, item.ID)
+		remoteRunId := run.RemoteRunId
+		if remoteRunId == "" {
+			remoteRunId = "<undefined>"
+		}
+		log.Printf("reconciling run %s with experiment ID %s, remote run ID %s, and database ID %d", run.ExperimentId, run.RunId, remoteRunId, item.ID)
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
 			continue
 		}
 		if experiment.RemoteExperimentId == "" {
-			log.Printf("experiment %s(%d) has no remote experiment id, skipping reconciliation", experiment.ExperimentId, item.ID)
+			log.Printf("experiment %s with ID %s and database ID %d has no remote experiment id, skipping reconciliation", experiment.Name, experiment.ExperimentId, item.ID)
 			continue
 		}
-		log.Printf("experiment %s(%d) has remote experiment id %s, syncing run %s", experiment.ExperimentId, item.ID, experiment.RemoteExperimentId, run.RunId)
+		log.Printf("experiment %s with ID %s and database ID %d has remote experiment id %s, syncing run %s", experiment.Name, experiment.ExperimentId, item.ID, experiment.RemoteExperimentId, run.RunId)
 		// Fetch remote run
 		localRun, err := r.dataStores.Local.GetRun(ctx, run.ExperimentId, run.RunId)
 		if err != nil {
@@ -96,7 +100,12 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			remoteRun = existing
 		}
 		log.Printf("syncing data for run %s to remote store", run.RunId)
+		log.Println("local run metrics: ")
+		for _, metric := range localRun.Data.Metrics {
+			log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+		}
 		// Sync the run to the remote store
+		// TODO: verify that data has changed before applying the update
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
 		remoteRun.Info.EndTime = localRun.Info.EndTime
@@ -137,7 +146,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		// first, fetch artifacts from local MLFlow
 		mlFlowArtifacts, err := r.dataStores.Local.Artifacts(ctx, run.RunId, nil)
 		if err != nil {
-			log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
+			log.Printf("failed to fetch artifacts for experiment run %s with database ID %d: %s", run.RunId, item.ID, err)
 			continue
 		}
 		for _, artifact := range mlFlowArtifacts {

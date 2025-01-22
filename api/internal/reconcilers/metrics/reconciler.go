@@ -43,7 +43,6 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
-	log.Printf("reconciling %d experiment runs for metric", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
@@ -59,7 +58,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling metrics for experiment %s run (%d) %s", experiment.RemoteExperimentId, item.ID, run.RemoteRunId)
+		log.Printf("reconciling metrics for experiment %s with remote ID %s and database ID %d run with remote ID %s and database ID %d",
+			experiment.Name, experiment.RemoteExperimentId, item.ID, run.RemoteRunId, run.Id)
 		// Fetch metrics from MLFlow
 		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 		if err != nil {
