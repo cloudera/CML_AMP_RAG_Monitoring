@@ -10,7 +10,6 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
-	"os"
 	"strconv"
 	"time"
 )
@@ -550,19 +549,19 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
 	remotePath := fmt.Sprintf("experiments/%s/%s/artifacts/%s", experimentId, runId, path)
-	localPath := fmt.Sprintf("/home/cdsw/%s", remotePath)
-	// first, store the artifact to the project file system
-	file, err := os.Create(localPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Write data to the file
-	_, err = file.Write(data)
-	if err != nil {
-		return err
-	}
+	//localPath := fmt.Sprintf("/home/cdsw/%s", remotePath)
+	//// first, store the artifact to the project file system
+	//file, err := os.Create(localPath)
+	//if err != nil {
+	//	return err
+	//}
+	//defer file.Close()
+	//
+	//// Write data to the file
+	//_, err = file.Write(data)
+	//if err != nil {
+	//	return err
+	//}
 
 	// next, trigger the POST to upload the artifact to the experiment run
 	form := cbhttp.FormFields(map[string]string{remotePath: string(data)})
