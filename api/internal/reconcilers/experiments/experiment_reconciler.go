@@ -50,7 +50,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	}
 
 	if queued > 0 {
-		log.Debugf("queueing %d local experiments for reconciliation", queued)
+		log.Printf("queueing %d local experiments for reconciliation", queued)
 	}
 
 	log.Debugln("completing reconciler resync")
@@ -98,11 +98,11 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		//updated := false
 		//if experiment.UpdatedTs.Before(lastUpdated) {
 		//	// Update the flag of the experiment to indicate that it requires reconciliation
-		log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
+		//  log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
 		//	updated = true
 		//}
-		updated := true
-		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, updated, lastUpdated)
+		log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
+		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, true, lastUpdated)
 		if err != nil {
 			log.Printf("failed to update experiment %s with ID %s timestamp: %s", local.Name, item.ID, err)
 		}
