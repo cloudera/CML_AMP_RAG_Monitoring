@@ -229,20 +229,16 @@ async def evaluate_response(
 
     custom_eval_results = {}
     if loaded_custom_evals:
-        try:
-            custom_eval_results = await asyncio.gather(
-                *[
-                    evaluator.aevaluate_response(query=query, response=chat_response)
-                    for evaluator in loaded_custom_evals
-                ]
-            )
+        custom_eval_results = await asyncio.gather(
+            *[
+                evaluator.aevaluate_response(query=query, response=chat_response)
+                for evaluator in loaded_custom_evals
+            ]
+        )
 
-            custom_eval_results = {
-                k: v for k, v in zip(custom_evaluators.keys(), custom_eval_results)
-            }
-        except Exception as e:
-            logger.error("Error evaluating custom evaluators")
-            logger.error(e)
+        custom_eval_results = {
+            k: v for k, v in zip(custom_evaluators.keys(), custom_eval_results)
+        }
 
     return (
         relevance,

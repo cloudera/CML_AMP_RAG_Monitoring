@@ -259,6 +259,9 @@ async def log_evaluation_metrics(
                     step=len(mlflowclient.get_metric_history(run.info.run_id, name)),
                     synchronous=True,
                 )
+                logger.info("%s: %s", name.lower() + "_score", result.score)
+        else:
+            logger.info("No custom evaluators or metrics to log")
 
         logger.info(
             "Logged evaluation metrics for exp id %s and run id %s",
