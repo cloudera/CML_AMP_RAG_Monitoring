@@ -110,56 +110,108 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 
 		// Sync the run to the remote store
 		// TODO: verify that data has changed before applying the update
-		remoteRun.Info.Name = localRun.Info.Name
-		remoteRun.Info.Status = localRun.Info.Status
-		remoteRun.Info.EndTime = localRun.Info.EndTime
-		remoteRun.Info.LifecycleStage = localRun.Info.LifecycleStage
-		remoteRun.Data = localRun.Data
-		start := time.UnixMilli(localRun.Info.StartTime)
-		end := time.UnixMilli(localRun.Info.EndTime)
-		remoteStart := time.UnixMilli(remoteRun.Info.StartTime)
-		log.Printf("updating run %s in remote store with name %s, status %s, local start time %s (%d), remote start time %s (%d), end time %s (%d), stage %s",
-			run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), start, localRun.Info.StartTime, remoteStart, remoteRun.Info.StartTime, end, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
-		updatedRun, err := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
-		if err != nil {
-			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
-			continue
+		updated := false
+		if remoteRun.Info.Name != localRun.Info.Name {
+			remoteRun.Info.Name = localRun.Info.Name
+			updated = true
 		}
+		if remoteRun.Info.Status != localRun.Info.Status {
+			remoteRun.Info.Status = localRun.Info.Status
+			updated = true
+		}
+		if remoteRun.Info.EndTime != localRun.Info.EndTime {
+			remoteRun.Info.EndTime = localRun.Info.EndTime
+			updated = true
+		}
+		if len(remoteRun.Data.Params) != len(localRun.Data.Params) {
+			updated = true
+		} else {
+			for _, param := range localRun.Data.Params {
+				found := false
+				for _, remoteParam := range remoteRun.Data.Params {
+					if remoteParam.Key == param.Key && remoteParam.Value != param.Value {
+						updated = true
+					}
+					found = true
+					break
+				}
+				if !found {
+					updated = true
+					break
+				}
+			}
+		}
+		if len(remoteRun.Data.Metrics) != len(localRun.Data.Metrics) {
+			updated = true
+		} else {
+			for _, metric := range localRun.Data.Metrics {
+				found := false
+				for _, remoteMetric := range remoteRun.Data.Metrics {
+					if metric.Key == remoteMetric.Key && metric.Step == remoteMetric.Step {
+						if metric.Value != remoteMetric.Value || metric.Timestamp != remoteMetric.Timestamp {
+							updated = true
+						}
+						found = true
+						break
+					}
+				}
+				if !found {
+					updated = true
+					break
+				}
+			}
+		}
+		if !updated {
+			log.Printf("run %s with run ID %s exists in remote store and appears up-to-date", localRun.Info.Name, localRun.Info.RunId)
+		} else {
+			remoteRun.Data = localRun.Data
+			start := time.UnixMilli(localRun.Info.StartTime)
+			end := time.UnixMilli(localRun.Info.EndTime)
+			remoteStart := time.UnixMilli(remoteRun.Info.StartTime)
+			log.Printf("updating run %s in remote store with name %s, status %s, local start time %s (%d), remote start time %s (%d), end time %s (%d), stage %s",
+				run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), start, localRun.Info.StartTime, remoteStart, remoteRun.Info.StartTime, end, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
+			updatedRun, err := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+			if err != nil {
+				log.Printf("failed to update run %d in remote store: %s", item.ID, err)
+				continue
+			}
 
-		if updatedRun.Info.Name != remoteRun.Info.Name || updatedRun.Info.Status != remoteRun.Info.Status || updatedRun.Info.StartTime != remoteRun.Info.StartTime || updatedRun.Info.EndTime != remoteRun.Info.EndTime || updatedRun.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
-			log.Printf("failed to updatedRun run %s info in remote store", run.RemoteRunId)
-			if updatedRun.Info.Name != remoteRun.Info.Name {
-				log.Printf("name mismatch: %s != %s", updatedRun.Info.Name, remoteRun.Info.Name)
+			if updatedRun.Info.Name != remoteRun.Info.Name || updatedRun.Info.Status != remoteRun.Info.Status || updatedRun.Info.StartTime != remoteRun.Info.StartTime || updatedRun.Info.EndTime != remoteRun.Info.EndTime || updatedRun.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
+				log.Printf("failed to updatedRun run %s info in remote store", run.RemoteRunId)
+				if updatedRun.Info.Name != remoteRun.Info.Name {
+					log.Printf("name mismatch: %s != %s", updatedRun.Info.Name, remoteRun.Info.Name)
+				}
+				if updatedRun.Info.Status != remoteRun.Info.Status {
+					log.Printf("status mismatch: %s != %s", updatedRun.Info.Status, remoteRun.Info.Status)
+				}
+				if updatedRun.Info.StartTime != remoteRun.Info.StartTime {
+					log.Printf("start time mismatch: %d != %d", updatedRun.Info.StartTime, remoteRun.Info.StartTime)
+				}
+				if updatedRun.Info.EndTime != remoteRun.Info.EndTime {
+					log.Printf("end time mismatch: %d != %d", updatedRun.Info.EndTime, remoteRun.Info.EndTime)
+				}
 			}
-			if updatedRun.Info.Status != remoteRun.Info.Status {
-				log.Printf("status mismatch: %s != %s", updatedRun.Info.Status, remoteRun.Info.Status)
+			if len(updatedRun.Data.Metrics) != len(remoteRun.Data.Metrics) {
+				log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
+				continue
 			}
-			if updatedRun.Info.StartTime != remoteRun.Info.StartTime {
-				log.Printf("start time mismatch: %d != %d", updatedRun.Info.StartTime, remoteRun.Info.StartTime)
-			}
-			if updatedRun.Info.EndTime != remoteRun.Info.EndTime {
-				log.Printf("end time mismatch: %d != %d", updatedRun.Info.EndTime, remoteRun.Info.EndTime)
-			}
-		}
-		if len(updatedRun.Data.Metrics) != len(remoteRun.Data.Metrics) {
-			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
-			continue
 		}
 
 		// sync the metric artifacts
 		// first, fetch artifacts from local MLFlow
+		log.Printf("fetching artifacts for experiment run %s with database ID %d", run.RunId, item.ID)
 		mlFlowArtifacts, err := r.dataStores.Local.Artifacts(ctx, run.RunId, nil)
 		if err != nil {
 			log.Printf("failed to fetch artifacts for experiment run %s with database ID %d: %s", run.RunId, item.ID, err)
 			continue
 		}
 		for _, artifact := range mlFlowArtifacts {
-			log.Printf("syncing artifact %s for experiment run %d", artifact.Path, item.ID)
+			log.Printf("syncing artifact %s for experiment run %s with database ID %d", artifact.Path, run.RunId, item.ID)
 			if !strings.HasSuffix(artifact.Path, ".json") {
 				log.Printf("skipping non-json artifact %s for experiment run %s with database ID %d", artifact.Path, localRun.Info.Name, item.ID)
 				continue
 			}
-			// TODO: filter the json to only sync metric artifacts
+			// TODO: filter the json to only sync metric artifacts - need a way to know which artifacts to include/exclude
 			metricArtifacts, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
 			if err != nil {
 				log.Printf("failed to fetch artifact %s for experiment run %s with database ID %d: %s", artifact.Path, localRun.Info.Name, item.ID, err)
