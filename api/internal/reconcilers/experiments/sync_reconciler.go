@@ -110,23 +110,25 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 		for _, run := range localRuns {
 			found := false
-			//updated := false
+			updated := false
 			for _, remoteRun := range remoteRuns {
 				if run.Info.Name == remoteRun.Info.Name {
 					log.Printf("run %s with run ID %s exists in remote store with run ID %s", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
 					found = true
-					//if run.Info.StartTime > remoteRun.Info.StartTime {
-					//	log.Printf("run %s with run ID %s exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
-					//	updated = true
-					//}
+					if run.Info.StartTime > remoteRun.Info.StartTime {
+						log.Printf("run %s with run ID %s exists in remote store with ID %s but is out of date", run.Info.Name, run.Info.RunId, remoteRun.Info.RunId)
+						updated = true
+					}
 					break
 				}
 			}
 			if found {
-				//if !updated {
-				//	continue
-				//}
-				log.Printf("run %s with run ID %s exists in remote store but is out of date", run.Info.Name, run.Info.RunId)
+				if !updated {
+					log.Printf("run %s with run ID %s exists in remote store and appears up-to-date", run.Info.Name, run.Info.RunId)
+					//continue
+				} else {
+					log.Printf("run %s with run ID %s exists in remote store but is out of date", run.Info.Name, run.Info.RunId)
+				}
 			}
 			var remoteRunId string
 			if !found {
