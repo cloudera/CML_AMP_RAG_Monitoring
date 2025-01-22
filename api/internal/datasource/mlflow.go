@@ -155,7 +155,7 @@ func (m *MLFlow) Artifacts(ctx context.Context, runId string, path *string) ([]A
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}
-	url := fmt.Sprintf("%s/api/2.0/runs/artifacts/list?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/artifacts/list?run_id=%s", m.baseUrl, runId)
 	if path != nil {
 		url = fmt.Sprintf("%s&path=%s", url, *path)
 	}
