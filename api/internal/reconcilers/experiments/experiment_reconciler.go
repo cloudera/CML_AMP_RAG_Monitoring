@@ -64,7 +64,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 			log.Printf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling mlflow experiment %s with experiment ID %s,", local.Name, item.ID)
+		log.Printf("reconciling mlflow experiment %s with experiment ID %s", local.Name, item.ID)
 		// Fetch the experiment from the database
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, item.ID)
 		// If the experiment does not exist in the database, insert it
@@ -98,7 +98,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		//updated := false
 		//if experiment.UpdatedTs.Before(lastUpdated) {
 		//	// Update the flag of the experiment to indicate that it requires reconciliation
-		//	log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
+		log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
 		//	updated = true
 		//}
 		updated := true

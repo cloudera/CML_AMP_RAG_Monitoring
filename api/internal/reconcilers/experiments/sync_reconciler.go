@@ -164,6 +164,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				id = newRun.Id
 			}
 			// Flag the run as ready for reconciliation
+			log.Printf("flagging run %s with run ID %s and database ID %d for reconciliation", run.Info.Name, run.Info.RunId, id)
 			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
 			if dberr != nil {
 				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)
