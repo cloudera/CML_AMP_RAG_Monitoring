@@ -33,7 +33,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	}
 
 	if len(runs) > 0 {
-		log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
+		log.Debugf("queueing %d experiment runs for metric reconciliation", len(runs))
 	}
 	for _, run := range runs {
 		queue.Add(run)
@@ -43,7 +43,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
-	log.Printf("reconciling %d experiment runs for metric", len(items))
+	log.Debugf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
@@ -59,7 +59,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling metrics for experiment %s run (%d) %s", experiment.RemoteExperimentId, item.ID, run.RemoteRunId)
+		log.Printf("reconciling metrics for experiment %s with ID %s and run %s with database ID %d", experiment.Name, experiment.RemoteExperimentId, run.RemoteRunId, item.ID)
 		// Fetch metrics from MLFlow
 		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 		if err != nil {
@@ -82,7 +82,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			if err != nil {
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
-				log.Printf("inserted numeric metric %s(%d) for experiment run %s(%d)", m.Name, m.Id, run.RemoteRunId, run.Id)
+				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RemoteRunId, run.Id)
 			}
 		}
 		// Fetch artifacts from MLFlow

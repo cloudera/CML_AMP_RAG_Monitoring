@@ -2,7 +2,6 @@ package runs
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -37,19 +36,19 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	}
 
 	if len(ids) > 0 {
-		log.Println(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
+		log.Debugf("queueing %d runs for reconciliation", len(ids))
 	}
 	log.Debugln("completing reconciler resync")
 }
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
 	for _, item := range items {
-		log.Printf("reconciling run %d", item.ID)
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
+		log.Printf("reconciling run %s with experiment ID %s, remote run ID %s, and database ID %d", run.ExperimentId, run.RunId, run.RemoteRunId, item.ID)
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d for reconciliation: %s", item.ID, err)
@@ -94,31 +93,58 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			}
 			remoteRun = existing
 		}
-		log.Printf("syncing data for run %s to remote store", run.RunId)
-		// Sync the metrics to the remote store
+		log.Printf("syncing data for experiment %s with ID %s run %s to remote store", experiment.Name, experiment.ExperimentId, run.RunId)
+		if len(localRun.Data.Metrics) > 0 {
+			log.Println("local run metrics: ")
+			for _, metric := range localRun.Data.Metrics {
+				log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+			}
+		} else {
+			log.Printf("local run %s has no metrics", run.RunId)
+		}
+
+		// Sync the run to the remote store
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
-		remoteRun.Info.StartTime = util.TimeStamp(localRun.Info.StartTime).Unix()
-		remoteRun.Info.EndTime = util.TimeStamp(localRun.Info.EndTime).Unix()
+		remoteRun.Info.EndTime = localRun.Info.EndTime
 		remoteRun.Info.LifecycleStage = localRun.Info.LifecycleStage
 		remoteRun.Data = localRun.Data
-		err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+		start := time.UnixMilli(localRun.Info.StartTime)
+		end := time.UnixMilli(localRun.Info.EndTime)
+		remoteStart := time.UnixMilli(remoteRun.Info.StartTime)
+		log.Printf("updating run %s in remote store with name %s, status %s, local start time %s (%d), remote start time %s (%d), end time %s (%d), stage %s",
+			run.RemoteRunId, remoteRun.Info.Name, string(remoteRun.Info.Status), start, localRun.Info.StartTime, remoteStart, remoteRun.Info.StartTime, end, remoteRun.Info.EndTime, remoteRun.Info.LifecycleStage)
+		_, err = r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 		if err != nil {
 			log.Printf("failed to update run %d in remote store: %s", item.ID, err)
 			continue
 		}
 
-		// fetch back the run to verify the updates
-		verify, verr := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
-		if verr != nil {
-			log.Printf("failed to fetch run %s from remote store: %s", run.RemoteRunId, verr)
+		verify, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		if err != nil {
+			log.Printf("failed to fetch run %d in remote store: %s", item.ID, err)
 			continue
+		}
+
+		if verify.Info.Name != remoteRun.Info.Name || verify.Info.Status != remoteRun.Info.Status || verify.Info.StartTime != remoteRun.Info.StartTime || verify.Info.EndTime != remoteRun.Info.EndTime || verify.Info.LifecycleStage != remoteRun.Info.LifecycleStage {
+			log.Printf("failed to verify run %s info in remote store", run.RemoteRunId)
+			if verify.Info.Name != remoteRun.Info.Name {
+				log.Printf("name mismatch: %s != %s", verify.Info.Name, remoteRun.Info.Name)
+			}
+			if verify.Info.Status != remoteRun.Info.Status {
+				log.Printf("status mismatch: %s != %s", verify.Info.Status, remoteRun.Info.Status)
+			}
+			if verify.Info.StartTime != remoteRun.Info.StartTime {
+				log.Printf("start time mismatch: %d != %d", verify.Info.StartTime, remoteRun.Info.StartTime)
+			}
+			if verify.Info.EndTime != remoteRun.Info.EndTime {
+				log.Printf("end time mismatch: %d != %d", verify.Info.EndTime, remoteRun.Info.EndTime)
+			}
 		}
 		if len(verify.Data.Metrics) != len(remoteRun.Data.Metrics) {
 			log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
 			continue
 		}
-
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation
 		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
 		if err != nil {
