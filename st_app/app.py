@@ -89,11 +89,6 @@ def setup_navigation():
 def setup_sidebar():
     with st.sidebar:
         st.image(logo_path, use_column_width=True)
-        st.markdown(
-            """
-            :orange-background[:material/wb_sunny: **Technical Preview** ]
-            """
-        )
         st.page_link("pages/1_Home.py", label="Home", icon=":material/home:")
         st.page_link(
             "pages/2_Data_Source.py",
