@@ -94,11 +94,16 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			}
 			remoteRun = existing
 		}
-		log.Printf("syncing data for run %s to remote store", run.RunId)
-		log.Println("local run metrics: ")
-		for _, metric := range localRun.Data.Metrics {
-			log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+		log.Printf("syncing data for experiment %s with ID %s run %s to remote store", experiment.Name, experiment.ExperimentId, run.RunId)
+		if len(localRun.Data.Metrics) > 0 {
+			log.Println("local run metrics: ")
+			for _, metric := range localRun.Data.Metrics {
+				log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+			}
+		} else {
+			log.Printf("local run %s has no metrics", run.RunId)
 		}
+
 		// Sync the run to the remote store
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
