@@ -595,3 +595,23 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
 	return nil
 }
+
+func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files/%s:download", m.baseUrl, m.cfg.CDSWProjectID, path)
+	req := cbhttp.NewRequest(ctx, "POST", url)
+	req.Header = make(map[string][]string)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Do(req)
+	if lerr != nil {
+		log.Printf("failed to fetch artifact %s: %s", path, lerr)
+		return nil, lerr
+	}
+	defer resp.Body.Close()
+
+	body, ioerr := io.ReadAll(resp.Body)
+	if ioerr != nil {
+		return nil, ioerr
+	}
+	return body, nil
+}

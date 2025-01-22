@@ -61,9 +61,10 @@ type RunTag struct {
 }
 
 type RunData struct {
-	Metrics []Metric `json:"metrics"`
-	Params  []Param  `json:"params"`
-	Tags    []RunTag `json:"tags"`
+	Metrics []Metric   `json:"metrics"`
+	Params  []Param    `json:"params"`
+	Tags    []RunTag   `json:"tags"`
+	Files   []Artifact `json:"files"`
 }
 
 type Run struct {

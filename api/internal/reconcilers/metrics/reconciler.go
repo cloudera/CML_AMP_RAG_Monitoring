@@ -89,11 +89,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		}
 
 		// fetch and text metrics stored as json artifacts
-		mlFlowArtifacts, err := r.mlFlow.Remote.Artifacts(ctx, run.RemoteRunId, nil)
+		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 		if err != nil {
-			log.Printf("failed to fetch artifacts for experiment run %s: %s", run.RemoteRunId, err)
+			log.Printf("failed to fetch run %s for experiment %s: %s", run.RemoteRunId, experiment.RemoteExperimentId, err)
+			continue
 		}
-		for _, artifact := range mlFlowArtifacts {
+		log.Printf("found %d artifacts for experiment run %s", len(remoteRun.Data.Files), run.RemoteRunId)
+		for _, artifact := range remoteRun.Data.Files {
 			// TODO: filter these
 			if strings.HasSuffix(artifact.Path, ".json") {
 				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RemoteRunId, artifact.Path)
