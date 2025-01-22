@@ -10,6 +10,8 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -551,12 +553,39 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
 	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
 	formData := map[string]string{remotePath: string(data)}
-	log.Printf("form data: %v", formData)
-	form := cbhttp.FormFields(formData)
-	req := cbhttp.NewRequest(ctx, "PUT", url, form)
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+
+	// Add form fields to the writer
+	for key, val := range formData {
+		err := writer.WriteField(key, val)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Close the writer to finalize the form data
+	err := writer.Close()
+	if err != nil {
+		return err
+	}
+
+	// Create a new PUT request with the form data
+	req, err := http.NewRequest("PUT", url, &requestBody)
+	if err != nil {
+		return err
+	}
+
+	// Set the Content-Type header to the multipart writer's content type
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	// Send the request using the default HTTP client
+
+	//form := cbhttp.FormFields(formData)
+	//req := cbhttp.NewRequest(ctx, "PUT", url, form)
+	//req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	log.Printf("request: %v", req)
-	resp, lerr := m.connections.HttpClient.Do(req)
+	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr)
 		return lerr
