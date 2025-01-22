@@ -552,6 +552,7 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	form := cbhttp.FormFields(map[string]string{remotePath: string(data)})
 	req := cbhttp.NewRequest(ctx, "PUT", url, form)
 	req.Header = make(map[string][]string)
+	req.Header.Set("Content-Type", "multipart/form-data")
 	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	resp, lerr := m.connections.HttpClient.Do(req)
 	if lerr != nil {

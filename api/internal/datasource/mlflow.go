@@ -164,7 +164,7 @@ func (m *MLFlow) Artifacts(ctx context.Context, runId string, path *string) ([]A
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		if err.Code == 404 {
-			log.Printf("run %s has not artifacts", runId)
+			log.Printf("run %s has no artifacts", runId)
 			return []Artifact{}, nil
 		}
 		log.Printf("failed to fetch artifacts for run %s: %s", runId, err)
