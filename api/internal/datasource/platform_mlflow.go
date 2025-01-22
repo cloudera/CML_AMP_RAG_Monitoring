@@ -548,12 +548,12 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 
 func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
-	remotePath := fmt.Sprintf("experiments/%s/%s/artifacts/%s", experimentId, runId, path)
+	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
 	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
 	formData := map[string]string{remotePath: string(data)}
 	log.Printf("form data: %v", formData)
 	form := cbhttp.FormFields(formData)
-	req := cbhttp.NewRequest(ctx, "POST", url, form)
+	req := cbhttp.NewRequest(ctx, "PUT", url, form)
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
 	log.Printf("request: %v", req)
 	resp, lerr := m.connections.HttpClient.Do(req)
