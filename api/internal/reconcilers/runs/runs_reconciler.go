@@ -191,9 +191,18 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 					log.Printf("end time mismatch: %d != %d", updatedRun.Info.EndTime, remoteRun.Info.EndTime)
 				}
 			}
-			if len(updatedRun.Data.Metrics) != len(remoteRun.Data.Metrics) {
+			if len(updatedRun.Data.Metrics) != len(localRun.Data.Metrics) {
 				log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
-				continue
+				log.Printf("metrics mismatch: %d != %d", len(updatedRun.Data.Metrics), len(remoteRun.Data.Metrics))
+				log.Print("local metrics")
+				for _, metric := range localRun.Data.Metrics {
+					log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+				}
+				log.Print("remote metrics")
+				for _, metric := range remoteRun.Data.Metrics {
+					log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+				}
+				//continue
 			}
 		}
 
