@@ -159,10 +159,15 @@ func (m *MLFlow) Artifacts(ctx context.Context, runId string, path *string) ([]A
 	if path != nil {
 		url = fmt.Sprintf("%s&path=%s", url, *path)
 	}
+	log.Printf("fetching artifacts for run %s using url %s", runId, url)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch arrtifacts for run %s: %s", runId, err)
+		if err.Code == 404 {
+			log.Printf("run %s has not artifacts", runId)
+			return []Artifact{}, nil
+		}
+		log.Printf("failed to fetch artifacts for run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
