@@ -226,7 +226,7 @@ async def evaluate_response(
             llm=evaluator_llm,
         )
         result = await evaluator.aevaluate_response(query=query, response=chat_response)
-        custom_eval_results[name] = result
+        custom_eval_results[f"{name}_score"] = result
 
     return (
         relevance,

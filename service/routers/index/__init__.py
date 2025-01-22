@@ -198,6 +198,7 @@ async def log_evaluation_metrics(
             maliciousness,
             toxicity,
             comprehensiveness,
+            custom_eval_results,
         ) = await qdrant.evaluate_response(
             query=query,
             chat_response=chat_response,
@@ -246,6 +247,19 @@ async def log_evaluation_metrics(
             step=len(metric_history) + 1,
             synchronous=True,
         )
+
+        # check if there are any custom eval results
+        if custom_eval_results:
+            logger.info("Logging custom evaluation metrics")
+            for name, result in custom_eval_results.items():
+                logger.info("%s: %s", name, result.score)
+                mlflow.log_metric(
+                    key=name,
+                    value=result.score,
+                    step=len(mlflowclient.get_metric_history(run.info.run_id, name)),
+                    synchronous=True,
+                )
+
         logger.info(
             "Logged evaluation metrics for exp id %s and run id %s",
             run.info.experiment_id,
