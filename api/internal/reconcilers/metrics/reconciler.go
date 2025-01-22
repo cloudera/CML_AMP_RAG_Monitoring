@@ -43,6 +43,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+	log.Debugf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
@@ -82,7 +83,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			if err != nil {
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
-				log.Printf("inserted numeric metric %s(%d) for experiment run %s(%d)", m.Name, m.Id, run.RemoteRunId, run.Id)
+				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RemoteRunId, run.Id)
 			}
 		}
 

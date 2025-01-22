@@ -124,9 +124,11 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			}
 			if found {
 				if !updated {
-					continue
+					log.Printf("run %s with run ID %s exists in remote store and appears up-to-date", run.Info.Name, run.Info.RunId)
+					//continue
+				} else {
+					log.Printf("run %s with run ID %s exists in remote store but is out of date", run.Info.Name, run.Info.RunId)
 				}
-				log.Printf("run %s with run ID %s exists in remote store but is out of date", run.Info.Name, run.Info.RunId)
 			}
 			var remoteRunId string
 			if !found {
@@ -164,6 +166,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				id = newRun.Id
 			}
 			// Flag the run as ready for reconciliation
+			log.Printf("flagging run %s with run ID %s and database ID %d for reconciliation", run.Info.Name, run.Info.RunId, id)
 			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
 			if dberr != nil {
 				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)

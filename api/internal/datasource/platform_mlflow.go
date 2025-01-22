@@ -169,8 +169,6 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 		return nil, serr
 	}
 
-	log.Printf("submitting json %s", encoded)
-
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
@@ -188,9 +186,6 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	if ioerr != nil {
 		return nil, ioerr
 	}
-
-	log.Printf("received json %s", buff)
-
 	var updatedRun PlatformRun
 	jerr := json.Unmarshal(buff, &updatedRun)
 	if jerr != nil {

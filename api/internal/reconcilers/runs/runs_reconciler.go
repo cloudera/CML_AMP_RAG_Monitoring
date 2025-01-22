@@ -2,7 +2,6 @@ package runs
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -38,7 +37,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	}
 
 	if len(ids) > 0 {
-		log.Debugln(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
+		log.Debugf("queueing %d runs for reconciliation", len(ids))
 	}
 	log.Debugln("completing reconciler resync")
 }
@@ -99,11 +98,16 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			}
 			remoteRun = existing
 		}
-		log.Printf("syncing data for run %s to remote store", run.RunId)
-		log.Println("local run metrics: ")
-		for _, metric := range localRun.Data.Metrics {
-			log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+		log.Printf("syncing data for experiment %s with ID %s run %s to remote store", experiment.Name, experiment.ExperimentId, run.RunId)
+		if len(localRun.Data.Metrics) > 0 {
+			log.Println("local run metrics: ")
+			for _, metric := range localRun.Data.Metrics {
+				log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+			}
+		} else {
+			log.Printf("local run %s has no metrics", run.RunId)
 		}
+
 		// Sync the run to the remote store
 		// TODO: verify that data has changed before applying the update
 		remoteRun.Info.Name = localRun.Info.Name
