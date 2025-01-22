@@ -2,7 +2,6 @@ package runs
 
 import (
 	"context"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -37,7 +36,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	}
 
 	if len(ids) > 0 {
-		log.Debugln(fmt.Sprintf("queueing %d runs for reconciliation", len(ids)))
+		log.Debugf("queueing %d runs for reconciliation", len(ids))
 	}
 	log.Debugln("completing reconciler resync")
 }

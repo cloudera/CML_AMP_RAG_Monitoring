@@ -38,7 +38,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 	}
 
 	if len(ids) > 0 {
-		log.Printf("queueing %d experiments for sync reconciliation", len(ids))
+		log.Debugf("queueing %d experiments for sync reconciliation", len(ids))
 	}
 	log.Debugln("completing mlflow sync reconciler resync")
 }
