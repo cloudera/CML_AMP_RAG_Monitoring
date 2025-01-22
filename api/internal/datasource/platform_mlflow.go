@@ -552,25 +552,16 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
 	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
 	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
-	formData := map[string]string{remotePath: string(data)}
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
-
-	// Add form fields to the writer
-	for key, val := range formData {
-		err := writer.WriteField(key, val)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Close the writer to finalize the form data
-	err := writer.Close()
+	err := writer.WriteField(remotePath, string(data))
 	if err != nil {
 		return err
 	}
-
-	// Create a new PUT request with the form data
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
 	req, err := http.NewRequest("PUT", url, &requestBody)
 	if err != nil {
 		return err
@@ -587,7 +578,7 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	log.Printf("request: %v", req)
 	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
-		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr)
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
 		return lerr
 	}
 	defer resp.Body.Close()
