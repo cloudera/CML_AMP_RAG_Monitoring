@@ -95,6 +95,10 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			remoteRun = existing
 		}
 		log.Printf("syncing data for run %s to remote store", run.RunId)
+		log.Println("local run metrics: ")
+		for _, metric := range localRun.Data.Metrics {
+			log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
+		}
 		// Sync the run to the remote store
 		remoteRun.Info.Name = localRun.Info.Name
 		remoteRun.Info.Status = localRun.Info.Status
