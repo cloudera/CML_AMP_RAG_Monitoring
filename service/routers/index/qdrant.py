@@ -38,8 +38,11 @@
 #
 # ###########################################################################
 
+import json
 import logging
-from typing import Tuple
+import os
+from pathlib import Path
+from typing import Tuple, Dict
 
 import opentelemetry.trace
 import qdrant_client
@@ -66,7 +69,12 @@ from llama_index.llms.bedrock_converse import BedrockConverse
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 from pydantic import BaseModel
 
-from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessEvaluator
+from .judge import (
+    MaliciousnessEvaluator,
+    ToxicityEvaluator,
+    ComprehensivenessEvaluator,
+    load_custom_evaluator,
+)
 from ...config import settings
 from pprint import pprint
 import asyncio
@@ -146,6 +154,21 @@ class RagPredictConfiguration(BaseModel):
     model_name: str = "meta.llama3-70b-instruct-v1:0"
 
 
+def get_custom_evaluators():
+    # check for json files in custom evaluators directory
+    custom_eval_dir = Path(os.path.join(os.getcwd(), "custom_evaluators"))
+    if not custom_eval_dir.exists():
+        return {}
+    custom_evaluators = {}
+    for file in custom_eval_dir.iterdir():
+        if file.suffix == ".json":
+            # read the json file
+            eval_json = json.load(file.open())
+            evaluator_name = eval_json.pop("name")
+            custom_evaluators[evaluator_name] = eval_json
+    return custom_evaluators
+
+
 @tracer.start_as_current_span("Qdrant evaluate response")
 async def evaluate_response(
     query: str,
@@ -157,6 +180,7 @@ async def evaluate_response(
     EvaluationResult,
     EvaluationResult,
     EvaluationResult,
+    Dict[str, EvaluationResult],
 ]:
     evaluator_llm = BedrockConverse(
         model="meta.llama3-70b-instruct-v1:0",
@@ -191,6 +215,19 @@ async def evaluate_response(
         comprehensiveness,
     ) = results
 
+    # check custom evaluators directory for custom evaluators
+    custom_evaluators = get_custom_evaluators()
+
+    custom_eval_results = {}
+    for name, evaluator_params in custom_evaluators.items():
+        evaluator = load_custom_evaluator(
+            eval_definition=evaluator_params["eval_definition"],
+            questions=evaluator_params["questions"],
+            llm=evaluator_llm,
+        )
+        result = await evaluator.aevaluate_response(query=query, response=chat_response)
+        custom_eval_results[name] = result
+
     return (
         relevance,
         faithfulness,
@@ -198,6 +235,7 @@ async def evaluate_response(
         maliciousness,
         toxicity,
         comprehensiveness,
+        custom_eval_results,
     )
 
 
