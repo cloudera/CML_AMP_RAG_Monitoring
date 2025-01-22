@@ -8,6 +8,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -84,6 +85,35 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
 				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RemoteRunId, run.Id)
+			}
+		}
+
+		// fetch and text metrics stored as json artifacts
+		mlFlowArtifacts, err := r.mlFlow.Remote.Artifacts(ctx, run.RemoteRunId, nil)
+		if err != nil {
+			log.Printf("failed to fetch artifacts for experiment run %s: %s", run.RemoteRunId, err)
+		}
+		for _, artifact := range mlFlowArtifacts {
+			// TODO: filter these
+			if strings.HasSuffix(artifact.Path, ".json") {
+				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RemoteRunId, artifact.Path)
+				if err != nil {
+					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RemoteRunId, err)
+					continue
+				}
+				value := string(data)
+				textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
+					ExperimentId: run.ExperimentId,
+					RunId:        run.RunId,
+					Name:         artifact.Path,
+					Type:         db.MetricTypeText,
+					ValueText:    &value,
+				})
+				if err != nil {
+					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+				} else {
+					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RemoteRunId, run.Id)
+				}
 			}
 		}
 
