@@ -36,7 +36,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 
 	experiments, err := r.dataStores.Local.ListExperiments(ctx, maxItems, "")
 	if err != nil {
-		log.Printf("failed to fetch experiments from local mlflow: %s", err)
+		log.Debugf("failed to fetch experiments from local mlflow: %s", err)
 	}
 	queued := 0
 	for _, ex := range experiments {
@@ -50,21 +50,22 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	}
 
 	if queued > 0 {
-		log.Printf("queueing %d local experiments for reconciliation", queued)
+		log.Debugf("queueing %d local experiments for reconciliation", queued)
 	}
 
 	log.Debugln("completing reconciler resync")
 }
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
+	log.Debugf("reconciling %d local experiments", len(items))
 	for _, item := range items {
 		// Fetch the experiment MLFlow
 		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)
 		if err != nil {
-			log.Printf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
+			log.Debugf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling mlflow experiment %s with experiment ID %s", local.Name, item.ID)
+		log.Debugf("reconciling mlflow experiment %s with experiment ID %s", local.Name, item.ID)
 		// Fetch the experiment from the database
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, item.ID)
 		// If the experiment does not exist in the database, insert it
@@ -79,7 +80,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 				log.Printf("finished creating experiment %s with mlflow ID %s.  Database ID is %d", local.Name, ex.ExperimentId, ex.Id)
 				continue
 			} else {
-				log.Printf("failed to fetch experiment with %s mlflow ID %s for reconciliation: %s", local.Name, item.ID, err)
+				log.Printf("failed to fetch local experiment with %s mlflow ID %s for reconciliation: %s", local.Name, item.ID, err)
 				continue
 			}
 		}
