@@ -31,12 +31,7 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 func (m *MLFlow) WaitForReady(ctx context.Context) error {
 	log.Println("waiting for mlflow to be ready")
 	done := false
-	iterations := 0
 	for {
-		iterations++
-		if iterations%10 == 0 {
-			log.Printf("(%ds) waiting for mlflow to be ready", iterations)
-		}
 		if done {
 			break
 		}
