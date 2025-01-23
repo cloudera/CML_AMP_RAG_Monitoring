@@ -197,6 +197,8 @@ def main():
         "examples": [],
     }
 
+    if not os.path.exists(CUSTOM_EVAL_DIR):
+        os.makedirs(CUSTOM_EVAL_DIR)
     with open(os.path.join(CUSTOM_EVAL_DIR, "friendliness.json"), "w+") as f:
         json.dump(friendliness_eval_def, f, indent=2)
 
