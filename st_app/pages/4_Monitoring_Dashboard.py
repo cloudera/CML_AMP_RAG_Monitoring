@@ -1173,7 +1173,7 @@ if experiment_ids:
                             ][f"{custom_metric_name}_score"].to_list()
                             custom_metric_kpi = custom_metric_rows[i // 6][i % 6]
                             custom_metric_kpi.metric(
-                                label=custom_eval["name"],
+                                label=custom_eval["name"].title().replace("_", " "),
                                 help=custom_eval["eval_definition"],
                                 value=round(avg_custom_metric, 2),
                                 delta=round(
@@ -1194,7 +1194,7 @@ if experiment_ids:
                                 pd.Grouper(key="timestamp", freq="h")  # group by hour
                             )[f"{custom_metric_name}_score"].agg(["mean", "max", "min"])
                             custom_metric_fig.markdown(
-                                f"### {custom_eval['name']}",
+                                f"### {custom_eval['name'].title().replace('_', ' ')}",
                                 help=custom_eval["eval_definition"],
                             )
                             fig = go.Figure(
