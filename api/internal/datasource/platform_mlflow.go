@@ -97,6 +97,7 @@ type PlatformRunData struct {
 	Metrics []PlatformMetric `json:"metrics"`
 	Params  []Param          `json:"params"`
 	Tags    []RunTag         `json:"tags"`
+	Files   []Artifact       `json:"files"`
 }
 
 type PlatformMLFlow struct {
@@ -193,7 +194,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	if jerr != nil {
 		return nil, jerr
 	}
-	return &Run{
+	ret := &Run{
 		Info: RunInfo{
 			RunId:          updatedRun.Id,
 			Name:           updatedRun.Name,
@@ -204,8 +205,27 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			ArtifactUri:    updatedRun.ArtifactUri,
 			LifecycleStage: run.Info.LifecycleStage,
 		},
-		Data: RunData{},
-	}, nil
+		Data: RunData{
+			Metrics: make([]Metric, 0),
+			Params:  updatedRun.Data.Params,
+			Tags:    updatedRun.Data.Tags,
+			Files:   updatedRun.Data.Files,
+		},
+	}
+	for _, metric := range updatedRun.Data.Metrics {
+		step, err := strconv.Atoi(metric.Step)
+		if err != nil {
+			log.Printf("failed to convert step to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Metrics = append(ret.Data.Metrics, Metric{
+			Key:       metric.Key,
+			Value:     metric.Value,
+			Timestamp: metric.Timestamp.Unix(),
+			Step:      step,
+		})
+	}
+	return ret, nil
 }
 
 func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
@@ -238,6 +258,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		Metrics: make([]Metric, 0),
 		Params:  run.Data.Params,
 		Tags:    run.Data.Tags,
+		Files:   run.Data.Files,
 	}
 	for _, metric := range run.Data.Metrics {
 		step, err := strconv.Atoi(metric.Step)
