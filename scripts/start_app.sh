@@ -3,10 +3,8 @@
 export FASTAPI_PORT=8200
 export SQL_DB_PATH="monitoring.db"
 
-# if AWS_DEFAULT_REGION isn't set, set to $AWS_REGION
-if [[ -z "$AWS_DEFAULT_REGION" ]]; then
-    export AWS_DEFAULT_REGION=$AWS_REGION
-fi
+# Set AWS_DEFAULT_REGION to the value of AWS_REGION
+export AWS_DEFAULT_REGION=$AWS_REGION
 
 set -eo pipefail
 
