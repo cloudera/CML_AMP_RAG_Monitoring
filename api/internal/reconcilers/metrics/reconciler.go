@@ -88,7 +88,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			}
 		}
 
-		// fetch and text metrics stored as json artifacts
+		// fetch any text metrics stored as json artifacts
 		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 		if err != nil {
 			log.Printf("failed to fetch run %s for experiment %s: %s", run.RemoteRunId, experiment.RemoteExperimentId, err)
