@@ -245,11 +245,14 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 				}
 			}
 			if artifactsUpdated {
-				log.Printf("updating run %s with new artifacts", run.RemoteRunId)
-				_, uerr := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+				log.Printf("updating run %s with %d artifacts", run.RemoteRunId, len(remoteRun.Data.Files))
+				updatedRun, uerr := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 				if uerr != nil {
 					log.Printf("failed to update run %d with new artifacts: %s", item.ID, uerr)
 					continue
+				}
+				for _, file := range updatedRun.Data.Files {
+					log.Printf("updated run %s has artifact %s with size %d", updatedRun.Info.Name, file.Path, file.FileSize)
 				}
 			} else {
 				log.Printf("no new artifacts to update for run %d", item.ID)
