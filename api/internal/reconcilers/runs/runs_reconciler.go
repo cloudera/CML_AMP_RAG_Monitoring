@@ -321,5 +321,5 @@ func NewRunReconciler(config *Config, db db.Database, dataStores datasource.Data
 }
 
 func (r *RunReconciler) Name() string {
-	return "mlflow-run-reconciler"
+	return "runs-reconciler"
 }

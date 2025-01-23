@@ -50,9 +50,11 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d for sync reconciliation: %s", item.ID, err)
+			continue
 		}
 
 		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
+			log.Printf("experiment %d is nil or has no experiment ID, skipping reconciliation", item.ID)
 			continue
 		}
 
@@ -79,6 +81,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			ex, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 			if err != nil {
 				log.Printf("failed to fetch experiment %s with experiment ID %s and database ID %d for reconciliation: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
+				continue
 			}
 			experiment = ex
 		}
@@ -97,6 +100,10 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				continue
 			}
 			err = r.db.Experiments().UpdateRemoteExperimentId(ctx, experiment.Id, remoteExperimentId)
+			if err != nil {
+				log.Printf("failed to update experiment %s with experiment ID %s and database ID %d remote experiment ID: %s", experiment.Name, experiment.ExperimentId, item.ID, err)
+				continue
+			}
 		}
 
 		// Fetch the experiment runs from local MLFlow
@@ -176,6 +183,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
 			if dberr != nil {
 				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)
+				continue
 			}
 		}
 
@@ -183,6 +191,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, false, util.TimeStamp(local.LastUpdatedTime))
 		if err != nil {
 			log.Printf("failed to update experiment %d timestamp: %s", item.ID, err)
+			continue
 		}
 		log.Printf("finished sync reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
@@ -207,5 +216,5 @@ func NewSyncReconciler(config *Config, db db.Database, dataStores datasource.Dat
 }
 
 func (r *SyncReconciler) Name() string {
-	return "mlflow-sync-reconciler"
+	return "sync-reconciler"
 }

@@ -114,6 +114,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 				})
 				if err != nil {
 					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+					continue
 				} else {
 					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RemoteRunId, run.Id)
 				}

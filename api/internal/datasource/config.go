@@ -36,6 +36,5 @@ func NewConfigFromEnv() (*Config, error) {
 	}
 	log.Printf("CDSW base url: %s", cfg.CDSWMLFlowBaseUrl)
 	log.Printf("CDSW project ID: %s", cfg.CDSWProjectID)
-	log.Printf("CDSW api key is %d tokens in length", len(cfg.CDSWApiKey))
 	return &cfg, nil
 }
