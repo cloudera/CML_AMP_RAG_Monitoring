@@ -13,6 +13,8 @@ type Database struct {
 	metrics        db.MetricsService
 }
 
+// TODO: DB-level mutex to protect SQLite operations from concurrent access
+
 var _ db.Database = &Database{}
 
 func NewInstance(cfg *lsql.Config) *lsql.Instance {

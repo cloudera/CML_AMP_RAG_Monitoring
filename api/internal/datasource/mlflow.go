@@ -155,14 +155,19 @@ func (m *MLFlow) Artifacts(ctx context.Context, runId string, path *string) ([]A
 	if runId == "" {
 		return nil, fmt.Errorf("runId is required")
 	}
-	url := fmt.Sprintf("%s/api/2.0/runs/artifacts/list?run_id=%s", m.baseUrl, runId)
+	url := fmt.Sprintf("%s/api/2.0/mlflow/artifacts/list?run_id=%s", m.baseUrl, runId)
 	if path != nil {
 		url = fmt.Sprintf("%s&path=%s", url, *path)
 	}
+	log.Printf("fetching artifacts for run %s using url %s", runId, url)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch arrtifacts for run %s: %s", runId, err)
+		if err.Code == 404 {
+			log.Printf("run %s has no artifacts", runId)
+			return []Artifact{}, nil
+		}
+		log.Printf("failed to fetch artifacts for run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
@@ -205,6 +210,10 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 	}
 
 	return body, nil
+}
+
+func (m *MLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error) {
+	panic("upload to local mlflow not supported")
 }
 
 func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, error) {

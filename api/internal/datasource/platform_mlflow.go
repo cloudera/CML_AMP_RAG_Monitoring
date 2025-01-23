@@ -10,6 +10,8 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -28,6 +30,12 @@ type PlatformExperiment struct {
 type PlatformExperimentListResponse struct {
 	Experiments   []PlatformExperiment `json:"experiments"`
 	NextPageToken string               `json:"next_page_token"`
+}
+
+type PlatformArtifact struct {
+	Path     string `json:"path"`
+	IsDir    bool   `json:"is_dir"`
+	FileSize string `json:"file_size"`
 }
 
 type PlatformRun struct {
@@ -92,9 +100,10 @@ type PlatformMetric struct {
 }
 
 type PlatformRunData struct {
-	Metrics []PlatformMetric `json:"metrics"`
-	Params  []Param          `json:"params"`
-	Tags    []RunTag         `json:"tags"`
+	Metrics []PlatformMetric   `json:"metrics"`
+	Params  []Param            `json:"params"`
+	Tags    []RunTag           `json:"tags"`
+	Files   []PlatformArtifact `json:"files"`
 }
 
 type PlatformMLFlow struct {
@@ -120,10 +129,6 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	params := make([]Param, 0)
 	for _, param := range run.Data.Params {
 		var val = param.Value
-		//if len(val) > 250 {
-		//	log.Debugf("param %s value is too long for platform MLFlow, truncating", param.Key)
-		//	val = val[:250]
-		//}
 		params = append(params, Param{
 			Key:   param.Key,
 			Value: val,
@@ -195,7 +200,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 	if jerr != nil {
 		return nil, jerr
 	}
-	return &Run{
+	ret := &Run{
 		Info: RunInfo{
 			RunId:          updatedRun.Id,
 			Name:           updatedRun.Name,
@@ -206,8 +211,39 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			ArtifactUri:    updatedRun.ArtifactUri,
 			LifecycleStage: run.Info.LifecycleStage,
 		},
-		Data: RunData{},
-	}, nil
+		Data: RunData{
+			Metrics: make([]Metric, 0),
+			Params:  updatedRun.Data.Params,
+			Tags:    updatedRun.Data.Tags,
+			Files:   make([]Artifact, 0),
+		},
+	}
+	for _, metric := range updatedRun.Data.Metrics {
+		step, err := strconv.Atoi(metric.Step)
+		if err != nil {
+			log.Printf("failed to convert step to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Metrics = append(ret.Data.Metrics, Metric{
+			Key:       metric.Key,
+			Value:     metric.Value,
+			Timestamp: metric.Timestamp.Unix(),
+			Step:      step,
+		})
+	}
+	for _, artifact := range updatedRun.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Files = append(ret.Data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
+		})
+	}
+	return ret, nil
 }
 
 func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
@@ -240,6 +276,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		Metrics: make([]Metric, 0),
 		Params:  run.Data.Params,
 		Tags:    run.Data.Tags,
+		Files:   make([]Artifact, 0),
 	}
 	for _, metric := range run.Data.Metrics {
 		step, err := strconv.Atoi(metric.Step)
@@ -252,6 +289,18 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			Value:     metric.Value,
 			Timestamp: metric.Timestamp.Unix(),
 			Step:      step,
+		})
+	}
+	for _, artifact := range run.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		data.Files = append(data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
 		})
 	}
 	return &Run{
@@ -548,4 +597,66 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 		return nil, err
 	}
 	return run.Data.Metrics, nil
+}
+
+func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error) {
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
+	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
+	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	part, err := writer.CreateFormFile(remotePath, path)
+	if err != nil {
+		log.Fatalf("failed to create form file: %v", err)
+	}
+
+	_, err = io.Copy(part, bytes.NewReader(data))
+	if err != nil {
+		log.Fatalf("failed to copy file content: %v", err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("PUT", url, &requestBody)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Client.Do(req)
+	if lerr != nil {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
+		return "", lerr
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+		return "", fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+	}
+	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
+	return path, nil
+}
+
+func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files%s:download", m.baseUrl, m.cfg.CDSWProjectID, path)
+	log.Printf("fetching artifact %s using url %s", path, url)
+	req := cbhttp.NewRequest(ctx, "POST", url)
+	req.Header = make(map[string][]string)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Do(req)
+	if lerr != nil {
+		log.Printf("failed to fetch artifact %s: %s", path, lerr)
+		return nil, lerr
+	}
+	defer resp.Body.Close()
+
+	body, ioerr := io.ReadAll(resp.Body)
+	if ioerr != nil {
+		return nil, ioerr
+	}
+	return body, nil
 }
