@@ -642,6 +642,7 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 
 func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files/%s:download", m.baseUrl, m.cfg.CDSWProjectID, path)
+	log.Printf("fetching artifact %s using url %s", path, url)
 	req := cbhttp.NewRequest(ctx, "POST", url)
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
