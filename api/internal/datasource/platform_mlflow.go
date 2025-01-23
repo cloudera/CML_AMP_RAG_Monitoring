@@ -573,15 +573,8 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 		return "", err
 	}
 
-	// Set the Content-Type header to the multipart writer's content type
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
-	// Send the request using the default HTTP client
-	//formData := map[string]string{remotePath: data}
-	//form := cbhttp.FormFields(formData)
-	//req := cbhttp.NewRequest(ctx, "PUT", url, form)
-	//req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
-	log.Printf("request: %v", req)
 	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
