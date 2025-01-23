@@ -98,6 +98,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 		for _, artifact := range remoteRun.Data.Files {
 			// TODO: filter these
 			if strings.HasSuffix(artifact.Path, ".json") {
+				log.Printf("fetching artifact %s for experiment run %s", artifact.Path, run.RemoteRunId)
 				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RemoteRunId, artifact.Path)
 				if err != nil {
 					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RemoteRunId, err)
