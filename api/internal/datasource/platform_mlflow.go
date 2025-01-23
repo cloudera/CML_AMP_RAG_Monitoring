@@ -593,7 +593,7 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 		return "", fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
 	}
 	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
-	return remotePath, nil
+	return path, nil
 }
 
 func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {
