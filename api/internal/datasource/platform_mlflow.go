@@ -548,7 +548,7 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 	return run.Data.Metrics, nil
 }
 
-func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
+func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
 	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
 	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
@@ -566,11 +566,11 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 
 	err = writer.Close()
 	if err != nil {
-		return err
+		return "", err
 	}
 	req, err := http.NewRequest("PUT", url, &requestBody)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Set the Content-Type header to the multipart writer's content type
@@ -585,15 +585,15 @@ func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string
 	resp, lerr := m.connections.HttpClient.Client.Do(req)
 	if lerr != nil {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
-		return lerr
+		return "", lerr
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
-		return fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+		return "", fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
 	}
 	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
-	return nil
+	return remotePath, nil
 }
 
 func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {

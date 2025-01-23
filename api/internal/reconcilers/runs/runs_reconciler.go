@@ -191,19 +191,6 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 					log.Printf("end time mismatch: %d != %d", updatedRun.Info.EndTime, remoteRun.Info.EndTime)
 				}
 			}
-			if len(updatedRun.Data.Metrics) != len(localRun.Data.Metrics) {
-				log.Printf("failed to verify run %s data in remote store", run.RemoteRunId)
-				log.Printf("metrics mismatch: %d != %d", len(updatedRun.Data.Metrics), len(remoteRun.Data.Metrics))
-				log.Print("local metrics")
-				for _, metric := range localRun.Data.Metrics {
-					log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
-				}
-				log.Print("remote metrics")
-				for _, metric := range remoteRun.Data.Metrics {
-					log.Printf("metric %s: %f, step %d, %s", metric.Key, metric.Value, metric.Step, util.TimeStamp(metric.Timestamp))
-				}
-				//continue
-			}
 		}
 
 		// sync the metric artifacts
@@ -226,16 +213,43 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 				log.Printf("failed to fetch artifact %s for experiment run %s with database ID %d: %s", artifact.Path, localRun.Info.Name, item.ID, err)
 				continue
 			}
+			artifactsUpdated := false
 			for path, data := range metricArtifacts {
 				// sync the artifact to the remote store
-				uerr := r.dataStores.Remote.UploadArtifact(ctx, experiment.RemoteExperimentId, run.RemoteRunId, path, data)
+				remotePath, uerr := r.dataStores.Remote.UploadArtifact(ctx, experiment.RemoteExperimentId, run.RemoteRunId, path, data)
 				if uerr != nil {
 					log.Printf("failed to save artifact %s for experiment run %s with database ID %d: %s", path, localRun.Info.Name, item.ID, uerr)
 					continue
 				}
-				log.Printf("saved artifact %s for experiment run %s with database ID %d", path, localRun.Info.Name, item.ID)
+				log.Printf("saved artifact %s for experiment run %s with database ID %d to remote path %s", path, localRun.Info.Name, item.ID, remotePath)
+				found := false
+				for _, file := range remoteRun.Data.Files {
+					if file.Path == remotePath {
+						found = true
+						if file.FileSize != int64(len(data)) {
+							log.Printf("file size mismatch for artifact %s in remote store: %d != %d", remotePath, file.FileSize, len(data))
+							file.FileSize = int64(len(data))
+							artifactsUpdated = true
+						}
+						break
+					}
+				}
+				if !found {
+					remoteRun.Data.Files = append(remoteRun.Data.Files, datasource.Artifact{
+						Path:     remotePath,
+						IsDir:    false,
+						FileSize: int64(len(data)),
+					})
+					artifactsUpdated = true
+				}
 			}
-			//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
+			if artifactsUpdated {
+				_, uerr := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
+				if uerr != nil {
+					log.Printf("failed to update run %d with new artifacts: %s", item.ID, uerr)
+					continue
+				}
+			}
 		}
 
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation

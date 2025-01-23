@@ -212,7 +212,7 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 	return body, nil
 }
 
-func (m *MLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error {
+func (m *MLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error) {
 	panic("upload to local mlflow not supported")
 }
 

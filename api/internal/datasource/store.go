@@ -13,7 +13,7 @@ type MetricStore interface {
 type ArtifactStore interface {
 	Artifacts(ctx context.Context, runId string, path *string) ([]Artifact, error)
 	GetArtifact(ctx context.Context, runId string, path string) ([]byte, error)
-	UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) error
+	UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error)
 }
 
 type ExperimentStore interface {
