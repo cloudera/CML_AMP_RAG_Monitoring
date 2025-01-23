@@ -24,12 +24,12 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	if !r.config.Enabled {
 		return
 	}
-	log.Println("beginning experiment run metrics reconciler resync")
+	log.Debugln("beginning experiment run metrics reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 	runs, err := r.db.ExperimentRuns().ListExperimentRunIdsForMetricReconciliation(ctx, maxItems)
 	if err != nil {
-		log.Printf("failed to query database: %s", err)
+		log.Errorf("failed to query database: %s", err)
 		return
 	}
 

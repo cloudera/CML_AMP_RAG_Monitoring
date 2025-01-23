@@ -28,6 +28,29 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 	}
 }
 
+func (m *MLFlow) WaitForReady(ctx context.Context) error {
+	log.Println("waiting for mlflow to be ready")
+	done := false
+	iterations := 0
+	for {
+		iterations++
+		if iterations%10 == 0 {
+			log.Printf("(%ds) waiting for mlflow to be ready", iterations)
+		}
+		if done {
+			break
+		}
+		_, err := m.ListExperiments(ctx, 1, "")
+		if err != nil {
+			time.Sleep(1 * time.Second)
+		} else {
+			log.Println("mlflow is ready")
+			done = true
+		}
+	}
+	return nil
+}
+
 func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
 	panic("local mlflow UpdateRun is not supported")
 }
@@ -37,7 +60,7 @@ func (m *MLFlow) GetRun(ctx context.Context, experimentId string, runId string) 
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch run %s: %s", runId, err)
+		log.Debugf("failed to fetch run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
@@ -75,7 +98,7 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 		}
 		encoded, serr := json.Marshal(body)
 		if serr != nil {
-			log.Printf("failed to encode body: %s", serr)
+			log.Debugf("failed to encode body: %s", serr)
 			return nil, serr
 		}
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
@@ -83,24 +106,24 @@ func (m *MLFlow) ListRuns(ctx context.Context, experimentId string) ([]*Run, err
 		req.Header.Set("Content-Type", "application/json")
 		resp, lerr := m.connections.HttpClient.Do(req)
 		if lerr != nil {
-			log.Printf("failed to fetch runs for experiment %s: %s", experimentId, lerr)
+			log.Debugf("failed to fetch runs for experiment %s: %s", experimentId, lerr)
 			return nil, lerr
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			log.Printf("failed to fetch runs: %s", resp.Status)
+			log.Debugf("failed to fetch runs: %s", resp.Status)
 			return nil, fmt.Errorf("failed to fetch runs for experiment %s: %s", experimentId, resp.Status)
 		}
 
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Printf("failed to read body: %s", err)
+			log.Debugf("failed to read body: %s", err)
 			return nil, err
 		}
 		var runsResponse RunsResponse
 		err = json.Unmarshal(respBody, &runsResponse)
 		if err != nil {
-			log.Printf("failed to unmarshal body: %s", err)
+			log.Debugf("failed to unmarshal body: %s", err)
 			return nil, err
 		}
 		for _, run := range runsResponse.Runs {
@@ -129,11 +152,11 @@ func (m *MLFlow) Metrics(ctx context.Context, experimentId string, runId string)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch metrics for run %s: %s", runId, err)
+		log.Debugf("failed to fetch metrics for run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
-		log.Printf("metrics not found for run %s", runId)
+		log.Debugf("metrics not found for run %s", runId)
 		return []Metric{}, nil
 	}
 	defer resp.Body.Close()
@@ -159,15 +182,15 @@ func (m *MLFlow) Artifacts(ctx context.Context, runId string, path *string) ([]A
 	if path != nil {
 		url = fmt.Sprintf("%s&path=%s", url, *path)
 	}
-	log.Printf("fetching artifacts for run %s using url %s", runId, url)
+	log.Debugf("fetching artifacts for run %s using url %s", runId, url)
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
 		if err.Code == 404 {
-			log.Printf("run %s has no artifacts", runId)
+			log.Debugf("run %s has no artifacts", runId)
 			return []Artifact{}, nil
 		}
-		log.Printf("failed to fetch artifacts for run %s: %s", runId, err)
+		log.Debugf("failed to fetch artifacts for run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
@@ -196,7 +219,7 @@ func (m *MLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch arrtifacts for run %s: %s", runId, err)
+		log.Debugf("failed to fetch arrtifacts for run %s: %s", runId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
@@ -225,31 +248,31 @@ func (m *MLFlow) CreateExperiment(ctx context.Context, name string) (string, err
 	}
 	encoded, err := json.Marshal(body)
 	if err != nil {
-		log.Printf("failed to encode body: %s", err)
+		log.Debugf("failed to encode body: %s", err)
 		return "", err
 	}
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to create experiment %s: %s", name, err)
+		log.Debugf("failed to create experiment %s: %s", name, err)
 		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Printf("failed to fetch experiments: %s", resp.Status)
+		log.Debugf("failed to fetch experiments: %s", resp.Status)
 		return "", fmt.Errorf("failed to create experiment %s: %s", name, resp.Status)
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("failed to read body: %s", err)
+		log.Debugf("failed to read body: %s", err)
 		return "", err
 	}
 	var experiment Experiment
 	err = json.Unmarshal(respBody, &experiment)
 	if err != nil {
-		log.Printf("failed to unmarshal body: %s", err)
+		log.Debugf("failed to unmarshal body: %s", err)
 		return "", err
 	}
 	return experiment.ExperimentId, nil
@@ -271,7 +294,7 @@ func (m *MLFlow) ListExperiments(ctx context.Context, maxItems int64, pageToken 
 
 		encoded, err := json.Marshal(body)
 		if err != nil {
-			log.Printf("failed to encode body: %s", err)
+			log.Debugf("failed to encode body: %s", err)
 		}
 		req := cbhttp.NewRequest(ctx, "POST", url)
 		req.Body = io.NopCloser(bytes.NewReader(encoded))
@@ -281,7 +304,7 @@ func (m *MLFlow) ListExperiments(ctx context.Context, maxItems int64, pageToken 
 
 		if lerr != nil {
 			if lerr.Code != 404 {
-				log.Errorf("failed to fetch local experiments: %s", lerr)
+				log.Debugf("failed to fetch local experiments: %s", lerr)
 			}
 			done = true
 			continue
@@ -290,7 +313,7 @@ func (m *MLFlow) ListExperiments(ctx context.Context, maxItems int64, pageToken 
 
 		if resp.StatusCode != 200 {
 			if resp.StatusCode != 404 {
-				log.Printf("failed to fetch experiments: %s", err)
+				log.Debugf("failed to fetch experiments: %s", err)
 			}
 			done = true
 			continue
@@ -298,14 +321,14 @@ func (m *MLFlow) ListExperiments(ctx context.Context, maxItems int64, pageToken 
 
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Printf("failed to read body: %s", err)
+			log.Debugf("failed to read body: %s", err)
 			done = true
 			continue
 		}
 		var experimentsResponse ExperimentListResponse
 		err = json.Unmarshal(respBody, &experimentsResponse)
 		if err != nil {
-			log.Printf("failed to unmarshal body: %s", err)
+			log.Debugf("failed to unmarshal body: %s", err)
 			done = true
 			continue
 		}
@@ -326,7 +349,6 @@ func (m *MLFlow) GetExperiment(ctx context.Context, experimentId string) (*Exper
 	req := cbhttp.NewRequest(ctx, "GET", url)
 	resp, err := m.connections.HttpClient.Do(req)
 	if err != nil {
-		log.Printf("failed to fetch experiment %s: %s", experimentId, err)
 		return nil, err
 	}
 	if resp.StatusCode == 404 {
