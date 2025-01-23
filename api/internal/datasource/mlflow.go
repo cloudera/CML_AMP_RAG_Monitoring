@@ -40,12 +40,14 @@ func (m *MLFlow) WaitForReady(ctx context.Context) error {
 		if done {
 			break
 		}
-		_, err := m.ListExperiments(ctx, 1, "")
+		experiments, err := m.ListExperiments(ctx, 1, "")
 		if err != nil {
 			time.Sleep(1 * time.Second)
 		} else {
-			log.Println("mlflow is ready")
-			done = true
+			if len(experiments) > 0 {
+				log.Println("mlflow is ready")
+				done = true
+			}
 		}
 	}
 	return nil
