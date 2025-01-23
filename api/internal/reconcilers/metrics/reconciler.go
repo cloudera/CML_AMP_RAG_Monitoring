@@ -44,7 +44,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
-	log.Debugf("reconciling %d experiment runs for metrics", len(items))
+	log.Printf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {

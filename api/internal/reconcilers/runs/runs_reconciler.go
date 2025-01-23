@@ -43,6 +43,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 }
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+	log.Printf("reconciling %d experiment runs", len(items))
 	for _, item := range items {
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {

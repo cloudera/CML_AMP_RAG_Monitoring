@@ -57,6 +57,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 }
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
+	log.Printf("reconciling %d local experiments", len(items))
 	for _, item := range items {
 		// Fetch the experiment MLFlow
 		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)

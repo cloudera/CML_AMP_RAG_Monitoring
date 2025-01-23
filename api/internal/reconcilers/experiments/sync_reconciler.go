@@ -44,6 +44,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 }
 
 func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+	log.Printf("sync reconciling %d experiments", len(items))
 	for _, item := range items {
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
@@ -109,6 +110,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			continue
 		}
 		for _, run := range localRuns {
+			log.Printf("reconciling local run %s with run ID %s", run.Info.Name, run.Info.RunId)
 			found := false
 			updated := false
 			for _, remoteRun := range remoteRuns {
@@ -133,6 +135,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			var remoteRunId string
 			if !found {
 				// Insert the run into the remote store
+				log.Printf("run %s with run ID %s not found in remote store, creating it", run.Info.Name, run.Info.RunId)
 				id, err := r.dataStores.Remote.CreateRun(ctx, experiment.RemoteExperimentId, run.Info.Name, util.TimeStamp(run.Info.StartTime), run.Data.Tags)
 				if err != nil {
 					log.Printf("failed to insert run %s with run ID %s into remote store: %s", run.Info.Name, run.Info.RunId, err)
@@ -150,9 +153,11 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			}
 			var id int64
 			if existing != nil {
+				log.Printf("run %s with run ID %s found in DB with database ID %d", run.Info.Name, run.Info.RunId, existing.Id)
 				id = existing.Id
 			} else {
 				// Insert the run into the DB
+				log.Printf("run %s with run ID %s not found in DB, creating it", run.Info.Name, run.Info.RunId)
 				newRun, dberr := r.db.ExperimentRuns().CreateExperimentRun(ctx, &db.ExperimentRun{
 					Id:           0,
 					ExperimentId: run.Info.ExperimentId,
@@ -166,7 +171,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 				id = newRun.Id
 			}
 			// Flag the run as ready for reconciliation
-			log.Printf("flagging run %s with run ID %s and database ID %d for reconciliation", run.Info.Name, run.Info.RunId, id)
+			log.Printf("flagging run %s with run ID %s and database ID %d for run reconciliation", run.Info.Name, run.Info.RunId, id)
 			dberr = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, id, true, time.Now())
 			if dberr != nil {
 				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)
