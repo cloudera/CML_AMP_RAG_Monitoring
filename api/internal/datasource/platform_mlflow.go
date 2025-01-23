@@ -32,6 +32,12 @@ type PlatformExperimentListResponse struct {
 	NextPageToken string               `json:"next_page_token"`
 }
 
+type PlatformArtifact struct {
+	Path     string `json:"path"`
+	IsDir    bool   `json:"is_dir"`
+	FileSize string `json:"file_size"`
+}
+
 type PlatformRun struct {
 	Id          string          `json:"id"`
 	Name        string          `json:"name"`
@@ -94,10 +100,10 @@ type PlatformMetric struct {
 }
 
 type PlatformRunData struct {
-	Metrics []PlatformMetric `json:"metrics"`
-	Params  []Param          `json:"params"`
-	Tags    []RunTag         `json:"tags"`
-	Files   []Artifact       `json:"files"`
+	Metrics []PlatformMetric   `json:"metrics"`
+	Params  []Param            `json:"params"`
+	Tags    []RunTag           `json:"tags"`
+	Files   []PlatformArtifact `json:"files"`
 }
 
 type PlatformMLFlow struct {
@@ -209,7 +215,7 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			Metrics: make([]Metric, 0),
 			Params:  updatedRun.Data.Params,
 			Tags:    updatedRun.Data.Tags,
-			Files:   updatedRun.Data.Files,
+			Files:   make([]Artifact, 0),
 		},
 	}
 	for _, metric := range updatedRun.Data.Metrics {
@@ -223,6 +229,18 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) 
 			Value:     metric.Value,
 			Timestamp: metric.Timestamp.Unix(),
 			Step:      step,
+		})
+	}
+	for _, artifact := range updatedRun.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Files = append(ret.Data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
 		})
 	}
 	return ret, nil
@@ -258,7 +276,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		Metrics: make([]Metric, 0),
 		Params:  run.Data.Params,
 		Tags:    run.Data.Tags,
-		Files:   run.Data.Files,
+		Files:   make([]Artifact, 0),
 	}
 	for _, metric := range run.Data.Metrics {
 		step, err := strconv.Atoi(metric.Step)
@@ -271,6 +289,18 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			Value:     metric.Value,
 			Timestamp: metric.Timestamp.Unix(),
 			Step:      step,
+		})
+	}
+	for _, artifact := range run.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		data.Files = append(data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
 		})
 	}
 	return &Run{
