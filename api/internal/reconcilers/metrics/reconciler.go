@@ -69,11 +69,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			continue
 		}
 		for _, metric := range mlFlowMetrics {
+			name := metric.Key
+			lastIndex := strings.LastIndex(name, "/")
+			if lastIndex != -1 {
+				name = name[lastIndex+1:]
+			}
 			ts := time.Unix(0, metric.Timestamp*int64(time.Millisecond))
 			m, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
 				ExperimentId: run.ExperimentId,
 				RunId:        run.RunId,
-				Name:         metric.Key,
+				Name:         name,
 				Type:         db.MetricTypeNumeric,
 				ValueNumeric: &metric.Value,
 				Tags: map[string]string{
