@@ -69,16 +69,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			continue
 		}
 		for _, metric := range mlFlowMetrics {
-			name := metric.Key
-			lastIndex := strings.LastIndex(name, "/")
-			if lastIndex != -1 {
-				name = name[lastIndex+1:]
-			}
 			ts := time.Unix(0, metric.Timestamp*int64(time.Millisecond))
 			m, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
 				ExperimentId: run.ExperimentId,
 				RunId:        run.RunId,
-				Name:         name,
+				Name:         metric.Key,
 				Type:         db.MetricTypeNumeric,
 				ValueNumeric: &metric.Value,
 				Tags: map[string]string{
@@ -110,10 +105,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 					continue
 				}
 				value := string(data)
+				log.Printf("found artifact %s", artifact.Path)
+				name := artifact.Path
+				lastIndex := strings.LastIndex(name, "/")
+				if lastIndex != -1 {
+					name = name[lastIndex+1:]
+				}
 				textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
 					ExperimentId: run.ExperimentId,
 					RunId:        run.RunId,
-					Name:         artifact.Path,
+					Name:         name,
 					Type:         db.MetricTypeText,
 					ValueText:    &value,
 				})
