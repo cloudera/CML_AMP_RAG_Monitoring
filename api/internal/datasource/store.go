@@ -34,6 +34,7 @@ type DataStore interface {
 	ArtifactStore
 	ExperimentStore
 	RunStore
+	WaitForReady(ctx context.Context) error
 }
 
 type DataStores struct {

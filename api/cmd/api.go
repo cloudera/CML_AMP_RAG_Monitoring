@@ -79,6 +79,12 @@ func main() {
 		panic(err)
 	}
 
+	// wait for the local mlflow instance to start
+	localErr := deps.dataStores.Local.WaitForReady(deps.app.Context())
+	if localErr != nil {
+		panic(localErr)
+	}
+
 	// Start the metrics reconciler
 	deps.reconcilers.Start()
 	defer deps.reconcilers.Finish()

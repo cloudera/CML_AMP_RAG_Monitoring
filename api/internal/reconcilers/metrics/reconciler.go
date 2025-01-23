@@ -29,12 +29,12 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	maxItems := int64(r.config.ResyncMaxItems)
 	runs, err := r.db.ExperimentRuns().ListExperimentRunIdsForMetricReconciliation(ctx, maxItems)
 	if err != nil {
-		log.Printf("failed to query database: %s", err)
+		log.Errorf("failed to query database: %s", err)
 		return
 	}
 
 	if len(runs) > 0 {
-		log.Debugf("queueing %d experiment runs for metric reconciliation", len(runs))
+		log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
 	}
 	for _, run := range runs {
 		queue.Add(run)
@@ -44,7 +44,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
-	log.Debugf("reconciling %d experiment runs for metrics", len(items))
+	log.Printf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
@@ -105,15 +105,22 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 					continue
 				}
 				value := string(data)
+				log.Printf("found artifact %s", artifact.Path)
+				name := artifact.Path
+				lastIndex := strings.LastIndex(name, "/")
+				if lastIndex != -1 {
+					name = name[lastIndex+1:]
+				}
 				textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
 					ExperimentId: run.ExperimentId,
 					RunId:        run.RunId,
-					Name:         artifact.Path,
+					Name:         name,
 					Type:         db.MetricTypeText,
 					ValueText:    &value,
 				})
 				if err != nil {
 					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+					continue
 				} else {
 					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RemoteRunId, run.Id)
 				}

@@ -37,12 +37,13 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 	}
 
 	if len(ids) > 0 {
-		log.Debugf("queueing %d runs for reconciliation", len(ids))
+		log.Printf("queueing %d runs for reconciliation", len(ids))
 	}
 	log.Debugln("completing reconciler resync")
 }
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+	log.Printf("reconciling %d experiment runs", len(items))
 	for _, item := range items {
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {
@@ -266,6 +267,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		}
 
 		// Update the experiment run to indicate that metrics reconciliation is required
+		log.Printf("flagging run %s with run ID %s and database ID %d for metrics reconciliation", localRun.Info.Name, localRun.Info.RunId, item.ID)
 		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, true)
 		if err != nil {
 			log.Printf("failed to update run %d reconcile metrics flag: %s", item.ID, err)
@@ -319,5 +321,5 @@ func NewRunReconciler(config *Config, db db.Database, dataStores datasource.Data
 }
 
 func (r *RunReconciler) Name() string {
-	return "mlflow-run-reconciler"
+	return "runs-reconciler"
 }
