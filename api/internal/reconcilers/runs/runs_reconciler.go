@@ -235,6 +235,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 					}
 				}
 				if !found {
+					log.Printf("adding new artifact %s to remote run files", remotePath)
 					remoteRun.Data.Files = append(remoteRun.Data.Files, datasource.Artifact{
 						Path:     remotePath,
 						IsDir:    false,
@@ -244,11 +245,14 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 				}
 			}
 			if artifactsUpdated {
+				log.Printf("updating run %s with new artifacts", run.RemoteRunId)
 				_, uerr := r.dataStores.Remote.UpdateRun(ctx, remoteRun)
 				if uerr != nil {
 					log.Printf("failed to update run %d with new artifacts: %s", item.ID, uerr)
 					continue
 				}
+			} else {
+				log.Printf("no new artifacts to update for run %d", item.ID)
 			}
 		}
 
