@@ -50,7 +50,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 	}
 
 	if queued > 0 {
-		log.Debugf("queueing %d local experiments for reconciliation", queued)
+		log.Printf("queueing %d local experiments for reconciliation", queued)
 	}
 
 	log.Debugln("completing reconciler resync")

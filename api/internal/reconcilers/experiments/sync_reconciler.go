@@ -25,7 +25,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 	if !r.config.Enabled {
 		return
 	}
-	log.Debugln("beginning experiments reconciler resync")
+	log.Println("beginning experiment sync reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
@@ -38,7 +38,7 @@ func (r *SyncReconciler) Resync(ctx context.Context, queue *reconciler.Reconcile
 	}
 
 	if len(ids) > 0 {
-		log.Debugf("queueing %d experiments for sync reconciliation", len(ids))
+		log.Printf("queueing %d experiments for sync reconciliation", len(ids))
 	}
 	log.Debugln("completing mlflow sync reconciler resync")
 }
@@ -54,7 +54,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			continue
 		}
 
-		log.Printf("reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, item.ID)
+		log.Printf("sync reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, item.ID)
 		local, err := r.dataStores.Local.GetExperiment(ctx, experiment.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment %d from local store for sync reconciliation: %s", item.ID, err)
@@ -178,7 +178,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		if err != nil {
 			log.Printf("failed to update experiment %d timestamp: %s", item.ID, err)
 		}
-		log.Printf("finished reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
+		log.Printf("finished sync reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
 }
 

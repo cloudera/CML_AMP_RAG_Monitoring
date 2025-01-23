@@ -24,7 +24,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	if !r.config.Enabled {
 		return
 	}
-	log.Debugln("beginning experiment run metrics reconciler resync")
+	log.Println("beginning experiment run metrics reconciler resync")
 
 	maxItems := int64(r.config.ResyncMaxItems)
 	runs, err := r.db.ExperimentRuns().ListExperimentRunIdsForMetricReconciliation(ctx, maxItems)
@@ -34,7 +34,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	}
 
 	if len(runs) > 0 {
-		log.Debugf("queueing %d experiment runs for metric reconciliation", len(runs))
+		log.Printf("queueing %d experiment runs for metric reconciliation", len(runs))
 	}
 	for _, run := range runs {
 		queue.Add(run)
