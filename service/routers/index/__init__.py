@@ -254,12 +254,14 @@ async def log_evaluation_metrics(
             for name, result in custom_eval_results.items():
                 logger.info("%s: %s", name, result.score)
                 mlflow.log_metric(
-                    key=f"{name.lower()}_score",
+                    key=f"{name.lower().replace(' ', '_')}_score",
                     value=result.score,
                     step=len(mlflowclient.get_metric_history(run.info.run_id, name)),
                     synchronous=True,
                 )
-                logger.info("%s: %s", name.lower() + "_score", result.score)
+                logger.info(
+                    "%s: %s", name.lower().replace(" ", "_") + "_score", result.score
+                )
         else:
             logger.info("No custom evaluators or metrics to log")
 
