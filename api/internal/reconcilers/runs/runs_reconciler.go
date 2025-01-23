@@ -109,7 +109,6 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		}
 
 		// Sync the run to the remote store
-		// TODO: verify that data has changed before applying the update
 		updated := false
 		if remoteRun.Info.Name != localRun.Info.Name {
 			remoteRun.Info.Name = localRun.Info.Name
