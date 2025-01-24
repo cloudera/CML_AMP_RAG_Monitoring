@@ -67,7 +67,11 @@ def setup_navigation():
                 title="Monitoring Dashboard",
             ),
             st.Page(
-                "pages/5_Leave_Feedback.py",
+                "pages/5_Custom_Evaluators.py",
+                title="Custom Evaluators",
+            ),
+            st.Page(
+                "pages/6_Leave_Feedback.py",
                 title="Leave Feedback",
             ),
         ],
@@ -98,7 +102,12 @@ def setup_sidebar():
             icon=":material/monitoring:",
         )
         st.page_link(
-            "pages/5_Leave_Feedback.py",
+            "pages/5_Custom_Evaluators.py",
+            label="Custom Evaluators",
+            icon=":material/custom_typography:",
+        )
+        st.page_link(
+            "pages/6_Leave_Feedback.py",
             label="Leave Feedback",
             icon=":material/comment:",
         )

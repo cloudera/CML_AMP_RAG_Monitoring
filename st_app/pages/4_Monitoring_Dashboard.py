@@ -60,6 +60,7 @@ warnings.filterwarnings("ignore")
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
 COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
+custom_evals_dir = Path(os.path.join(os.getcwd(), "custom_evaluators"))
 
 table_cols_to_show = [
     "response_id",
@@ -72,6 +73,19 @@ table_cols_to_show = [
     "output_length",
     # "feedback_str"
 ]
+
+
+def get_custom_evaluators():
+    custom_evaluators = []
+    if not custom_evals_dir.exists():
+        return custom_evaluators
+
+    for file in os.listdir(custom_evals_dir):
+        if file.endswith(".json"):
+            # read the json file
+            with open(os.path.join(custom_evals_dir, file), "r") as f:
+                custom_evaluators.append(json.load(f))
+    return custom_evaluators
 
 
 def get_experiment_ids():
@@ -222,6 +236,7 @@ with refresh_col:
 # select experiment
 experiment_ids = get_experiment_ids()
 collections = get_collections()
+custom_evals = get_custom_evaluators()
 
 if not experiment_ids:
     st.write("No Data Sources or Entries Found")
@@ -328,6 +343,18 @@ if experiment_ids:
             metric_names=["live_results.json"],
         )
 
+        # custom metrics requests
+        custom_metrics_requests = {}
+        for custom_eval in custom_evals:
+            custom_metric_request = MLFlowStoreRequest(
+                experiment_id=str(selected_experiment),
+                run_ids=run_ids,
+                metric_names=[f"{custom_eval['name'].lower().replace(' ', '_')}_score"],
+            )
+            custom_metrics_requests[
+                f"{custom_eval['name'].lower().replace(' ', '_')}_score"
+            ] = custom_metric_request
+
         placeholder = st.empty()
 
         # near real-time / live feed simulation
@@ -353,6 +380,16 @@ if experiment_ids:
             precision_response = get_metrics(precision_request)
             recall_response = get_metrics(recall_request)
             thumbs_up_response = get_metrics(thumbs_up_request)
+
+            # get custom metrics
+            custom_metrics_responses = {}
+            for (
+                custom_metric_name,
+                custom_metric_request,
+            ) in custom_metrics_requests.items():
+                custom_metrics_responses[custom_metric_name] = get_metrics(
+                    custom_metric_request
+                )
 
             # initilize empty lists for all the scores
             faithfulness_scores = []
@@ -566,6 +603,42 @@ if experiment_ids:
             )
             if live_results_df["comprehensiveness_score"].isnull().all():
                 live_results_df["comprehensiveness_score"] = 0.5
+
+            # merge custom metrics
+            for (
+                custom_metric_name,
+                custom_metric_response,
+            ) in custom_metrics_responses.items():
+                if custom_metric_response != []:
+                    custom_metric_response_ids = [
+                        x["experiment_run_id"] for x in custom_metric_response
+                    ]
+                    custom_metric_scores = [
+                        (
+                            x["value"]["numericValue"]
+                            if "numericValue" in x["value"]
+                            else 0
+                        )
+                        for x in custom_metric_response
+                    ]
+                    custom_metric_df = pd.DataFrame(
+                        {
+                            "run_id": custom_metric_response_ids,
+                            f"{custom_metric_name}": custom_metric_scores,
+                        }
+                    )
+                else:
+                    custom_metric_df = pd.DataFrame(
+                        {
+                            "run_id": run_ids,
+                            f"{custom_metric_name}": pd.NA,
+                        }
+                    )
+                live_results_df = live_results_df.merge(
+                    custom_metric_df,
+                    on="run_id",
+                    how="left",
+                )
 
             with placeholder.container():
 
@@ -1076,20 +1149,94 @@ if experiment_ids:
                             fig, key=f"comprehensiveness_fig_{update_timestamp}"
                         )
 
-                st.write("### Detailed Logs")
-                live_results_df["thumbs_up"] = live_results_df["thumbs_up"].apply(
-                    lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
-                )
-                live_results_df = live_results_df.rename(
-                    {
-                        # "feedback_str": "user_feedback",
-                        "thumbs_up": "feedback"
-                    },
-                    axis=1,
-                )
-                live_results_df = live_results_df.drop(
-                    columns=["response_id", "run_id"]
-                )
-                st.dataframe(
-                    live_results_df.sort_values(by="timestamp", ascending=False)
-                )
+                # display custom metrics
+                if custom_evals:
+                    custom_metric_rows = [
+                        st.columns([1, 1, 1, 1, 1, 1])
+                        for _ in range(len(custom_evals) // 6 + 1)
+                    ]
+                    with st.expander("**Custom Metrics Overview**", expanded=True):
+                        custom_metric_fig_rows = [
+                            st.columns([1, 1, 1])
+                            for _ in range(len(custom_evals) // 3 + 1)
+                        ]
+                    for i, custom_eval in enumerate(custom_evals):
+                        custom_metric_name = (
+                            custom_eval["name"].lower().replace(" ", "_")
+                        )
+                        if f"{custom_metric_name}_score" in live_results_df.columns:
+                            avg_custom_metric = np.mean(
+                                live_results_df[f"{custom_metric_name}_score"]
+                            )
+                            custom_metric_scores = live_results_df[
+                                live_results_df[f"{custom_metric_name}_score"].notna()
+                            ][f"{custom_metric_name}_score"].to_list()
+                            custom_metric_kpi = custom_metric_rows[i // 6][i % 6]
+                            custom_metric_kpi.metric(
+                                label=custom_eval["name"].title().replace("_", " "),
+                                help=custom_eval["eval_definition"],
+                                value=round(avg_custom_metric, 2),
+                                delta=round(
+                                    (
+                                        avg_custom_metric
+                                        - np.mean(custom_metric_scores[:-1])
+                                        if len(custom_metric_scores) > 1
+                                        else 0
+                                    ),
+                                    2,
+                                ),
+                            )
+                            custom_metric_fig = custom_metric_fig_rows[i // 3][i % 3]
+                            custom_metric_df = live_results_df[
+                                live_results_df[f"{custom_metric_name}_score"].notnull()
+                            ][[f"{custom_metric_name}_score", "timestamp"]]
+                            agg_custom_metric_df = custom_metric_df.groupby(
+                                pd.Grouper(key="timestamp", freq="h")  # group by hour
+                            )[f"{custom_metric_name}_score"].agg(["mean", "max", "min"])
+                            custom_metric_fig.markdown(
+                                f"### {custom_eval['name'].title().replace('_', ' ')}",
+                                help=custom_eval["eval_definition"],
+                            )
+                            fig = go.Figure(
+                                data=go.Scatter(
+                                    x=agg_custom_metric_df.index,
+                                    y=agg_custom_metric_df["mean"],
+                                    mode="markers",
+                                    marker=dict(size=5),
+                                    fill="tozeroy",
+                                    customdata=agg_custom_metric_df[["max", "min"]],
+                                    hovertemplate="Mean: <b>%{y:.2f}</b> Max: <b>%{customdata[0]:.2f}"
+                                    "</b><br>Min: <b>%{customdata[1]:.2f}</b><br>Date:%{x|%b %d, %Y}"
+                                    "<br>Time: %{x|%H:%M}<extra></extra>",
+                                )
+                            )
+                            fig.update_layout(
+                                xaxis_title="Date",
+                                yaxis_title=f"Mean {custom_eval['name']} Score (0-1)",
+                                yaxis=dict(range=[0, 1]),
+                                xaxis={
+                                    "tickformat": "%b %d, %Y",
+                                    "tickmode": "array",
+                                },
+                            )
+                            custom_metric_fig.plotly_chart(
+                                fig, key=f"{custom_metric_name}_fig_{update_timestamp}"
+                            )
+
+                with st.expander("**Detailed Logs**", expanded=True):
+                    live_results_df["thumbs_up"] = live_results_df["thumbs_up"].apply(
+                        lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
+                    )
+                    live_results_df = live_results_df.rename(
+                        {
+                            # "feedback_str": "user_feedback",
+                            "thumbs_up": "feedback"
+                        },
+                        axis=1,
+                    )
+                    live_results_df = live_results_df.drop(
+                        columns=["response_id", "run_id"]
+                    )
+                    st.dataframe(
+                        live_results_df.sort_values(by="timestamp", ascending=False)
+                    )

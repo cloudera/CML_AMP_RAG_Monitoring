@@ -36,6 +36,7 @@ from data_types import (
 COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
 SOURCE_FILES_DIR = os.path.join(st_app_dir, "source_files")
 SAMPLE_DATA_DIR = os.path.join(main_dir, "sample_data")
+CUSTOM_EVAL_DIR = os.path.join(main_dir, "custom_evaluators")
 
 # Create the source files directory
 os.makedirs(SOURCE_FILES_DIR, exist_ok=True)
@@ -185,6 +186,21 @@ def main():
         ],
     )
     print("Populated the Qdrant vector store.")
+
+    print("Creating a custom evaluator...")
+
+    # Create a custom evaluator
+    friendliness_eval_def = {
+        "name": "Friendliness",
+        "eval_definition": "Friendliness assesses the warmth and approachability of the answer.",
+        "questions": "Is the answer friendly?\nIs the answer compassionate?",
+        "examples": [],
+    }
+
+    if not os.path.exists(CUSTOM_EVAL_DIR):
+        os.makedirs(CUSTOM_EVAL_DIR)
+    with open(os.path.join(CUSTOM_EVAL_DIR, "friendliness.json"), "w+") as f:
+        json.dump(friendliness_eval_def, f, indent=2)
 
     # simulate question answering
     print("Simulating question answering...")

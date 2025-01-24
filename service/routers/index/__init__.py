@@ -39,8 +39,10 @@
 # ###########################################################################
 
 import http
+import json
 import logging
 import os
+from pathlib import Path
 import uuid
 from typing import Dict, List, Optional, Union
 import mlflow
@@ -53,6 +55,8 @@ from llama_index.core.base.llms.types import MessageRole
 from llama_index.core.chat_engine.types import AgentChatResponse
 
 from pydantic import BaseModel
+
+from st_app.data_types import CreateCustomEvaluatorRequest
 
 from ... import exceptions
 from . import qdrant
@@ -146,6 +150,37 @@ def feedback(
     return {"success": True}
 
 
+def save_to_disk(
+    data,
+    directory: Union[str, Path, os.PathLike],
+    filename: str,
+):
+    """Helper function to save JSON data to disk."""
+    with open(os.path.join(directory, filename), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+@router.post("/add_custom_evaluator", summary="Add a custom evaluator")
+@exceptions.propagates
+@tracer.start_as_current_span("add_custom_evaluator")
+def add_custom_evaluator(
+    request: CreateCustomEvaluatorRequest,
+) -> Dict[str, str]:
+    """Add a custom evaluator"""
+    try:
+        path = Path(os.path.join(os.getcwd(), "custom_evaluators"))
+        path.mkdir(parents=True, exist_ok=True)
+        save_to_disk(
+            request.dict(),
+            path,
+            f"{request.name.lower().replace(' ', '_')}.json",
+        )
+        return {"status": "success"}
+    except Exception as e:
+        logger.error("Failed to add custom evaluator: %s", e)
+        return {"status": "failed"}
+
+
 async def log_evaluation_metrics(
     run: mlflow.ActiveRun,
     query: Union[str, None] = None,
@@ -163,6 +198,7 @@ async def log_evaluation_metrics(
             maliciousness,
             toxicity,
             comprehensiveness,
+            custom_eval_results,
         ) = await qdrant.evaluate_response(
             query=query,
             chat_response=chat_response,
@@ -211,6 +247,24 @@ async def log_evaluation_metrics(
             step=len(metric_history) + 1,
             synchronous=True,
         )
+
+        # check if there are any custom eval results
+        if custom_eval_results:
+            logger.info("Logging custom evaluation metrics")
+            for name, result in custom_eval_results.items():
+                logger.info("%s: %s", name, result.score)
+                mlflow.log_metric(
+                    key=f"{name.lower().replace(' ', '_')}_score",
+                    value=result.score,
+                    step=len(mlflowclient.get_metric_history(run.info.run_id, name)),
+                    synchronous=True,
+                )
+                logger.info(
+                    "%s: %s", name.lower().replace(" ", "_") + "_score", result.score
+                )
+        else:
+            logger.info("No custom evaluators or metrics to log")
+
         logger.info(
             "Logged evaluation metrics for exp id %s and run id %s",
             run.info.experiment_id,
