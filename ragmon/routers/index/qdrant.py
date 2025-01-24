@@ -43,7 +43,7 @@ import logging
 import opentelemetry.trace
 import qdrant_client
 from fastapi import HTTPException
-from llama_index.core.base.llms.types import ChatMessage, MessageRole
+from llama_index.core.base.llms.types import ChatMessage
 from llama_index.core.chat_engine import CondenseQuestionChatEngine
 
 from llama_index.core.chat_engine.types import AgentChatResponse
@@ -55,28 +55,21 @@ from llama_index.core.readers import SimpleDirectoryReader
 from llama_index.core.response_synthesizers import get_response_synthesizer
 from llama_index.core.storage import StorageContext
 from llama_index.vector_stores.qdrant import QdrantVectorStore
-from pydantic import BaseModel
 
 from ...services.ragllm import get_embedding_model_and_dims, get_inference_model
+from ...data_types import (
+    RagMessage,
+    RagPredictConfiguration,
+    RagIndexDocumentConfiguration,
+)
 from pprint import pprint
 
 logger = logging.getLogger(__name__)
 tracer = opentelemetry.trace.get_tracer(__name__)
 
 
-class RagMessage(BaseModel):
-    role: MessageRole
-    content: str
-
-
 def table_name_from(data_source_id: int):
     return f"index_{data_source_id}"
-
-
-class RagIndexDocumentConfiguration(BaseModel):
-    # TODO: Add more params
-    chunk_size: int = 512  # this is llama-index's default
-    chunk_overlap: int = 10  # percentage of tokens in a chunk (chunk_size)
 
 
 @tracer.start_as_current_span("qdrant upload")
@@ -122,12 +115,6 @@ def upload(
         ],
     )
     logger.info("indexed document")
-
-
-class RagPredictConfiguration(BaseModel):
-    top_k: int = 5
-    chunk_size: int = 512
-    model_name: str = "meta.llama3-70b-instruct-v1:0"
 
 
 @tracer.start_as_current_span("Qdrant query")

@@ -37,3 +37,17 @@
 #  DATA.
 #
 # ###########################################################################
+import os
+import json
+from pathlib import Path
+from typing import Union
+
+
+def save_to_disk(
+    data,
+    directory: Union[str, Path, os.PathLike],
+    filename: str,
+):
+    """Helper function to save JSON data to disk."""
+    with open(os.path.join(directory, filename), "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)

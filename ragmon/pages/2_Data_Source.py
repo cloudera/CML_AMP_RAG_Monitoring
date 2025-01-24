@@ -44,6 +44,7 @@ import time
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import mlflow
 from qdrant_client import QdrantClient
 from llama_index.core import Settings
 from llama_index.core.indices import VectorStoreIndex
@@ -54,17 +55,20 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client.models import Distance, VectorParams
 from services.ragllm import get_embedding_model_and_dims
 from data_types import RagIndexConfiguration
+from config import settings
 import mimetypes
 
-
 Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
+mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
+data_dir = os.path.join(st_app_dir, "data")
+cols_dir = os.path.join(data_dir, "collections")
+COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
+SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
 RESOURCES_DIR = os.path.join(st_app_dir, "resources")
-COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
-SOURCE_FILES_DIR = os.path.join(st_app_dir, "source_files")
 
 
 # Function to get list of collections
@@ -171,6 +175,7 @@ def create_collection(
 
     # Save the collection configuration to a JSON file
     collections = get_collections()
+    mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
         "name": name,
@@ -178,6 +183,7 @@ def create_collection(
         "distance_metric": distance_metric,
         "chunk_size": chunk_size,
         "chunk_overlap": chunk_overlap,
+        "mlflow_exp_id": mlflow_exp_id,
     }
     collections.append(collection_config)
     with open(COLLECTIONS_JSON, "w+") as f:

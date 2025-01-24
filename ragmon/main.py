@@ -76,6 +76,43 @@ def _configure_logger() -> None:
 _configure_logger()
 
 ###################################
+#  Initialization of directories
+###################################
+
+
+def initialize_directories():
+    """Initialize directories."""
+    data_directory = os.path.join(os.getcwd(), "data")
+    if not os.path.exists(data_directory):
+        logger.info("Data directory doesn't exist. Creating data directory.")
+        os.makedirs(data_directory)
+    logger.info("Data directory: %s", data_directory)
+    response_directory = os.path.join(data_directory, "responses")
+    if not os.path.exists(response_directory):
+        logger.info("Responses directory doesn't exist. Creating responses directory.")
+        os.makedirs(os.path.join(data_directory, "responses"))
+    logger.info("Responses directory: %s", response_directory)
+    indexed_files_directory = os.path.join(data_directory, "indexed_files")
+    if not os.path.exists(indexed_files_directory):
+        logger.info(
+            "Indexed files directory doesn't exist. Creating indexed files directory."
+        )
+        os.makedirs(indexed_files_directory)
+    logger.info("Indexed files directory: %s", indexed_files_directory)
+    collections_directory = os.path.join(data_directory, "collections")
+    if not os.path.exists(collections_directory):
+        logger.info(
+            "Collections directory doesn't exist. Creating collections directory."
+        )
+        os.makedirs(collections_directory)
+    logger.info("Collections directory: %s", collections_directory)
+    logger.info("Directories initialized.")
+
+
+initialize_directories()
+
+
+###################################
 # Reconciler
 ###################################
 
@@ -83,14 +120,14 @@ _configure_logger()
 def start_evaluation_reconciler():
     """Start the evaluation reconciler."""
     logger.info("Starting evaluation reconciler.")
-    data_directory = os.path.join(os.getcwd(), "data")
-    if not os.path.exists(data_directory):
+    responses_directory = os.path.join(os.getcwd(), "data", "responses")
+    if not os.path.exists(responses_directory):
         logger.info("Data directory doesn't exist. Creating data directory.")
-        os.makedirs(data_directory)
-    logger.info("Data directory: %s", data_directory)
+        os.makedirs(responses_directory)
+    logger.info("Reconciler looking for files in directory: %s", responses_directory)
     worker_thread = threading.Thread(
         target=background_worker,
-        args=(data_directory, evaluate_json_data),
+        args=(responses_directory, evaluate_json_data),
         daemon=True,
     )
     worker_thread.start()
@@ -109,7 +146,7 @@ async def lifespan(fastapi_app: FastAPI):
 ###################################
 
 # TODO: add reconciler to app lifecycle
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/health")

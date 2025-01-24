@@ -40,7 +40,7 @@
 
 from pydantic import BaseModel
 from llama_index.core.base.llms.types import MessageRole
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 class RagIndexConfiguration(BaseModel):
@@ -86,21 +86,45 @@ class RagPredictRequest(BaseModel):
     do_evaluate: bool = True
 
 
+class Metric(BaseModel):
+    name: str
+    value: Union[float, None]
+
+
+class RagFeedback(BaseModel):
+    feedback: Union[float, None] = None  # 0.0 or 1.0
+    feedback_str: Optional[str] = None
+
+
 class RagPredictResponse(BaseModel):
     id: str
     input: str
     output: str
+    data_source_id: int
+    top_k: int
+    chunk_size: int
+    model_name: str
     source_nodes: List[RagPredictSourceNode] = []
     chat_history: List[RagMessage]
-    mlflow_experiment_id: str
-    mlflow_run_id: str
+    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: Optional[str] = None
+    metrics: Optional[List[Metric]] = []
+    metrics_logged_status: Optional[str] = None
+    feedback: Optional[RagFeedback] = RagFeedback()
+    feedback_logged_status: Optional[str] = None
 
 
 class RagFeedbackRequest(BaseModel):
+    response_id: str
+    mlflow_experiment_id: Optional[str] = None
+    mlflow_run_id: Optional[str] = None
+    feedback: float  # 0.0 or 1.0
+    feedback_str: Optional[str] = None
+
+
+class MLflowStoreIdentifier(BaseModel):
     experiment_id: str
     experiment_run_id: str
-    feedback: float  # 0.0 or 1.0\
-    feedback_str: Optional[str] = None
 
 
 class MLFlowStoreRequest(BaseModel):
