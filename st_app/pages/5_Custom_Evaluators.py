@@ -45,9 +45,20 @@ def add_custom_evaluator(request: CreateCustomEvaluatorRequest):
 
 @st.dialog("Create Custom Evaluator")
 def create_evaluator_modal():
-    name = st.text_input("Evaluator Name")
-    evaluator_definition = st.text_area("Evaluator Definition")
-    questions = st.text_area("Questions")
+    name = st.text_input(
+        "Evaluator Name",
+        help="**Name of the custom evaluator.**  \nFor example:  \n*Friendliness*",
+    )
+    evaluator_definition = st.text_area(
+        "Evaluator Definition",
+        help="**Define the evaluator in a sentence or two.**  \nFor example:  \n"
+        "*Friendliness assesses the warmth and friendliness of the response.*",
+    )
+    questions = st.text_area(
+        "Questions",
+        help="**Newline separated list of questions to use for evaluation.**  \n"
+        "For example:  \n *How friendly is the response?*  \n  *How helpful is the response?*",
+    )
     if st.button("Create"):
         request = CreateCustomEvaluatorRequest(
             name=name,
@@ -80,7 +91,9 @@ with custom_evaluators_placeholder:
                 st.write("**Definition**")
                 st.caption(evaluator_json.eval_definition)
                 st.write("**Questions**")
-                st.caption(evaluator_json.questions)
+                questions = evaluator_json.questions.split("\n")
+                for question in questions:
+                    st.caption(f"{question}")
     else:
         st.write("No custom evaluators found")
 
