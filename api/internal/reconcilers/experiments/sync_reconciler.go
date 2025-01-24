@@ -149,6 +149,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 					log.Printf("failed to insert run %s with run ID %s into remote store: %s", run.Info.Name, run.Info.RunId, err)
 					continue
 				}
+				log.Printf("finished creating run %s with run ID %s in remote store with remote ID %s", run.Info.Name, run.Info.RunId, id)
 				remoteRunId = id
 			} else {
 				remoteRunId = run.Info.RunId
