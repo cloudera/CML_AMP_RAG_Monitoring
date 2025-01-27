@@ -95,7 +95,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 			continue
 		}
 		// If the experiment exists in the database, compare the updated timestamps
-		lastUpdated := util.TimeStamp(local.LastUpdatedTime)
+		//lastUpdated := util.TimeStamp(local.LastUpdatedTime)
 		//updated := false
 		//if experiment.UpdatedTs.Before(lastUpdated) {
 		//	// Update the flag of the experiment to indicate that it requires reconciliation
@@ -103,7 +103,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		//	updated = true
 		//}
 		log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
-		err = r.db.Experiments().UpdateExperimentUpdatedAndTimestamp(ctx, experiment.Id, true, lastUpdated)
+		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id)
 		if err != nil {
 			log.Printf("failed to update experiment %s with ID %s timestamp: %s", local.Name, item.ID, err)
 		}
