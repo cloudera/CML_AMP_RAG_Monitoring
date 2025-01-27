@@ -155,7 +155,7 @@ class CustomEvaluator(BaseEvaluator):
         )
 
 
-CUSTOM_EVAL_TEMPLATE = (
+CUSTOM_EVAL_TEMPLATE = PromptTemplate(
     "{eval_definition}. \n"
     "The evaluation should be performed in a step-by-step manner by answering the following questions:\n {questions}"
     "Each question above is worth 1 point. Provide detailed feedback on response according to the criteria questions above  "
@@ -189,12 +189,12 @@ CUSTOM_EVAL_TEMPLATE = (
 )
 
 
-def create_custom_evaluator(
+def load_custom_evaluator(
     eval_definition: str,
     questions: Union[Sequence[str], str],
     llm: Optional[LLM] = None,
     raise_error: bool = False,
-    eval_template: Union[str, BasePromptTemplate, None] = CUSTOM_EVAL_TEMPLATE,
+    eval_template: Union[BasePromptTemplate, None] = CUSTOM_EVAL_TEMPLATE,
     parser_function: Callable[
         [str], Tuple[Optional[float], Optional[str]]
     ] = _default_parser_function,
@@ -202,9 +202,9 @@ def create_custom_evaluator(
     """Create a custom evaluator."""
     if isinstance(questions, str):
         questions = questions.split("\n")
-    questions = "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
     score_threshold = len(questions)
-    eval_template = eval_template.format(
+    questions = "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
+    eval_template = eval_template.partial_format(
         eval_definition=eval_definition,
         questions=questions,
     )
