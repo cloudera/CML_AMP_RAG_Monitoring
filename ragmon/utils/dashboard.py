@@ -1,5 +1,7 @@
 import json
-from typing import List
+import os
+from pathlib import Path
+from typing import List, Union
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -76,6 +78,27 @@ def get_runs(experiment_id: str):
     if not response_json:
         return []
     return response_json
+
+
+def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
+    """
+    Retrieves custom evaluators from the specified directory.
+
+    Args:
+        custom_evals_dir (Union[Path, os.PathLike, str]): The directory containing the custom evaluators.
+
+    Returns:
+        list: A list of custom evaluators. If the directory does not exist, an empty list is returned.
+    """
+    custom_evaluators = []
+    if not custom_evals_dir.exists():
+        return custom_evaluators
+    for file in os.listdir(custom_evals_dir):
+        if file.endswith(".json"):
+            # read the json file
+            with open(os.path.join(custom_evals_dir, file), "r") as f:
+                custom_evaluators.append(json.load(f))
+    return custom_evaluators
 
 
 def parse_live_results_table(
@@ -247,8 +270,9 @@ def show_live_df_component(
             live_results_df["feedback"] = live_results_df["feedback"].apply(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
             )
-        st.write("### Detailed Logs")
-        st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
+        with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
+            st.write("### Detailed Logs")
+            st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
 
 
 def show_i_o_component(

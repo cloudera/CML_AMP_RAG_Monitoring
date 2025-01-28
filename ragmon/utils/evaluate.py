@@ -3,9 +3,12 @@ This module contains functions to evaluate the response of a chat engine against
 """
 
 import asyncio
+import json
 import logging
+import os
+from pathlib import Path
 import sys
-from typing import Union, Tuple, Sequence
+from typing import Union, Tuple, Sequence, Dict
 
 from uvicorn.logging import DefaultFormatter
 
@@ -25,7 +28,12 @@ from llama_index.core.chat_engine.types import AgentChatResponse
 
 import mlflow
 
-from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessEvaluator
+from .judge import (
+    MaliciousnessEvaluator,
+    ToxicityEvaluator,
+    ComprehensivenessEvaluator,
+    load_custom_evaluator,
+)
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -36,6 +44,25 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 logger.setLevel(settings.rag_log_level)
+
+# custom evaluators directory
+main_dir = Path(os.path.realpath(__file__)).parents[1]
+data_dir = Path(os.path.join(main_dir, "data"))
+CUSTOM_EVALUATORS_DIR = Path(os.path.join(data_dir, "custom_evaluators"))
+
+
+def get_custom_evaluators():
+    # check for json files in custom evaluators directory
+    if not CUSTOM_EVALUATORS_DIR.exists():
+        return {}
+    custom_evaluators = {}
+    for file in CUSTOM_EVALUATORS_DIR.iterdir():
+        if file.suffix == ".json":
+            # read the json file
+            eval_json = json.load(file.open())
+            evaluator_name = eval_json.pop("name")
+            custom_evaluators[evaluator_name] = eval_json
+    return custom_evaluators
 
 
 async def evaluate_response(
@@ -49,6 +76,7 @@ async def evaluate_response(
     EvaluationResult,
     EvaluationResult,
     EvaluationResult,
+    Dict[str, EvaluationResult],
 ]:
     """
     Evaluate a response against a query and contexts.
@@ -119,6 +147,33 @@ async def evaluate_response(
         comprehensiveness,
     ) = results
 
+    # check custom evaluators directory for custom evaluators
+    custom_evaluators = get_custom_evaluators()
+    loaded_custom_evals = []
+
+    for _, evaluator_params in custom_evaluators.items():
+        evaluator = load_custom_evaluator(
+            eval_definition=evaluator_params["eval_definition"],
+            questions=evaluator_params["questions"],
+            llm=evaluator_llm,
+        )
+        loaded_custom_evals.append(evaluator)
+
+    custom_eval_results = {}
+    if loaded_custom_evals:
+        custom_eval_results = await asyncio.gather(
+            *[
+                evaluator.aevluate(
+                    query=query, response=chat_response, contexts=contexts
+                )
+                for evaluator in loaded_custom_evals
+            ]
+        )
+
+        custom_eval_results = {
+            k: v for k, v in zip(custom_evaluators.keys(), custom_eval_results)
+        }
+
     return (
         relevance,
         faithfulness,
@@ -126,6 +181,7 @@ async def evaluate_response(
         maliciousness,
         toxicity,
         comprehensiveness,
+        custom_eval_results,
     )
 
 
@@ -204,6 +260,7 @@ async def evaluate_json_data(data):
                 maliciousness,
                 toxicity,
                 comprehensiveness,
+                custom_eval_results,
             ) = await evaluate_response(query, response, contexts)
 
             # show the evaluation results logger
@@ -219,6 +276,24 @@ async def evaluate_json_data(data):
                 comprehensiveness.score,
             )
 
+            # show the custom evaluation metrics
+            if custom_eval_results:
+                logger.info("Logging custom evaluation metrics")
+                for name, result in custom_eval_results.items():
+                    logger.info("%s: %s", name, result.score)
+                    mlflow.log_metric(
+                        key=f"{name.lower().replace(' ', '_')}_score",
+                        value=result.score,
+                        synchronous=True,
+                    )
+                    logger.info(
+                        "%s: %s",
+                        name.lower().replace(" ", "_") + "_score",
+                        result.score,
+                    )
+            else:
+                logger.info("No custom evaluators or metrics to log")
+
             # create metric dictionary and do not add metrics which are none or empty
 
             metrics = [
@@ -231,6 +306,15 @@ async def evaluate_json_data(data):
                 Metric(name="input_length", value=len(query.split())),
                 Metric(name="output_length", value=len(response.split())),
             ]
+
+            # add custom metrics to metrics list
+            for name, result in custom_eval_results.items():
+                metrics.append(
+                    Metric(
+                        name=f"{name.lower().replace(' ', '_')}_score",
+                        value=result.score,
+                    )
+                )
 
             data.metrics = metrics
 

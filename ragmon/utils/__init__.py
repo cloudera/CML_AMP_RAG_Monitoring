@@ -42,6 +42,8 @@ import json
 from pathlib import Path
 from typing import Union
 
+from qdrant_client import QdrantClient
+
 
 def save_to_disk(
     data,
@@ -51,3 +53,26 @@ def save_to_disk(
     """Helper function to save JSON data to disk."""
     with open(os.path.join(directory, filename), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+# Function to get list of collections
+def get_collections(COLLECTIONS_JSON: str):
+    """
+    Retrieve a list of collections from the client.
+    Returns:
+        list: A list of collections retrieved from the client.
+    """
+    client = QdrantClient(url="http://localhost:6333")
+    collections = client.get_collections().collections
+    if len(collections) == 0:
+        with open(COLLECTIONS_JSON, "w+") as f:
+            collections = []
+            json.dump(collections, f, indent=2)
+    else:
+        with open(COLLECTIONS_JSON, "r+") as f:
+            try:
+                collections = json.load(f)
+            except json.JSONDecodeError:
+                collections = []
+    client.close()
+    return collections

@@ -58,6 +58,8 @@ from data_types import RagIndexConfiguration
 from config import settings
 import mimetypes
 
+from utils import get_collections
+
 Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
 mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
@@ -69,29 +71,6 @@ cols_dir = os.path.join(data_dir, "collections")
 COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
 SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
 RESOURCES_DIR = os.path.join(st_app_dir, "resources")
-
-
-# Function to get list of collections
-def get_collections():
-    """
-    Retrieve a list of collections from the client.
-    Returns:
-        list: A list of collections retrieved from the client.
-    """
-    client = QdrantClient(url="http://localhost:6333")
-    collections = client.get_collections().collections
-    if len(collections) == 0:
-        with open(COLLECTIONS_JSON, "w+") as f:
-            collections = []
-            json.dump(collections, f)
-    else:
-        with open(COLLECTIONS_JSON, "r+") as f:
-            try:
-                collections = json.load(f)
-            except json.JSONDecodeError:
-                collections = []
-    client.close()
-    return collections
 
 
 # Function to get documents from a collection
@@ -174,7 +153,7 @@ def create_collection(
         raise ValueError(f"Invalid distance metric: {distance_metric}")
 
     # Save the collection configuration to a JSON file
-    collections = get_collections()
+    collections = get_collections(COLLECTIONS_JSON=COLLECTIONS_JSON)
     mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
@@ -306,7 +285,7 @@ with create_button_col:
         create_collection_modal()
 
 # Display list of collections
-collections = get_collections()
+collections = get_collections(COLLECTIONS_JSON=COLLECTIONS_JSON)
 collections_placeholder = st.empty()
 with collections_placeholder.container():
     if collections:
