@@ -33,12 +33,11 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 		log.Printf("failed to fetch run ids: %s", err)
 	}
 	for _, id := range ids {
+		log.Printf("queueing run %d for reconciliation", id)
 		queue.Add(id)
 	}
 
-	if len(ids) > 0 {
-		log.Printf("queueing %d runs for reconciliation", len(ids))
-	}
+	log.Printf("%d runs for are queued for reconciliation", len(queue.Pending))
 	log.Debugln("completing reconciler resync")
 }
 
@@ -92,9 +91,9 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			run.RemoteRunId = runId
 			remoteRun = newRun
 		} else {
-			existing, err := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
-			if err != nil {
-				log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
+			existing, eerr := r.dataStores.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+			if eerr != nil {
+				log.Printf("failed to fetch run %d from remote store: %s", item.ID, eerr)
 				continue
 			}
 			remoteRun = existing
@@ -273,8 +272,8 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 			log.Printf("failed to update run %d reconcile metrics flag: %s", item.ID, err)
 			continue
 		}
-		log.Debugf("finished reconciling run %d ", item.ID)
 	}
+	log.Printf("finished run reconiliation for %d experiment runs", len(items))
 }
 
 func (r *RunReconciler) fetchArtifacts(ctx context.Context, experimentId string, runId string, artifact datasource.Artifact) (map[string][]byte, error) {
