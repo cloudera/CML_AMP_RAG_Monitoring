@@ -199,6 +199,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 		log.Printf("finished sync reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
+	log.Println("finished sync reconciling experiments")
 }
 
 func NewSyncReconcilerManager(app *app.Instance, cfg *Config, rec *SyncReconciler) (*reconciler.Manager[int64], error) {
