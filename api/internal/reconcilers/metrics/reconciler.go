@@ -8,6 +8,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	maxItems := int64(r.config.ResyncMaxItems)
 	runs, err := r.db.ExperimentRuns().ListExperimentRunIdsForMetricReconciliation(ctx, maxItems)
 	if err != nil {
-		log.Printf("failed to query database: %s", err)
+		log.Errorf("failed to query database: %s", err)
 		return
 	}
 
@@ -43,7 +44,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
-	log.Printf("reconciling %d experiment runs for metric", len(items))
+	log.Printf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
@@ -59,7 +60,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling metrics for experiment %s run (%d) %s", experiment.RemoteExperimentId, item.ID, run.RemoteRunId)
+		log.Printf("reconciling metrics for experiment %s with remote ID %s and database ID %d run with remote ID %s and database ID %d",
+			experiment.Name, experiment.RemoteExperimentId, item.ID, run.RemoteRunId, run.Id)
 		// Fetch metrics from MLFlow
 		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
 		if err != nil {
@@ -82,23 +84,49 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			if err != nil {
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
-				log.Printf("inserted numeric metric %s(%d) for experiment run %s(%d)", m.Name, m.Id, run.RemoteRunId, run.Id)
+				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RemoteRunId, run.Id)
 			}
 		}
-		// Fetch artifacts from MLFlow
-		//mlFlowArtifacts, err := r.mlFlow.Local.Artifacts(ctx, run.RunId, nil)
-		//if err != nil {
-		//	log.Printf("failed to fetch artifacts for experiment run %d: %s", item.ID, err)
-		//	continue
-		//}
-		//for _, artifact := range mlFlowArtifacts {
-		//	artifactMetrics, err := r.fetchArtifacts(ctx, run.ExperimentId, run.RunId, artifact)
-		//	if err != nil {
-		//		log.Printf("failed to fetch artifact %s for experiment run %d: %s", artifact.Path, item.ID, err)
-		//		continue
-		//	}
-		//	log.Printf("fetched %d metrics for artifact %s for experiment run %s", len(artifactMetrics), artifact.Path, run.RunId)
-		//}
+
+		// fetch any text metrics stored as json artifacts
+		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		if err != nil {
+			log.Printf("failed to fetch run %s for experiment %s: %s", run.RemoteRunId, experiment.RemoteExperimentId, err)
+			continue
+		}
+		log.Printf("found %d artifacts for experiment run %s", len(remoteRun.Data.Files), run.RemoteRunId)
+		for _, artifact := range remoteRun.Data.Files {
+			// TODO: filter these
+			if strings.HasSuffix(artifact.Path, ".json") {
+				log.Printf("fetching artifact %s for experiment run %s", artifact.Path, run.RemoteRunId)
+				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RemoteRunId, artifact.Path)
+				if err != nil {
+					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RemoteRunId, err)
+					continue
+				}
+				value := string(data)
+				log.Printf("found artifact %s", artifact.Path)
+				name := artifact.Path
+				lastIndex := strings.LastIndex(name, "/")
+				if lastIndex != -1 {
+					name = name[lastIndex+1:]
+				}
+				textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
+					ExperimentId: run.ExperimentId,
+					RunId:        run.RunId,
+					Name:         name,
+					Type:         db.MetricTypeText,
+					ValueText:    &value,
+				})
+				if err != nil {
+					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+					continue
+				} else {
+					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RemoteRunId, run.Id)
+				}
+			}
+		}
+
 		// Update the metrics flag of the experiment run to indicate that it has been reconciled
 		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, false)
 		if err != nil {

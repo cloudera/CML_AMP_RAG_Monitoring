@@ -10,6 +10,8 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase"
 	cbhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/clientbase/http"
 	"io"
+	"mime/multipart"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -30,15 +32,64 @@ type PlatformExperimentListResponse struct {
 	NextPageToken string               `json:"next_page_token"`
 }
 
+type PlatformArtifact struct {
+	Path     string `json:"path"`
+	IsDir    bool   `json:"is_dir"`
+	FileSize string `json:"file_size"`
+}
+
 type PlatformRun struct {
-	Id             string          `json:"id"`
-	Name           string          `json:"run_name"`
-	Status         string          `json:"status"`
-	StartTime      time.Time       `json:"start_time"`
-	EndTime        time.Time       `json:"end_time"`
-	ArtifactUri    string          `json:"artifact_uri"`
-	LifecycleStage string          `json:"lifecycle_stage"`
-	Data           PlatformRunData `json:"data"`
+	Id          string          `json:"id"`
+	Name        string          `json:"name"`
+	Status      string          `json:"status"`
+	StartTime   time.Time       `json:"start_time"`
+	EndTime     time.Time       `json:"end_time"`
+	ArtifactUri string          `json:"artifact_uri"`
+	Data        PlatformRunData `json:"data"`
+}
+
+type PlatformRunUpdate struct {
+	Id          string          `json:"id"`
+	Name        string          `json:"name"`
+	Status      int64           `json:"status"`
+	StartTime   time.Time       `json:"start_time"`
+	EndTime     time.Time       `json:"end_time"`
+	ArtifactUri string          `json:"artifact_uri"`
+	Data        PlatformRunData `json:"data"`
+}
+
+func FromPlatformStatus(status string) RunStatus {
+	switch status {
+	case "EXPERIMENT_RUN_RUNNING":
+		return RunStatusRunning
+	case "EXPERIMENT_RUN_SCHEDULED":
+		return RunStatusScheduled
+	case "EXPERIMENT_RUN_FINISHED":
+		return RunStatusFinished
+	case "EXPERIMENT_RUN_FAILED":
+		return RunStatusFailed
+	case "EXPERIMENT_RUN_KILLED":
+		return RunStatusKilled
+	default:
+		return RunStatusScheduled
+	}
+}
+
+func ToPlatformStatus(status RunStatus) string {
+	switch status {
+	case RunStatusRunning:
+		return "EXPERIMENT_RUN_RUNNING"
+	case RunStatusScheduled:
+		return "EXPERIMENT_RUN_SCHEDULED"
+	case RunStatusFinished:
+		return "EXPERIMENT_RUN_FINISHED"
+	case RunStatusFailed:
+		return "EXPERIMENT_RUN_FAILED"
+	case RunStatusKilled:
+		return "EXPERIMENT_RUN_KILLED"
+	default:
+		return "EXPERIMENT_RUN_SCHEDULED"
+	}
 }
 
 type PlatformMetric struct {
@@ -49,9 +100,10 @@ type PlatformMetric struct {
 }
 
 type PlatformRunData struct {
-	Metrics []PlatformMetric `json:"metrics"`
-	Params  []Param          `json:"params"`
-	Tags    []RunTag         `json:"tags"`
+	Metrics []PlatformMetric   `json:"metrics"`
+	Params  []Param            `json:"params"`
+	Tags    []RunTag           `json:"tags"`
+	Files   []PlatformArtifact `json:"files"`
 }
 
 type PlatformMLFlow struct {
@@ -70,17 +122,17 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 	}
 }
 
-func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
+func (m *PlatformMLFlow) WaitForReady(ctx context.Context) error {
+	return nil
+}
+
+func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectID, run.Info.ExperimentId, run.Info.RunId)
 	req := cbhttp.NewRequest(ctx, "PATCH", url)
 
 	params := make([]Param, 0)
 	for _, param := range run.Data.Params {
 		var val = param.Value
-		if len(val) > 250 {
-			log.Printf("param %s value is too long for platform MLFlow, truncating", param.Key)
-			val = val[:250]
-		}
 		params = append(params, Param{
 			Key:   param.Key,
 			Value: val,
@@ -102,36 +154,34 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 		})
 	}
 
-	var status string
+	var status int64
 	switch run.Info.Status {
 	case RunStatusRunning:
-		status = "EXPERIMENT_RUN_RUNNING"
+		status = 1
 	case RunStatusScheduled:
-		status = "EXPERIMENT_RUN_SCHEDULED"
+		status = 2
 	case RunStatusFinished:
-		status = "EXPERIMENT_RUN_FINISHED"
+		status = 3
 	case RunStatusFailed:
-		status = "EXPERIMENT_RUN_FAILED"
+		status = 4
 	case RunStatusKilled:
-		status = "EXPERIMENT_RUN_KILLED"
+		status = 5
 	}
 
-	platformRun := PlatformRun{
-		Id:             run.Info.RunId,
-		Name:           run.Info.Name,
-		Status:         status,
-		StartTime:      time.Unix(run.Info.StartTime, 0),
-		EndTime:        time.Unix(run.Info.EndTime, 0),
-		ArtifactUri:    run.Info.ArtifactUri,
-		LifecycleStage: run.Info.LifecycleStage,
-		Data:           data,
+	platformRun := PlatformRunUpdate{
+		Id:      run.Info.RunId,
+		Name:    run.Info.Name,
+		Status:  status,
+		EndTime: time.UnixMilli(run.Info.EndTime),
+		Data:    data,
 	}
 
 	encoded, serr := json.Marshal(platformRun)
 	if serr != nil {
 		log.Printf("failed to encode body: %s", serr)
-		return serr
+		return nil, serr
 	}
+
 	req.Body = io.NopCloser(bytes.NewReader(encoded))
 	req.Header = make(map[string][]string)
 	req.Header.Set("Content-Type", "application/json")
@@ -139,17 +189,65 @@ func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) error {
 	resp, lerr := m.connections.HttpClient.Do(req)
 	if lerr != nil {
 		log.Printf("failed to update run %s: %s", run.Info.RunId, lerr)
-		return lerr
+		return nil, lerr
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("failed to update run %s: %s", run.Info.RunId, resp.Status)
+		return nil, fmt.Errorf("failed to update run %s: %s", run.Info.RunId, resp.Status)
 	}
-	_, ioerr := io.ReadAll(resp.Body)
+	buff, ioerr := io.ReadAll(resp.Body)
 	if ioerr != nil {
-		return ioerr
+		return nil, ioerr
 	}
-	return nil
+	var updatedRun PlatformRun
+	jerr := json.Unmarshal(buff, &updatedRun)
+	if jerr != nil {
+		return nil, jerr
+	}
+	ret := &Run{
+		Info: RunInfo{
+			RunId:          updatedRun.Id,
+			Name:           updatedRun.Name,
+			ExperimentId:   run.Info.ExperimentId,
+			Status:         FromPlatformStatus(updatedRun.Status),
+			StartTime:      updatedRun.StartTime.UnixMilli(),
+			EndTime:        updatedRun.EndTime.UnixMilli(),
+			ArtifactUri:    updatedRun.ArtifactUri,
+			LifecycleStage: run.Info.LifecycleStage,
+		},
+		Data: RunData{
+			Metrics: make([]Metric, 0),
+			Params:  updatedRun.Data.Params,
+			Tags:    updatedRun.Data.Tags,
+			Files:   make([]Artifact, 0),
+		},
+	}
+	for _, metric := range updatedRun.Data.Metrics {
+		step, err := strconv.Atoi(metric.Step)
+		if err != nil {
+			log.Printf("failed to convert step to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Metrics = append(ret.Data.Metrics, Metric{
+			Key:       metric.Key,
+			Value:     metric.Value,
+			Timestamp: metric.Timestamp.Unix(),
+			Step:      step,
+		})
+	}
+	for _, artifact := range updatedRun.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		ret.Data.Files = append(ret.Data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
+		})
+	}
+	return ret, nil
 }
 
 func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId string) (*Run, error) {
@@ -173,7 +271,6 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 	if ioerr != nil {
 		return nil, err
 	}
-
 	var run PlatformRun
 	jerr := json.Unmarshal(body, &run)
 	if jerr != nil {
@@ -183,6 +280,7 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 		Metrics: make([]Metric, 0),
 		Params:  run.Data.Params,
 		Tags:    run.Data.Tags,
+		Files:   make([]Artifact, 0),
 	}
 	for _, metric := range run.Data.Metrics {
 		step, err := strconv.Atoi(metric.Step)
@@ -197,16 +295,28 @@ func (m *PlatformMLFlow) GetRun(ctx context.Context, experimentId string, runId 
 			Step:      step,
 		})
 	}
+	for _, artifact := range run.Data.Files {
+		size, err := strconv.Atoi(artifact.FileSize)
+		if err != nil {
+			log.Printf("failed to convert file size to int: %s", err)
+			return nil, err
+		}
+		data.Files = append(data.Files, Artifact{
+			Path:     artifact.Path,
+			IsDir:    false,
+			FileSize: int64(size),
+		})
+	}
 	return &Run{
 		Info: RunInfo{
 			RunId:          runId,
 			Name:           run.Name,
 			ExperimentId:   experimentId,
-			Status:         RunStatus(run.Status),
-			StartTime:      run.StartTime.Unix(),
-			EndTime:        run.EndTime.Unix(),
+			Status:         FromPlatformStatus(run.Status),
+			StartTime:      run.StartTime.UnixMilli(),
+			EndTime:        run.EndTime.UnixMilli(),
 			ArtifactUri:    run.ArtifactUri,
-			LifecycleStage: run.LifecycleStage,
+			LifecycleStage: "active",
 		},
 		Data: data,
 	}, nil
@@ -265,6 +375,8 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 	body := map[string]interface{}{
 		"project_id":    m.cfg.CDSWProjectID,
 		"experiment_id": experimentId,
+		"start_time":    createdTs,
+		"tags":          tags,
 	}
 	encoded, jerr := json.Marshal(body)
 	if jerr != nil {
@@ -296,6 +408,7 @@ func (m *PlatformMLFlow) CreateRun(ctx context.Context, experimentId string, nam
 		log.Printf("failed to unmarshal body: %s", serr)
 		return "", serr
 	}
+
 	return run.Id, nil
 }
 
@@ -488,4 +601,66 @@ func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId
 		return nil, err
 	}
 	return run.Data.Metrics, nil
+}
+
+func (m *PlatformMLFlow) UploadArtifact(ctx context.Context, experimentId string, runId string, path string, data []byte) (string, error) {
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files", m.baseUrl, m.cfg.CDSWProjectID)
+	remotePath := fmt.Sprintf(".experiments/%s/%s/artifacts/%s", experimentId, runId, path)
+	log.Printf("uploading artifact %s for experiment %s and run %s to remote path %s", path, experimentId, runId, remotePath)
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	part, err := writer.CreateFormFile(remotePath, path)
+	if err != nil {
+		log.Fatalf("failed to create form file: %v", err)
+	}
+
+	_, err = io.Copy(part, bytes.NewReader(data))
+	if err != nil {
+		log.Fatalf("failed to copy file content: %v", err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+	req, err := http.NewRequest("PUT", url, &requestBody)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Client.Do(req)
+	if lerr != nil {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, lerr.Error())
+		return "", lerr
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+		return "", fmt.Errorf("failed to upload artifact %s for experiment %s and run %s: %s", path, experimentId, runId, resp.Status)
+	}
+	log.Printf("successfully uploaded artifact %s for experiment %s and run %s", path, experimentId, runId)
+	return path, nil
+}
+
+func (m *PlatformMLFlow) GetArtifact(ctx context.Context, runId string, path string) ([]byte, error) {
+	url := fmt.Sprintf("%s/api/v2/projects/%s/files%s:download", m.baseUrl, m.cfg.CDSWProjectID, path)
+	log.Printf("fetching artifact %s using url %s", path, url)
+	req := cbhttp.NewRequest(ctx, "POST", url)
+	req.Header = make(map[string][]string)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("authorization", fmt.Sprintf("Bearer %s", m.cfg.CDSWApiKey))
+	resp, lerr := m.connections.HttpClient.Do(req)
+	if lerr != nil {
+		log.Printf("failed to fetch artifact %s: %s", path, lerr)
+		return nil, lerr
+	}
+	defer resp.Body.Close()
+
+	body, ioerr := io.ReadAll(resp.Body)
+	if ioerr != nil {
+		return nil, ioerr
+	}
+	return body, nil
 }

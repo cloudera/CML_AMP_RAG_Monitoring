@@ -130,7 +130,7 @@ func (e *ExperimentsMock) UpdateExperimentUpdatedAndTimestamp(ctx context.Contex
 	panic("implement me")
 }
 
-func (e *ExperimentsMock) CreateExperiment(ctx context.Context, experimentId string, createdTs time.Time, updatedTs time.Time) (*Experiment, error) {
+func (e *ExperimentsMock) CreateExperiment(ctx context.Context, experimentId string, name string, createdTs time.Time, updatedTs time.Time) (*Experiment, error) {
 	//TODO implement me
 	panic("implement me")
 }
