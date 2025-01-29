@@ -569,7 +569,6 @@ def show_time_series_component(
     None
     """
     if metric_key in metrics_df:
-        st.markdown(f"### {title}", help=tooltip)
         metrics_df = metrics_df[[metric_key, "timestamp"]]
         agg_df = metrics_df.groupby(
             pd.Grouper(key="timestamp", freq=frequency)  # group by frequency
@@ -596,6 +595,8 @@ def show_time_series_component(
             },
         )
         if fig_placeholder is None:
+            st.markdown(f"### {title}", help=tooltip)
             st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
             return
+        fig_placeholder.markdown(f"### {title}", help=tooltip)
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")

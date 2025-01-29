@@ -439,7 +439,7 @@ if experiment_ids:
                         tooltip=custom_eval["eval_definition"],
                         update_timestamp=update_timestamp,
                         frequency="h",
-                        # fig_placeholder=custom_metric_fig,
+                        fig_placeholder=custom_metric_fig,
                     )
             # Live Results
             metrics_dfs = [
