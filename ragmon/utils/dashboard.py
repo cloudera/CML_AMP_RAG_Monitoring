@@ -90,6 +90,8 @@ def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
     Returns:
         list: A list of custom evaluators. If the directory does not exist, an empty list is returned.
     """
+    if not isinstance(custom_evals_dir, Path):
+        custom_evals_dir = Path(custom_evals_dir)
     custom_evaluators = []
     if not custom_evals_dir.exists():
         return custom_evaluators
@@ -505,6 +507,7 @@ def show_pie_chart_component(
     tooltip: str,
     labels: List[str],
     update_timestamp: str,
+    fig_placeholder: DeltaGenerator = None,
 ):
     """
     Displays a pie chart component in a Streamlit app.
@@ -516,6 +519,7 @@ def show_pie_chart_component(
     title (str): The title of the pie chart.
     tooltip (str): The tooltip text for the pie chart title.
     labels (List[str]): The labels for the pie chart slices.
+    fig_placeholder (DeltaGenerator): Streamlit placeholder for the pie chart.
 
     Returns:
     None
@@ -534,7 +538,10 @@ def show_pie_chart_component(
                 hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
             )
         )
-        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+        if fig_placeholder is None:
+            st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+            return
+        fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
 def show_time_series_component(
@@ -544,6 +551,7 @@ def show_time_series_component(
     tooltip: str,
     update_timestamp: str,
     frequency: str = "h",
+    fig_placeholder: DeltaGenerator = None,
 ):
     """
     Displays a time series component in a Streamlit app.
@@ -554,6 +562,8 @@ def show_time_series_component(
     update_timestamp (str): A timestamp string to ensure the chart is updated.
     title (str): The title of the time series plot.
     tooltip (str): The tooltip text for the time series plot title.
+    frequency (str): The frequency to group the time series data.
+    fig_placeholder (DeltaGenerator): Streamlit placeholder for the time series plot.
 
     Returns:
     None
@@ -585,4 +595,7 @@ def show_time_series_component(
                 "tickmode": "array",
             },
         )
-        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+        if fig_placeholder is None:
+            st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+            return
+        fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")

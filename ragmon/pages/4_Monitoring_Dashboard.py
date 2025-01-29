@@ -429,17 +429,17 @@ if experiment_ids:
                         metrics_df=custom_metric_df,
                         kpi_placeholder=custom_metric_kpi,
                         label=custom_eval["name"].title(),
-                        tooltip=custom_eval["description"],
+                        tooltip=custom_eval["eval_definition"],
                     )
                     custom_metric_fig = custom_metric_fig_rows[i // 3][i % 3]
                     show_time_series_component(
                         metric_key=metric_key,
                         metrics_df=custom_metric_df,
                         title=custom_eval["name"].title(),
-                        tooltip=custom_eval["description"],
+                        tooltip=custom_eval["eval_definition"],
                         update_timestamp=update_timestamp,
                         frequency="h",
-                        fig_placeholder=custom_metric_fig,
+                        # fig_placeholder=custom_metric_fig,
                     )
             # Live Results
             metrics_dfs = [

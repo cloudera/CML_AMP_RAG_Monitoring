@@ -139,7 +139,7 @@ class EvaluationExample(BaseModel):
 
 
 class CreateCustomEvaluatorRequest(BaseModel):
-    evaluator_name: str
-    evaluator_definition: str
-    evaluator_questions: Union[List[str], str]
-    evaluator_examples: List[EvaluationExample] = []
+    name: str
+    eval_definition: str
+    questions: Union[List[str], str]
+    examples: List[EvaluationExample] = []

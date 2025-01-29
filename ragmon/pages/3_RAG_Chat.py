@@ -57,7 +57,9 @@ from utils import get_collections
 # get collections directory
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
-COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
+data_dir = os.path.join(st_app_dir, "data")
+cols_dir = os.path.join(data_dir, "collections")
+COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
 
 
 # Function to get response from the backend
