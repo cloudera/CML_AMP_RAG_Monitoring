@@ -45,7 +45,6 @@ import streamlit as st
 from qdrant_client import QdrantClient
 import uuid
 import requests
-import json
 from data_types import (
     RagPredictConfiguration,
     RagPredictRequest,
@@ -53,34 +52,14 @@ from data_types import (
     RagMessage,
     RagFeedbackRequest,
 )
+from utils import get_collections
 
 # get collections directory
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
-COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
-
-
-# Function to get list of collections
-def get_collections():
-    """
-    Retrieve a list of collections from the client.
-    Returns:
-        list: A list of collections retrieved from the client.
-    """
-    client = QdrantClient(url="http://localhost:6333")
-    collections = client.get_collections().collections
-    if len(collections) == 0:
-        with open(COLLECTIONS_JSON, "w+") as f:
-            collections = []
-            json.dump(collections, f)
-    else:
-        with open(COLLECTIONS_JSON, "r+") as f:
-            try:
-                collections = json.load(f)
-            except json.JSONDecodeError:
-                collections = []
-    client.close()
-    return collections
+data_dir = os.path.join(st_app_dir, "data")
+cols_dir = os.path.join(data_dir, "collections")
+COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
 
 
 # Function to get response from the backend
@@ -201,7 +180,7 @@ if "feedback_store" not in st.session_state.keys():
     st.session_state.feedback_store = []
 
 st.title(":material/forum: RAG chat")
-collections = get_collections()
+collections = get_collections(COLLECTIONS_JSON=COLLECTIONS_JSON)
 
 selected_collection = st.selectbox(
     "Choose data source",

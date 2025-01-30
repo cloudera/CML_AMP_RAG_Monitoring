@@ -3,9 +3,12 @@ This module contains functions to evaluate the response of a chat engine against
 """
 
 import asyncio
+import json
 import logging
+import os
+from pathlib import Path
 import sys
-from typing import Union, Tuple, Sequence
+from typing import Union, Tuple, Sequence, Dict
 
 from uvicorn.logging import DefaultFormatter
 
@@ -25,7 +28,12 @@ from llama_index.core.chat_engine.types import AgentChatResponse
 
 import mlflow
 
-from .judge import MaliciousnessEvaluator, ToxicityEvaluator, ComprehensivenessEvaluator
+from .judge import (
+    MaliciousnessEvaluator,
+    ToxicityEvaluator,
+    ComprehensivenessEvaluator,
+    load_custom_evaluator,
+)
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -36,6 +44,25 @@ handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 logger.setLevel(settings.rag_log_level)
+
+# custom evaluators directory
+main_dir = Path(os.path.realpath(__file__)).parents[1]
+data_dir = Path(os.path.join(main_dir, "data"))
+CUSTOM_EVALUATORS_DIR = Path(os.path.join(data_dir, "custom_evaluators"))
+
+
+def get_custom_evaluators():
+    # check for json files in custom evaluators directory
+    if not CUSTOM_EVALUATORS_DIR.exists():
+        return {}
+    custom_evaluators = {}
+    for file in CUSTOM_EVALUATORS_DIR.iterdir():
+        if file.suffix == ".json":
+            # read the json file
+            eval_json = json.load(file.open())
+            evaluator_name = eval_json.pop("name")
+            custom_evaluators[evaluator_name] = eval_json
+    return custom_evaluators
 
 
 async def evaluate_response(
@@ -49,6 +76,7 @@ async def evaluate_response(
     EvaluationResult,
     EvaluationResult,
     EvaluationResult,
+    Dict[str, EvaluationResult],
 ]:
     """
     Evaluate a response against a query and contexts.
@@ -119,6 +147,33 @@ async def evaluate_response(
         comprehensiveness,
     ) = results
 
+    # check custom evaluators directory for custom evaluators
+    custom_evaluators = get_custom_evaluators()
+    loaded_custom_evals = []
+
+    for _, evaluator_params in custom_evaluators.items():
+        evaluator = load_custom_evaluator(
+            eval_definition=evaluator_params["eval_definition"],
+            questions=evaluator_params["questions"],
+            llm=evaluator_llm,
+        )
+        loaded_custom_evals.append(evaluator)
+
+    custom_eval_results = {}
+    if loaded_custom_evals:
+        custom_eval_results = await asyncio.gather(
+            *[
+                evaluator.aevaluate(
+                    query=query, response=chat_response, contexts=contexts
+                )
+                for evaluator in loaded_custom_evals
+            ]
+        )
+
+        custom_eval_results = {
+            k: v for k, v in zip(custom_evaluators.keys(), custom_eval_results)
+        }
+
     return (
         relevance,
         faithfulness,
@@ -126,7 +181,51 @@ async def evaluate_response(
         maliciousness,
         toxicity,
         comprehensiveness,
+        custom_eval_results,
     )
+
+
+def set_experiment_and_run(data):
+    """
+    Set the experiment ID and run ID for MLflow.
+
+    Args:
+        data: The JSON data containing the experiment ID and run ID.
+
+    Returns:
+        Tuple containing the experiment ID and run ID.
+    """
+    if data.mlflow_experiment_id is None or data.mlflow_run_id is None:
+        # set the experiment ID and run ID if not present
+        mlflow_experiment = mlflow.set_experiment(
+            experiment_name=f"{data.data_source_id}_live"
+        )
+        mlflow_experiment_id = mlflow_experiment.experiment_id
+        if data.mlflow_run_id:
+            run = mlflow.start_run(
+                run_id=data.mlflow_run_id,
+            )
+        else:
+            run = mlflow.start_run()
+        mlflow_run_id = run.info.run_id
+        logger.info(
+            "Set experiment ID %s and run ID %s first time for response with id %s",
+            mlflow_experiment_id,
+            mlflow_run_id,
+            data.id,
+        )
+        if mlflow.active_run():
+            mlflow.end_run()
+
+        return mlflow_experiment_id, mlflow_run_id
+    else:
+        logger.info(
+            "Experiment ID %s and run ID %s already set for response with id %s",
+            data.mlflow_experiment_id,
+            data.mlflow_run_id,
+            data.id,
+        )
+        return data.mlflow_experiment_id, data.mlflow_run_id
 
 
 async def evaluate_json_data(data):
@@ -150,6 +249,14 @@ async def evaluate_json_data(data):
             "data": data.dict(),
             "status": "success",
         }
+
+    if data.mlflow_experiment_id is None or data.mlflow_run_id is None:
+        data.mlflow_experiment_id, data.mlflow_run_id = set_experiment_and_run(data)
+        return {
+            "data": data.dict(),
+            "status": "pending",
+        }
+
     if data.metrics_logged_status == "pending":
         logger.info("Evaluating response with id %s", data.id)
         response_id = data.id
@@ -163,118 +270,133 @@ async def evaluate_json_data(data):
         for source_node in data.source_nodes:
             contexts.append(source_node.content)
         try:
-            # set the experiment ID and run ID if not present
-            mlflow_experiment = mlflow.set_experiment(
-                experiment_name=f"{data.data_source_id}_live"
-            )
-            data.mlflow_experiment_id = mlflow_experiment.experiment_id
-            if data.mlflow_run_id:
-                run = mlflow.start_run(
-                    run_id=data.mlflow_run_id,
-                )
-            else:
-                run = mlflow.start_run()
-                data.mlflow_run_id = run.info.run_id
-
             register_experiment_and_run(
                 experiment_id=data.mlflow_experiment_id,
                 experiment_run_id=data.mlflow_run_id,
             )
+            with mlflow.start_run(
+                experiment_id=data.mlflow_experiment_id,
+                run_id=data.mlflow_run_id,
+            ):
+                # log request params
+                mlflow.log_params(
+                    {
+                        "data_source_id": data_source_id,
+                        "top_k": top_k,
+                        "chunk_size": chunk_size,
+                        "model_name": model_name,
+                    }
+                )
 
-            # log request params
-            mlflow.log_params(
-                {
-                    "data_source_id": data_source_id,
-                    "top_k": top_k,
-                    "chunk_size": chunk_size,
-                    "model_name": model_name,
-                }
-            )
+                # log contexts
+                if contexts:
+                    for i, context in enumerate(contexts):
+                        mlflow.log_param(f"context_{i}", context)
 
-            # log contexts
-            if contexts:
-                for i, context in enumerate(contexts):
-                    mlflow.log_param(f"context_{i}", context)
+                # Evaluate the response
+                (
+                    relevance,
+                    faithfulness,
+                    context_relevancy,
+                    maliciousness,
+                    toxicity,
+                    comprehensiveness,
+                    custom_eval_results,
+                ) = await evaluate_response(query, response, contexts)
 
-            # Evaluate the response
-            (
-                relevance,
-                faithfulness,
-                context_relevancy,
-                maliciousness,
-                toxicity,
-                comprehensiveness,
-            ) = await evaluate_response(query, response, contexts)
+                # show the evaluation results logger
+                logger.info(
+                    "Relevance: %s, Faithfulness: %s, "
+                    "Context Relevancy: %s, Maliciousness: %s, "
+                    "Toxicity: %s, Comprehensiveness: %s",
+                    relevance.score,
+                    faithfulness.score,
+                    context_relevancy.score,
+                    maliciousness.score,
+                    toxicity.score,
+                    comprehensiveness.score,
+                )
 
-            # show the evaluation results logger
-            logger.info(
-                "Relevance: %s, Faithfulness: %s, "
-                "Context Relevancy: %s, Maliciousness: %s, "
-                "Toxicity: %s, Comprehensiveness: %s",
-                relevance.score,
-                faithfulness.score,
-                context_relevancy.score,
-                maliciousness.score,
-                toxicity.score,
-                comprehensiveness.score,
-            )
+                # show the custom evaluation metrics
+                if custom_eval_results:
+                    logger.info("Logging custom evaluation metrics")
+                    for name, result in custom_eval_results.items():
+                        logger.info("%s: %s", name, result.score)
+                        mlflow.log_metric(
+                            key=f"{name.lower().replace(' ', '_')}_score",
+                            value=result.score,
+                            synchronous=True,
+                        )
+                else:
+                    logger.info("No custom evaluators or metrics to log")
 
-            # create metric dictionary and do not add metrics which are none or empty
+                # create metric dictionary and do not add metrics which are none or empty
 
-            metrics = [
-                Metric(name="relevance_score", value=relevance.score),
-                Metric(name="faithfulness_score", value=faithfulness.score),
-                Metric(name="context_relevancy_score", value=context_relevancy.score),
-                Metric(name="maliciousness_score", value=maliciousness.score),
-                Metric(name="toxicity_score", value=toxicity.score),
-                Metric(name="comprehensiveness_score", value=comprehensiveness.score),
-                Metric(name="input_length", value=len(query.split())),
-                Metric(name="output_length", value=len(response.split())),
-            ]
+                metrics = [
+                    Metric(name="relevance_score", value=relevance.score),
+                    Metric(name="faithfulness_score", value=faithfulness.score),
+                    Metric(
+                        name="context_relevancy_score", value=context_relevancy.score
+                    ),
+                    Metric(name="maliciousness_score", value=maliciousness.score),
+                    Metric(name="toxicity_score", value=toxicity.score),
+                    Metric(
+                        name="comprehensiveness_score", value=comprehensiveness.score
+                    ),
+                    Metric(name="input_length", value=len(query.split())),
+                    Metric(name="output_length", value=len(response.split())),
+                ]
 
-            data.metrics = metrics
-
-            # Log the metrics
-            for metric in metrics:
-                if metric.value is not None:
-                    mlflow.log_metric(
-                        metric.name,
-                        metric.value,
-                        synchronous=False,
+                # add custom metrics to metrics list
+                for name, result in custom_eval_results.items():
+                    metrics.append(
+                        Metric(
+                            name=f"{name.lower().replace(' ', '_')}_score",
+                            value=result.score,
+                        )
                     )
 
-            logger.info(
-                "Logged evaluation metrics for exp id %s and run id %s",
-                data.mlflow_experiment_id,
-                data.mlflow_run_id,
-            )
+                data.metrics = metrics
 
-            # extract keywords from the query and response
-            query_keywords = extract_keywords(query)
-            response_keywords = extract_keywords(response)
+                # Log the metrics
+                for metric in metrics:
+                    if metric.value is not None:
+                        mlflow.log_metric(
+                            metric.name,
+                            metric.value,
+                            synchronous=False,
+                        )
 
-            # log response
-            mlflow.log_table(
-                {
-                    "response_id": data.id,
-                    "input": query,
-                    "input_length": len(query.split()),
-                    "output": response,
-                    "output_length": len(response.split()),
-                    "source_nodes": data.source_nodes,
-                    "query_keywords": ", ".join(query_keywords or []),
-                    "response_keywords": ", ".join(response_keywords or []),
-                },
-                artifact_file="live_results.json",
-            )
+                logger.info(
+                    "Logged evaluation metrics for exp id %s and run id %s",
+                    data.mlflow_experiment_id,
+                    data.mlflow_run_id,
+                )
 
-            logger.info(
-                "Logged keywords for exp id %s and run id %s",
-                data.mlflow_experiment_id,
-                data.mlflow_run_id,
-            )
+                # extract keywords from the query and response
+                query_keywords = extract_keywords(query)
+                response_keywords = extract_keywords(response)
 
-            mlflow.end_run()
+                # log response
+                mlflow.log_table(
+                    {
+                        "response_id": data.id,
+                        "input": query,
+                        "input_length": len(query.split()),
+                        "output": response,
+                        "output_length": len(response.split()),
+                        "source_nodes": data.source_nodes,
+                        "query_keywords": ", ".join(query_keywords or []),
+                        "response_keywords": ", ".join(response_keywords or []),
+                    },
+                    artifact_file="live_results.json",
+                )
+
+                logger.info(
+                    "Logged keywords for exp id %s and run id %s",
+                    data.mlflow_experiment_id,
+                    data.mlflow_run_id,
+                )
 
             data.metrics_logged_status = "success"
 
@@ -291,28 +413,29 @@ async def evaluate_json_data(data):
         if data.mlflow_experiment_id and data.mlflow_run_id:
             try:
                 logger.info("Logging feedback for response with id %s", data.id)
-                run = mlflow.start_run(
+                with mlflow.start_run(
                     experiment_id=data.mlflow_experiment_id,
                     run_id=data.mlflow_run_id,
-                )
-                mlflow.log_metrics(
-                    {
-                        "feedback": data.feedback.feedback,
-                    },
-                    synchronous=False,
-                )
-                mlflow.log_table(
-                    {
-                        "feedback_str": data.feedback.feedback_str,
-                    },
-                    artifact_file="user_feedback.json",
-                )
-                logger.info(
-                    "Logged feedback for exp id %s and run id %s",
-                    data.mlflow_experiment_id,
-                    data.mlflow_run_id,
-                )
-                mlflow.end_run()
+                ):
+                    if data.feedback.feedback is not None:
+                        mlflow.log_metrics(
+                            {
+                                "feedback": data.feedback.feedback,
+                            },
+                            synchronous=False,
+                        )
+                    if data.feedback.feedback_str:
+                        mlflow.log_table(
+                            {
+                                "feedback_str": data.feedback.feedback_str,
+                            },
+                            artifact_file="user_feedback.json",
+                        )
+                    logger.info(
+                        "Logged feedback for exp id %s and run id %s",
+                        data.mlflow_experiment_id,
+                        data.mlflow_run_id,
+                    )
                 data.feedback_logged_status = "success"
             except Exception as e:
                 logger.error(

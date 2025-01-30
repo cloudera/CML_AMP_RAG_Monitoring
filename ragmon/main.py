@@ -106,6 +106,13 @@ def initialize_directories():
         )
         os.makedirs(collections_directory)
     logger.info("Collections directory: %s", collections_directory)
+    custom_evaluators_directory = os.path.join(data_directory, "custom_evaluators")
+    if not os.path.exists(custom_evaluators_directory):
+        logger.info(
+            "Custom evaluators directory doesn't exist. Creating custom evaluators directory."
+        )
+        os.makedirs(custom_evaluators_directory)
+    logger.info("Custom evaluators directory: %s", custom_evaluators_directory)
     logger.info("Directories initialized.")
 
 

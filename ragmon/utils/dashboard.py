@@ -1,5 +1,7 @@
 import json
-from typing import List
+import os
+from pathlib import Path
+from typing import List, Union
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -76,6 +78,29 @@ def get_runs(experiment_id: str):
     if not response_json:
         return []
     return response_json
+
+
+def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
+    """
+    Retrieves custom evaluators from the specified directory.
+
+    Args:
+        custom_evals_dir (Union[Path, os.PathLike, str]): The directory containing the custom evaluators.
+
+    Returns:
+        list: A list of custom evaluators. If the directory does not exist, an empty list is returned.
+    """
+    if not isinstance(custom_evals_dir, Path):
+        custom_evals_dir = Path(custom_evals_dir)
+    custom_evaluators = []
+    if not custom_evals_dir.exists():
+        return custom_evaluators
+    for file in os.listdir(custom_evals_dir):
+        if file.endswith(".json"):
+            # read the json file
+            with open(os.path.join(custom_evals_dir, file), "r") as f:
+                custom_evaluators.append(json.load(f))
+    return custom_evaluators
 
 
 def parse_live_results_table(
@@ -247,8 +272,9 @@ def show_live_df_component(
             live_results_df["feedback"] = live_results_df["feedback"].apply(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
             )
-        st.write("### Detailed Logs")
-        st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
+        with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
+            st.write("### Detailed Logs")
+            st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
 
 
 def show_i_o_component(
@@ -481,6 +507,7 @@ def show_pie_chart_component(
     tooltip: str,
     labels: List[str],
     update_timestamp: str,
+    fig_placeholder: DeltaGenerator = None,
 ):
     """
     Displays a pie chart component in a Streamlit app.
@@ -492,6 +519,7 @@ def show_pie_chart_component(
     title (str): The title of the pie chart.
     tooltip (str): The tooltip text for the pie chart title.
     labels (List[str]): The labels for the pie chart slices.
+    fig_placeholder (DeltaGenerator): Streamlit placeholder for the pie chart.
 
     Returns:
     None
@@ -510,7 +538,10 @@ def show_pie_chart_component(
                 hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
             )
         )
-        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+        if fig_placeholder is None:
+            st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+            return
+        fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
 def show_time_series_component(
@@ -520,6 +551,7 @@ def show_time_series_component(
     tooltip: str,
     update_timestamp: str,
     frequency: str = "h",
+    fig_placeholder: DeltaGenerator = None,
 ):
     """
     Displays a time series component in a Streamlit app.
@@ -530,12 +562,13 @@ def show_time_series_component(
     update_timestamp (str): A timestamp string to ensure the chart is updated.
     title (str): The title of the time series plot.
     tooltip (str): The tooltip text for the time series plot title.
+    frequency (str): The frequency to group the time series data.
+    fig_placeholder (DeltaGenerator): Streamlit placeholder for the time series plot.
 
     Returns:
     None
     """
     if metric_key in metrics_df:
-        st.markdown(f"### {title}", help=tooltip)
         metrics_df = metrics_df[[metric_key, "timestamp"]]
         agg_df = metrics_df.groupby(
             pd.Grouper(key="timestamp", freq=frequency)  # group by frequency
@@ -561,4 +594,9 @@ def show_time_series_component(
                 "tickmode": "array",
             },
         )
-        st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+        if fig_placeholder is None:
+            st.markdown(f"### {title}", help=tooltip)
+            st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+            return
+        fig_placeholder.markdown(f"### {title}", help=tooltip)
+        fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")

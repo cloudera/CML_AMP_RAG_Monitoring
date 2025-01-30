@@ -50,7 +50,9 @@ import streamlit as st  # 🎈 data web app development
 
 from qdrant_client import QdrantClient
 from data_types import MLFlowStoreRequest
+from utils import get_collections
 from utils.dashboard import (
+    get_custom_evaluators,
     get_experiment_ids,
     get_runs,
     parse_live_results_table,
@@ -71,28 +73,7 @@ st_app_dir = file_path.parents[1]
 data_dir = os.path.join(st_app_dir, "data")
 cols_dir = os.path.join(data_dir, "collections")
 COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
-
-
-def get_collections():
-    """
-    Retrieve a list of collections from the client.
-    Returns:
-        list: A list of collections retrieved from the client.
-    """
-    client = QdrantClient(url="http://localhost:6333")
-    collections = client.get_collections().collections
-    if len(collections) == 0:
-        with open(COLLECTIONS_JSON, "w+") as f:
-            collections = []
-            json.dump(collections, f)
-    else:
-        with open(COLLECTIONS_JSON, "r+") as f:
-            try:
-                collections = json.load(f)
-            except json.JSONDecodeError:
-                collections = []
-    client.close()
-    return collections
+CUSTOM_EVAL_DIR = os.path.join(data_dir, "custom_evaluators")
 
 
 title_col, refresh_col = st.columns([12, 1])
@@ -110,7 +91,8 @@ with refresh_col:
 
 # select experiment/data source
 experiment_ids = get_experiment_ids()
-collections = get_collections()
+collections = get_collections(COLLECTIONS_JSON=COLLECTIONS_JSON)
+custom_evals = get_custom_evaluators(custom_evals_dir=CUSTOM_EVAL_DIR)
 
 if not experiment_ids:
     st.write("No Data Sources or Entries Found")
@@ -216,6 +198,18 @@ if experiment_ids:
             metric_names=["live_results.json"],
         )
 
+        # custom metrics requests
+        custom_metrics_requests = {}
+        for custom_eval in custom_evals:
+            custom_metric_request = MLFlowStoreRequest(
+                experiment_id=str(selected_experiment),
+                run_ids=run_ids,
+                metric_names=[f"{custom_eval['name'].lower().replace(' ', '_')}_score"],
+            )
+            custom_metrics_requests[
+                f"{custom_eval['name'].lower().replace(' ', '_')}_score"
+            ] = custom_metric_request
+
         placeholder = st.empty()
 
         # near real-time / live feed simulation
@@ -236,6 +230,16 @@ if experiment_ids:
         precision_df = get_numeric_metrics_df(precision_request)
         recall_df = get_numeric_metrics_df(recall_request)
         feedback_df = get_numeric_metrics_df(feedback_request)
+
+        # get custom metrics responses
+        custom_metrics_dfs = {}
+        for (
+            custom_metric_name,
+            custom_metric_request,
+        ) in custom_metrics_requests.items():
+            custom_metrics_dfs[custom_metric_name] = get_numeric_metrics_df(
+                custom_metric_request
+            )
 
         with placeholder.container():
 
@@ -404,15 +408,52 @@ if experiment_ids:
                         frequency="h",
                     )
 
-            show_live_df_component(
-                live_results_df,
-                metrics_dfs=[
-                    faithfulness_df.drop(columns=["timestamp"]),
-                    relevance_df.drop(columns=["timestamp"]),
-                    context_relevancy_df.drop(columns=["timestamp"]),
-                    maliciousness_df.drop(columns=["timestamp"]),
-                    toxicity_df.drop(columns=["timestamp"]),
-                    comprehensiveness_df.drop(columns=["timestamp"]),
-                    feedback_df.drop(columns=["timestamp"]),
-                ],
-            )
+            # Custom Metrics
+            if custom_evals:
+                custom_metric_rows = [
+                    st.columns([1, 1, 1, 1, 1, 1])
+                    for _ in range(len(custom_evals) // 6 + 1)
+                ]
+                with st.expander("**Custom Metrics Overview**", expanded=True):
+                    custom_metric_fig_rows = [
+                        st.columns([1, 1, 1]) for _ in range(len(custom_evals) // 3 + 1)
+                    ]
+                for i, custom_eval in enumerate(custom_evals):
+                    metric_key = (
+                        f"{custom_eval['name'].lower().replace(' ', '_')}_score"
+                    )
+                    custom_metric_df = custom_metrics_dfs[metric_key]
+                    custom_metric_kpi = custom_metric_rows[i // 6][i % 6]
+                    show_numeric_metric_kpi(
+                        metric_key=metric_key,
+                        metrics_df=custom_metric_df,
+                        kpi_placeholder=custom_metric_kpi,
+                        label=custom_eval["name"].title(),
+                        tooltip=custom_eval["eval_definition"],
+                    )
+                    custom_metric_fig = custom_metric_fig_rows[i // 3][i % 3]
+                    show_time_series_component(
+                        metric_key=metric_key,
+                        metrics_df=custom_metric_df,
+                        title=custom_eval["name"].title(),
+                        tooltip=custom_eval["eval_definition"],
+                        update_timestamp=update_timestamp,
+                        frequency="h",
+                        fig_placeholder=custom_metric_fig,
+                    )
+            # Live Results
+            metrics_dfs = [
+                faithfulness_df.drop(columns=["timestamp"]),
+                relevance_df.drop(columns=["timestamp"]),
+                context_relevancy_df.drop(columns=["timestamp"]),
+                maliciousness_df.drop(columns=["timestamp"]),
+                toxicity_df.drop(columns=["timestamp"]),
+                comprehensiveness_df.drop(columns=["timestamp"]),
+                feedback_df.drop(columns=["timestamp"]),
+            ]
+
+            # append custom metrics to metrics_dfs
+            for _, custom_metric_df in custom_metrics_dfs.items():
+                metrics_dfs.append(custom_metric_df.drop(columns=["timestamp"]))
+
+            show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)

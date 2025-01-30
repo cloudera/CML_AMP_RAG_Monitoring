@@ -35,11 +35,18 @@ async def process_io_pair(file_path, processing_function):
     # Process io pair
     response = await processing_function(data)
     # save the response
-    data = response["data"]
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=2)
+    if response is not None:
+        data = response["data"]
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=2)
+    if response["status"] == "pending":
+        logger.info(
+            "MLFlow experiment and run IDs set for i/o pair: %s. Queued for evaluation.",
+            file_path,
+        )
+        return
     if response["status"] == "failed":
-        logger.error("Failed to process i/o pair: %s. Will retry", file_path)
+        logger.error("Failed to process i/o pair: %s. Will retry.", file_path)
         return
 
 
