@@ -53,6 +53,7 @@ func (r *Metrics) CreateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 	VALUES (?, ?, ?, ?, ?, ?, ?)
 	RETURNING id
 	`
+	log.Printf("Creating metric %s using query %s", m.Name, query)
 	ts := time.Now()
 	if m.Timestamp != nil {
 		ts = *m.Timestamp
