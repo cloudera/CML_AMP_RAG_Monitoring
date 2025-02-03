@@ -29,6 +29,15 @@ environment_variables:
   CAII_EMBEDDING_ENDPOINT_NAME:
     default: ""
     description: "Cloudera AI Inference embedding endpoint name."
+  SQL_DB_ADDRESS:
+    default: ""
+    description: "SQL Database address in the form <host:port>"
+  SQL_DB_USERNAME:
+    default: ""
+    description: "SQL Database username."
+  SQL_DB_PASSWORD:
+    default: ""
+    description: "SQL Database password."
 
 tasks:
   - type: run_session
