@@ -183,8 +183,6 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 	case "sqlite":
 		fallthrough
 	case "mysql":
-		fallthrough
-	case "postgres":
 		res, err := ceq.ExecContext(ctx, query, args...)
 		if err != nil {
 			log.Printf("Failed to save to database - %s", err)
@@ -196,6 +194,13 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 			return 0, err
 		}
 		return id, nil
+	case "postgres":
+		var id int64
+		err := ceq.QueryRowContext(ctx, query, args...).Scan(&id)
+		if err != nil {
+			log.Printf("Failed to insert row into database - %s", err)
+		}
+		return id, err
 	default:
 		return 0, ErrDatabaseEngineNotSupported
 	}
