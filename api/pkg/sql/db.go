@@ -200,6 +200,7 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 		err := ceq.QueryRowContext(ctx, query, args...).Scan(&id)
 		if err != nil {
 			log.Printf("Failed to insert row into database - %s", err)
+			return 0, err
 		}
 		return id, err
 	default:

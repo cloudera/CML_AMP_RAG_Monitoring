@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS experiment_runs (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     experiment_id VARCHAR(100) NOT NULL,
     run_id VARCHAR(100) NOT NULL,
     created BOOLEAN NOT NULL DEFAULT False, -- save this so that we can know that a create is requested but still in progress
