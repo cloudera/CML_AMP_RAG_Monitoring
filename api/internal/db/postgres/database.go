@@ -20,7 +20,7 @@ func NewInstance(cfg *lsql.Config) *lsql.Instance {
 	if cfg.DatabaseName == "" {
 		panic("database name is empty")
 	}
-	log.Printf("Connecting to %s database %s", cfg.Engine, cfg.DatabaseName)
+	log.Printf("Connecting to %s database %s at %s", cfg.Engine, cfg.DatabaseName, cfg.Address)
 	instance, err := lsql.NewInstance(cfg)
 	if err != nil {
 		log.Printf("failed to create database instance: %s", err)
