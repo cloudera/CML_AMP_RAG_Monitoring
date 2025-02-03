@@ -28,8 +28,8 @@ type Config struct {
 }
 
 type ConfigSecrets struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `env:"SQL_DB_USERNAME"`
+	Password string `env:"SQL_DB_PASSWORD"`
 }
 
 func NewConfigFromEnv() (*Config, error) {
@@ -50,16 +50,11 @@ func NewConfigFromEnv() (*Config, error) {
 
 func (cfg *Config) PartialAddress() string {
 	var connString string
-	// NTLM authentication prepends the domain to username
-	usernameAndMaybeDomain := cfg.Username
 	switch strings.ToLower(cfg.Engine) {
 	case "mysql":
 		connString = "%s:%s@tcp(%s)/"
-	case "sqlserver":
-		connString = "sqlserver://%s:%s@%s"
-		if cfg.Domain != "" {
-			usernameAndMaybeDomain = fmt.Sprintf("%s%%5C%s", cfg.Domain, cfg.Username)
-		}
+	case "postgres":
+		connString = "%s:%s@%s"
 	case "sqlite":
 		if cfg.Address != "" {
 			return cfg.Address
@@ -70,7 +65,7 @@ func (cfg *Config) PartialAddress() string {
 	}
 	return fmt.Sprintf(
 		connString,
-		usernameAndMaybeDomain,
+		cfg.Username,
 		cfg.Password,
 		cfg.Address,
 	)
@@ -78,16 +73,16 @@ func (cfg *Config) PartialAddress() string {
 
 func (cfg *Config) FullAddress() string {
 	var connString string
-	// NTLM authentication prepends the domain to username
-	usernameAndMaybeDomain := cfg.Username
 	switch strings.ToLower(cfg.Engine) {
 	case "mysql":
-		connString = "%s:%s@tcp(%s)/%s?%s"
-	case "sqlserver":
-		connString = "sqlserver://%s:%s@%s?database=%s&%s"
-		if cfg.Domain != "" {
-			usernameAndMaybeDomain = fmt.Sprintf("%s%%5C%s", cfg.Domain, cfg.Username)
-		}
+		connString = "%s://%s:%s@tcp(%s)/%s?%s"
+	case "postgres":
+		return fmt.Sprintf("%s://%s:%s@%s/%s",
+			cfg.Engine,
+			cfg.Username,
+			cfg.Password,
+			cfg.Address,
+			cfg.DatabaseName)
 	case "sqlite":
 		if cfg.Address != "" {
 			return cfg.Address
@@ -98,16 +93,13 @@ func (cfg *Config) FullAddress() string {
 	}
 	return fmt.Sprintf(
 		connString,
-		usernameAndMaybeDomain,
+		cfg.Engine,
+		cfg.Username,
 		cfg.Password,
 		cfg.Address,
 		cfg.DatabaseName,
 		cfg.Options,
 	)
-}
-
-func (cfg *Config) MigrationAddress() string {
-	return fmt.Sprintf("%s://%s", cfg.Engine, cfg.FullAddress())
 }
 
 func (cfg *Config) loadFile() error {

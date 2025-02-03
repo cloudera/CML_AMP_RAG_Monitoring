@@ -113,11 +113,13 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 			log.Printf("failed to fetch local runs for experiment %s with experiment ID %s and database ID %d: %s", experiment.Name, experiment.ExperimentId, item.ID, lerr)
 			continue
 		}
+		log.Printf("fetched %d local runs for experiment %s with experiment ID %s and database ID %d", len(localRuns), experiment.Name, experiment.ExperimentId, item.ID)
 		remoteRuns, rerr := r.dataStores.Remote.ListRuns(ctx, experiment.RemoteExperimentId)
 		if rerr != nil {
 			log.Printf("failed to fetch local runs for experiment %s with experiment ID %s and database ID %d: %s", experiment.Name, experiment.ExperimentId, item.ID, rerr)
 			continue
 		}
+		log.Printf("fetched %d remote runs for experiment %s with experiment ID %s and database ID %d", len(remoteRuns), experiment.Name, experiment.ExperimentId, item.ID)
 		for _, run := range localRuns {
 			log.Printf("reconciling local run %s with run ID %s", run.Info.Name, run.Info.RunId)
 			found := false
@@ -197,6 +199,7 @@ func (r *SyncReconciler) Reconcile(ctx context.Context, items []reconciler.Recon
 		}
 		log.Printf("finished sync reconciling experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
+	log.Println("finished sync reconciling experiments")
 }
 
 func NewSyncReconcilerManager(app *app.Instance, cfg *Config, rec *SyncReconciler) (*reconciler.Manager[int64], error) {

@@ -1,0 +1,1 @@
+ALTER TABLE experiments ADD COLUMN name VARCHAR(100);

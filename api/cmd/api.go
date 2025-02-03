@@ -5,6 +5,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	postgresmig "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/migrations/postgres"
 	sqlitemig "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/migrations/sqlite"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/server"
@@ -30,7 +31,10 @@ type dependencies struct {
 
 func NewMigration(appCfg *config.Config, cfg *lsql.Config) (*lmigration.Migration, error) {
 	if appCfg.Migrate {
-		return lmigration.NewMigration(cfg, map[string]lmigration.MigrationSet{"sqlite": lmigration.MigrationSet{AssetNames: sqlitemig.AssetNames, Asset: sqlitemig.Asset}})
+		return lmigration.NewMigration(cfg, map[string]lmigration.MigrationSet{
+			"sqlite":   lmigration.MigrationSet{AssetNames: sqlitemig.AssetNames, Asset: sqlitemig.Asset},
+			"postgres": lmigration.MigrationSet{AssetNames: postgresmig.AssetNames, Asset: postgresmig.Asset},
+		})
 	}
 	return nil, nil
 }

@@ -9,7 +9,7 @@ package main
 import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
-	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/sqlite"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/postgres"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/experiments"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/metrics"
@@ -52,12 +52,12 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	lsqlInstance := sqlite.NewInstance(lsqlConfig)
+	lsqlInstance := postgres.NewInstance(lsqlConfig)
 	swaggerApiServer := server.NewSwaggerApiServer(instance, configConfig, lsqlInstance)
-	experimentService := sqlite.NewExperiments(lsqlInstance)
-	experimentRunService := sqlite.NewExperimentRuns(lsqlInstance)
-	metricsService := sqlite.NewMetrics(lsqlInstance)
-	database := sqlite.NewDatabase(experimentService, experimentRunService, metricsService)
+	experimentService := postgres.NewExperiments(lsqlInstance)
+	experimentRunService := postgres.NewExperimentRuns(lsqlInstance)
+	metricsService := postgres.NewMetrics(lsqlInstance)
+	database := postgres.NewDatabase(experimentService, experimentRunService, metricsService)
 	metricsAPI := restapi.NewMetricsAPI(database)
 	experimentRunsAPI := restapi.NewExperimentRunsAPI(database)
 	experimentAPI := restapi.NewExperimentAPI(database)
