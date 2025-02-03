@@ -26,4 +26,5 @@ dependencies = [
     "typing-extensions==4.12.2",
     "urllib3<2",
     "keybert>=0.8.5",
+    "wordcloud>=1.9.4",
 ]
