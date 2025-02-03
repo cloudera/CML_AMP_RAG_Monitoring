@@ -1,0 +1,1 @@
+ALTER TABLE experiment_runs ADD COLUMN remote_run_id VARCHAR(100) DEFAULT NULL;

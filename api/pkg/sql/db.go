@@ -139,12 +139,9 @@ func (db *Instance) GenerateLimitCondition(pageSize int64, pageNumber int64, ord
 	case "sqlite":
 		fallthrough
 	case "mysql":
+		fallthrough
+	case "postgres":
 		return fmt.Sprintf(" LIMIT %d ", pageSize), nil
-	case "sqlserver":
-		if len(orderByFieldNameForSqlSvr) == 0 {
-			return "", ErrOrderByRequired
-		}
-		return fmt.Sprintf(" ORDER BY %s OFFSET %d ROWS FETCH FIRST %d ROWS ONLY ", orderByFieldNameForSqlSvr, pageNumber, pageSize), nil
 	default:
 		return "", ErrDatabaseEngineNotSupported
 	}
@@ -159,9 +156,9 @@ func (db *Instance) GenerateLimitAndOrderCondition(pageSize int64, pageNumber in
 	case "sqlite":
 		fallthrough
 	case "mysql":
+		fallthrough
+	case "postgres":
 		return fmt.Sprintf(" ORDER BY %s%s LIMIT %d, %d", orderByFieldName, maybeDescString, pageNumber, pageSize), nil
-	case "sqlserver":
-		return fmt.Sprintf(" ORDER BY %s%s OFFSET %d ROWS FETCH FIRST %d ROWS ONLY ", orderByFieldName, maybeDescString, pageNumber, pageSize), nil
 	default:
 		return "", ErrDatabaseEngineNotSupported
 	}
@@ -186,6 +183,8 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 	case "sqlite":
 		fallthrough
 	case "mysql":
+		fallthrough
+	case "postgres":
 		res, err := ceq.ExecContext(ctx, query, args...)
 		if err != nil {
 			log.Printf("Failed to save to database - %s", err)
@@ -196,30 +195,6 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 			log.Printf("failed to get last inserted id", err)
 			return 0, err
 		}
-		return id, nil
-	case "sqlserver":
-		if !strings.Contains(query, "OUTPUT") {
-			msg := "sqlserver INSERT query must contain OUTPUT clause"
-			log.Printf(msg)
-			return 0, errors.New(msg)
-		}
-
-		row := ceq.QueryRowContext(ctx, query, args...)
-		if row != nil && row.err != nil {
-			log.Printf("Failed to save to database", err)
-			return 0, err
-		}
-		if row == nil {
-			log.Printf("Failed to save to database")
-			return 0, fmt.Errorf("no ID returned from DB")
-		}
-		var id int64
-		err := row.Scan(&id)
-		if err != nil {
-			log.Printf("Failed to save to database", err)
-			return 0, err
-		}
-
 		return id, nil
 	default:
 		return 0, ErrDatabaseEngineNotSupported

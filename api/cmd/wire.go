@@ -7,7 +7,7 @@ import (
 	"github.com/google/wire"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
-	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/sqlite"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db/postgres"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers"
 	recexperiments "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/experiments"
 	recmetrics "github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/reconcilers/metrics"
@@ -27,8 +27,8 @@ func InitializeDependencies() (*dependencies, error) {
 		cbhttp.NewConfigFromEnv, cbhttp.NewInstance, clientbase.NewConfigFromEnv, clientbase.NewConnections,
 		sbhttpserver.NewConfigFromEnv, sbhttpserver.NewInstance,
 		server.NewSwaggerConfig, server.NewHandler, server.NewHttpServers,
-		lsql.NewConfigFromEnv, sqlite.NewInstance, sqlite.NewExperiments, sqlite.NewExperimentRuns,
-		sqlite.NewMetrics, sqlite.NewDatabase, NewMigration,
+		lsql.NewConfigFromEnv, postgres.NewInstance, postgres.NewExperiments, postgres.NewExperimentRuns,
+		postgres.NewMetrics, postgres.NewDatabase, NewMigration,
 		restapi.NewMetricsAPI, restapi.NewExperimentRunsAPI, restapi.NewExperimentAPI,
 		server.NewSwaggerApiServer,
 		datasource.NewConfigFromEnv, datasource.NewDataStores,

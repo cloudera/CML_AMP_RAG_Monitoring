@@ -3,6 +3,7 @@ package lmigration
 import (
 	"database/sql"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	lmigration_sqlite "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql/migration/sqlite"
@@ -14,7 +15,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
-	"github.com/golang-migrate/migrate/v4/database/sqlserver"
 	"github.com/golang-migrate/migrate/v4/source"
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
@@ -73,7 +73,7 @@ func NewMigration(cfg *lsql.Config, sets map[string]MigrationSet) (*Migration, e
 		return nil, err
 	}
 
-	db, err := sql.Open(cfg.Engine, cfg.PartialAddress())
+	db, err := sql.Open(cfg.Engine, cfg.FullAddress())
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +83,20 @@ func NewMigration(cfg *lsql.Config, sets map[string]MigrationSet) (*Migration, e
 	switch strings.ToLower(cfg.Engine) {
 	case "mysql":
 		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", cfg.DatabaseName))
-	case "sqlserver":
-		_, err = db.Exec(fmt.Sprintf("IF NOT EXISTS(SELECT 1 FROM sys.databases WHERE name='%s') CREATE DATABASE [%s]",
-			cfg.DatabaseName, cfg.DatabaseName))
+	case "postgres":
+		var exists bool
+		query := fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = '%s')", cfg.DatabaseName)
+		err := db.QueryRow(query).Scan(&exists)
+		if err != nil {
+			return nil, err
+		}
+
+		if !exists {
+			_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DatabaseName))
+			if err != nil {
+				return nil, err
+			}
+		}
 	case "sqlite":
 	default:
 		return nil, fmt.Errorf("unsupported DB engine")
@@ -111,8 +122,8 @@ func NewMigration(cfg *lsql.Config, sets map[string]MigrationSet) (*Migration, e
 	switch strings.ToLower(cfg.Engine) {
 	case "mysql":
 		database, err = mysql.WithInstance(db, &mysql.Config{})
-	case "sqlserver":
-		database, err = sqlserver.WithInstance(db, &sqlserver.Config{})
+	case "postgres":
+		database, err = postgres.WithInstance(db, &postgres.Config{})
 	case "sqlite":
 		database, err = lmigration_sqlite.WithInstance(db, &lmigration_sqlite.Config{})
 	default:
