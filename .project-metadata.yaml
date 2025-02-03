@@ -11,6 +11,15 @@ runtimes:
     edition: Standard
 
 environment_variables:
+  SQL_DB_ADDRESS:
+    default: ""
+    description: "Postgres SQL Database address in the form <host:port> where port is optional.  Required to specify where metrics are stored."
+  SQL_DB_USERNAME:
+    default: ""
+    description: "SQL Database username. Required to connect to the metrics database."
+  SQL_DB_PASSWORD:
+    default: ""
+    description: "SQL Database password. Required to connect to the metrics database."
   AWS_REGION:
     default: ""
     description: "AWS Region. Needed for accessing Bedrock Models."
@@ -29,15 +38,6 @@ environment_variables:
   CAII_EMBEDDING_ENDPOINT_NAME:
     default: ""
     description: "Cloudera AI Inference embedding endpoint name."
-  SQL_DB_ADDRESS:
-    default: ""
-    description: "SQL Database address in the form <host:port>"
-  SQL_DB_USERNAME:
-    default: ""
-    description: "SQL Database username."
-  SQL_DB_PASSWORD:
-    default: ""
-    description: "SQL Database password."
 
 tasks:
   - type: run_session
