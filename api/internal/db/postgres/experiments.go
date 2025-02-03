@@ -23,7 +23,9 @@ func NewExperiments(instance *lsql.Instance) db.ExperimentService {
 
 func (e *Experiments) CreateExperiment(ctx context.Context, experimentId string, name string, createdTs time.Time, updatedTs time.Time) (*db.Experiment, error) {
 	query := `
-	INSERT INTO experiments (experiment_id, name, created, created_ts, updated, updated_ts, deleted) VALUES (?, ?, true, ?, false, ?, false)
+	INSERT INTO experiments (experiment_id, name, created, created_ts, updated, updated_ts, deleted) 
+	VALUES (?, ?, true, ?, false, ?, false)
+	RETURNING id
 	`
 	id, err := e.db.ExecAndReturnId(ctx, query, experimentId, name, createdTs, updatedTs)
 	if err != nil {

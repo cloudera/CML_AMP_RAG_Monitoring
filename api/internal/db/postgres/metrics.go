@@ -51,6 +51,7 @@ func (r *Metrics) CreateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 	query := `
 	INSERT INTO metrics (experiment_id, run_id, name, value_numeric, value_text, tags, ts)
 	VALUES (?, ?, ?, ?, ?, ?, ?)
+	RETURNING id
 	`
 	ts := time.Now()
 	if m.Timestamp != nil {

@@ -24,6 +24,7 @@ func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.Experi
 	query := `
 	INSERT INTO experiment_runs (experiment_id, run_id, updated)
 	VALUES (?, ?, true)
+	RETURNING id
 	`
 	args := []interface{}{run.ExperimentId, run.RunId}
 	id, err := e.db.ExecAndReturnId(ctx, query, args...)
