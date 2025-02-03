@@ -1,0 +1,1 @@
+ALTER TABLE experiment_runs ADD COLUMN reconcile_metrics BOOLEAN NOT NULL DEFAULT False;
