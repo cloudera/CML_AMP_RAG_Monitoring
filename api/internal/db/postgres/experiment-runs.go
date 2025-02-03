@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
 	"time"
@@ -27,7 +26,6 @@ func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.Experi
 	VALUES (?, ?, true)
 	RETURNING id
 	`
-	log.Printf("Creating experiment run %s using query %s", run.RunId, query)
 	args := []interface{}{run.ExperimentId, run.RunId}
 	id, err := e.db.ExecAndReturnId(ctx, query, args...)
 	if err != nil {

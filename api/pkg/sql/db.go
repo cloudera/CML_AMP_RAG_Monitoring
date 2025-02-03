@@ -195,7 +195,6 @@ func ExecAndReturnId(ceq ctxExecQuerier, ctx context.Context, query string, args
 		}
 		return id, nil
 	case "postgres":
-		log.Printf("executing postgres query %s with args %v", query, args)
 		var id int64
 		err := ceq.QueryRowContext(ctx, query, args...).Scan(&id)
 		if err != nil {

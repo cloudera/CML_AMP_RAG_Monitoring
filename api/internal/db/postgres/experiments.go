@@ -27,7 +27,6 @@ func (e *Experiments) CreateExperiment(ctx context.Context, experimentId string,
 	VALUES (?, ?, true, ?, false, ?, false)
 	RETURNING id
 	`
-	log.Printf("Creating experiment %s using query %s", experimentId, query)
 	id, err := e.db.ExecAndReturnId(ctx, query, experimentId, name, createdTs, updatedTs)
 	if err != nil {
 		return nil, err
