@@ -29,7 +29,7 @@ nohup ./qdrant/qdrant >~/qdrant.log &
 
 echo "Starting Metric API"
 # Start up the Go api
-SQL_DB_NAME=rag_metrics SQL_DB_ADDRESS=rag_metrics nohup ./api/api &>~/api.log &
+SQL_DB_ENGINE=postgres SQL_DB_NAME=metrics SQL_DB_OPTIONS=connectTimeout=5 nohup ./api/api &>~/api.log &
 
 cd ragmon
 

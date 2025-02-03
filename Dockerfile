@@ -8,5 +8,9 @@ WORKDIR /home/cdsw
 ENV CDSW_APP_PORT=8100
 ENV CDSW_API_URL=none
 ENV CDSW_PROJECT_NUM=0
+ENV SQL_DB_ADDRESS=none
+ENV SQL_DB_ENGINE=postgres
+ENV SQL_DB_USERNAME=none
+ENV SQL_DB_PASSWORD=none
 ENV LOCAL=true
 CMD ["bash", "-c", "scripts/install_qdrant.sh && scripts/install_golang.sh && scripts/install_py_deps.sh && scripts/build_api.sh && scripts/start_app.sh"]

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS metrics (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     experiment_id VARCHAR(100) NOT NULL,
     run_id VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,

@@ -14,17 +14,16 @@ import (
 type Config struct {
 	ConfigSecrets
 
-	Engine         string        `env:"SQL_DB_ENGINE" envDefault:"sqlite"`
+	Engine         string        `env:"SQL_DB_ENGINE" envDefault:""`
 	DatabaseName   string        `env:"SQL_DB_NAME"`
-	Address        string        `env:"SQL_DB_ADDRESS" envDefault:"localhost:4000"`
+	Address        string        `env:"SQL_DB_ADDRESS" envDefault:""`
 	Domain         string        `env:"SQL_DB_DOMAIN"`
-	Options        string        `env:"SQL_DB_OPTIONS" envDefault:"parseTime=true&maxAllowedPacket=0&multiStatements=true&clientFoundRows=true"`
+	Options        string        `env:"SQL_DB_OPTIONS" envDefault:""`
 	DisableMetrics bool          `env:"SQL_DB_DISABLE_METRICS"`
 	MaxLifetime    time.Duration `env:"SQL_DB_MAX_LIFETIME" envDefault:"30m"`
 	MaxIdleConns   int           `env:"SQL_DB_MAX_IDLE_CONNS" envDefault:"5"`
 	MaxOpenConns   int           `env:"SQL_DB_MAX_OPEN_CONNS" envDefault:"20"`
 	ConfigLocation string        `env:"SQL_DB_CONFIG_LOCATION"`
-	FilePathRoot   string        `env:"FILE_PATH_ROOT" envDefault:"^/home/jenkins/agent/workspace/build/[^/]+/"`
 }
 
 type ConfigSecrets struct {
