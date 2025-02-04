@@ -64,6 +64,10 @@ def get_collections(COLLECTIONS_JSON: str):
     """
     client = QdrantClient(url="http://localhost:6333")
     collections = client.get_collections().collections
+    if not os.path.exists(COLLECTIONS_JSON):
+        with open(COLLECTIONS_JSON, "w+") as f:
+            collections = []
+            json.dump(collections, f)
     if len(collections) == 0:
         with open(COLLECTIONS_JSON, "w+") as f:
             collections = []
@@ -76,3 +80,14 @@ def get_collections(COLLECTIONS_JSON: str):
                 collections = []
     client.close()
     return collections
+
+
+def table_name_from(data_source_id: int):
+    """
+    Get the table name from a data source ID.
+    Args:
+        data_source_id (int): The data source ID.
+    Returns:
+        str: The table name.
+    """
+    return f"index_{data_source_id}"

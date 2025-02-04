@@ -58,7 +58,7 @@ from data_types import RagIndexConfiguration
 from config import settings
 import mimetypes
 
-from utils import get_collections
+from utils import get_collections, table_name_from
 
 Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
 mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
@@ -75,6 +75,15 @@ RESOURCES_DIR = os.path.join(st_app_dir, "resources")
 
 # Function to get documents from a collection
 def get_documents_df(collection_name: str):
+    """
+    Get the documents from the specified collection.
+
+    Args:
+        collection_name (str): The name of the collection to get documents from.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the documents in the collection.
+    """
     collections_dir = os.path.join(SOURCE_FILES_DIR, collection_name)
     # Get all files in the directory, the creation time in date, and the file size in MB
     if not os.path.exists(collections_dir):
@@ -107,15 +116,21 @@ def get_documents_df(collection_name: str):
     return records_df.drop_duplicates().reset_index(drop=True)
 
 
-# Function to get the table name from a data source ID
-def table_name_from(data_source_id: int):
-    return f"index_{data_source_id}"
-
-
 # Function to get or create a Qdrant vector store
 def get_or_create_qdrant_vector_store(
     data_source_id: str, vector_size: int, distance_metric: str
 ):
+    """
+    Get or create a Qdrant vector store for the specified data source ID.
+
+    Args:
+        data_source_id (str): The data source ID.
+        vector_size (int): The size of the vectors.
+        distance_metric (str): The distance metric to use for the vector store.
+
+    Returns:
+        QdrantVectorStore: The Qdrant vector store.
+    """
     client = QdrantClient(host="localhost", port=6333)
     vector_store = QdrantVectorStore(
         table_name_from(data_source_id),
@@ -135,13 +150,13 @@ def create_collection(
 ):
     """
     Creates a collection with the specified name, vector size, and distance metric.
-    Parameters:
-    name (str): The name of the collection to be created.
-    vector_size (int): The size of the vectors in the collection.
-    distance_metric (str): The distance metric to be used for the collection.
-                           Must be one of "Cosine", "Euclidean", or "Dot".
+    Args:
+        name (str): The name of the collection to be created.
+        vector_size (int): The size of the vectors in the collection.
+        distance_metric (str): The distance metric to be used for the collection.
+                            Must be one of "Cosine", "Euclidean", or "Dot".
     Raises:
-    ValueError: If an invalid distance metric is provided.
+        ValueError: If an invalid distance metric is provided.
     """
     if distance_metric == "Cosine":
         distance_metric = Distance.COSINE
@@ -179,6 +194,14 @@ def create_collection(
 def save_uploadedfile(uploadedfile, collection_name):
     """
     takes the temporary file from streamlit upload and saves it
+    to the source_files directory
+
+    Args:
+        uploadedfile (BytesIO): The uploaded file to save.
+        collection_name (str): The name of the collection to save the file to.
+
+    Returns:
+        str: The path to the saved file.
     """
     save_dir = os.path.join(SOURCE_FILES_DIR, collection_name)
     if not os.path.exists(save_dir):
@@ -198,8 +221,12 @@ def save_uploadedfile(uploadedfile, collection_name):
 def upload_documents(collection_config: RagIndexConfiguration):
     """
     Upload documents to the specified collection.
-    Parameters:
-    collection_config (RagIndexConfiguration): The configuration of the collection to upload documents to.
+
+    Args:
+        collection_config (RagIndexConfiguration): The configuration of the collection to upload documents to
+
+    Raises:
+        ValueError: If an invalid distance metric is provided.
     """
     uploaded_files = st.file_uploader(
         "Choose files to upload",
