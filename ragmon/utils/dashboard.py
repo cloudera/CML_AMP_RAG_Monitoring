@@ -9,6 +9,7 @@ import requests
 import streamlit as st
 import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
+from wordcloud import WordCloud
 
 from data_types import MLFlowStoreRequest
 
@@ -21,6 +22,8 @@ table_cols_to_show = [
     "contexts",
     "input_length",
     "output_length",
+    "query_keywords",
+    "response_keywords",
     # "feedback_str"
 ]
 
@@ -253,6 +256,16 @@ def get_numeric_metrics_df(request: MLFlowStoreRequest):
     return metrics_df
 
 
+def highlight_words(s, words):
+    for word in words:
+        if word in s:
+            s = s.replace(
+                word,
+                f'<span style="background-color: #f0f9eb; border-radius: 5px;">{word}</span>',
+            )
+    return s
+
+
 def show_live_df_component(
     live_results_df: pd.DataFrame,
     metrics_dfs: List[pd.DataFrame],
@@ -268,6 +281,7 @@ def show_live_df_component(
             subset=["response_id"], keep="last"
         )
         live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
+
         if "feedback" in live_results_df.columns:
             live_results_df["feedback"] = live_results_df["feedback"].apply(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
@@ -600,3 +614,33 @@ def show_time_series_component(
             return
         fig_placeholder.markdown(f"### {title}", help=tooltip)
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
+
+
+def show_wordcloud_component(df: pd.DataFrame):
+    """
+    Displays a word cloud component in Streamlit.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame containing the data (keyword column) for the word cloud.
+    fig_placeholder (DeltaGenerator): Streamlit placeholder for the word cloud.
+
+    Returns:
+    None
+    """
+    if "query_keywords" and "response_keywords" in df.columns:
+        query_keywords = " ".join(df["query_keywords"].to_list())
+        response_keywords = " ".join(df["response_keywords"].to_list())
+        q_wc = WordCloud()
+        r_wc = WordCloud()
+
+        q_fig = q_wc.generate(query_keywords)
+        r_fig = r_wc.generate(response_keywords)
+
+        with st.expander(":material/label: **Word Cloud**", expanded=True):
+            q_col, r_col = st.columns(2)
+            with q_col:
+                st.markdown("### Query Keywords")
+                st.image(q_fig.to_image(), use_column_width=True)
+            with r_col:
+                st.markdown("### Response Keywords")
+                st.image(r_fig.to_image(), use_column_width=True)

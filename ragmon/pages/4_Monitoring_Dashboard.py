@@ -63,6 +63,7 @@ from utils.dashboard import (
     show_live_df_component,
     show_pie_chart_component,
     show_time_series_component,
+    show_wordcloud_component,
 )
 
 warnings.filterwarnings("ignore")
@@ -414,7 +415,9 @@ if experiment_ids:
                     st.columns([1, 1, 1, 1, 1, 1])
                     for _ in range(len(custom_evals) // 6 + 1)
                 ]
-                with st.expander("**Custom Metrics Overview**", expanded=True):
+                with st.expander(
+                    ":material/analytics: **Custom Metrics Overview**", expanded=True
+                ):
                     custom_metric_fig_rows = [
                         st.columns([1, 1, 1]) for _ in range(len(custom_evals) // 3 + 1)
                     ]
@@ -441,6 +444,11 @@ if experiment_ids:
                         frequency="h",
                         fig_placeholder=custom_metric_fig,
                     )
+            # Show keywords wordcloud
+            show_wordcloud_component(
+                df=live_results_df,
+            )
+
             # Live Results
             metrics_dfs = [
                 faithfulness_df.drop(columns=["timestamp"]),
