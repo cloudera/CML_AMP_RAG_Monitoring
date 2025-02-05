@@ -58,6 +58,7 @@ from data_types import (
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
 COLLECTIONS_JSON = os.path.join(st_app_dir, "collections.json")
+SOURCE_FILES_DIR = os.path.join(st_app_dir, "source_files")
 
 
 # Function to get list of collections
@@ -83,8 +84,68 @@ def get_collections():
     return collections
 
 
+# Function to get the table name from a data source ID
+def table_name_from(data_source_id: int):
+    """
+    Get the table name from a data source ID.
+
+    Args:
+        data_source_id (int): The data source ID.
+    Returns:
+        str: The table name.
+    """
+    return f"index_{data_source_id}"
+
+
+# function to return true or false to disable chat
+def disable_chat(collections, selected_collection):
+    """
+    Determine whether the chat should be disabled.
+
+    Args:
+        collections (list): The list of collections.
+        selected_collection (dict): The selected collection.
+    Returns:
+        bool: True if the chat should be disabled, False otherwise.
+    """
+    # If there are no collections, the chat should be disabled
+    if len(collections) == 0:
+        return True
+
+    # If there are no files in the source files directory, the chat should be disabled
+    if selected_collection is None:
+        return True
+
+    files_dir = os.path.join(
+        SOURCE_FILES_DIR, table_name_from(selected_collection["id"])
+    )
+
+    # If the files directory does not exist, the chat should be disabled
+    if not os.path.exists(files_dir):
+        return True
+
+    # If there are no files in the files directory, the chat should be disabled
+    files = os.listdir(
+        os.path.join(SOURCE_FILES_DIR, table_name_from(selected_collection["id"]))
+    )
+    if len(files) == 0:
+        return True
+
+    # Otherwise, the chat should not be disabled
+    return False
+
+
 # Function to get response from the backend
 def get_response(request: RagPredictRequest) -> RagPredictResponse:
+    """
+    Get a response from the backend.
+
+    Args:
+        request (RagPredictRequest): The request.
+
+    Returns:
+        RagPredictResponse: The response.
+    """
     fastapi_port = os.environ["FASTAPI_PORT"]
     if fastapi_port is None:
         fastapi_port = 8000
@@ -107,6 +168,14 @@ def get_response(request: RagPredictRequest) -> RagPredictResponse:
 
 # Function to log feedback
 def log_feedback(request: RagFeedbackRequest):
+    """
+    Log feedback.
+
+    Args:
+        request (RagFeedbackRequest): The request.
+    Returns:
+        dict: The response.
+    """
     fastapi_port = os.environ["FASTAPI_PORT"]
     if fastapi_port is None:
         fastapi_port = 8000
@@ -239,7 +308,10 @@ prompt_col, reset_col = st.columns([24, 1])
 # Chat input
 with prompt_col:
     if prompt := st.chat_input(
-        "Ask a question!", disabled=True if collections == [] else False
+        "Ask a question!",
+        disabled=disable_chat(
+            collections=collections, selected_collection=selected_collection
+        ),
     ):
         st.session_state.messages.append(RagMessage(role="user", content=prompt))
         st.chat_message("user", avatar=":material/person:").markdown(prompt)
