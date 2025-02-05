@@ -52,7 +52,7 @@ from data_types import (
     RagMessage,
     RagFeedbackRequest,
 )
-from utils import get_collections
+from utils import get_collections, table_name_from
 
 # get collections directory
 file_path = Path(os.path.realpath(__file__))
@@ -60,10 +60,57 @@ st_app_dir = file_path.parents[1]
 data_dir = os.path.join(st_app_dir, "data")
 cols_dir = os.path.join(data_dir, "collections")
 COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
+SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
+
+
+# function to return true or false to disable chat
+def disable_chat(collections, selected_collection):
+    """
+    Determine whether the chat should be disabled.
+    Args:
+        collections (list): The list of collections.
+        selected_collection (dict): The selected collection.
+    Returns:
+        bool: True if the chat should be disabled, False otherwise.
+    """
+    # If there are no collections, the chat should be disabled
+    if len(collections) == 0:
+        return True
+
+    # If there are no files in the source files directory, the chat should be disabled
+    if selected_collection is None:
+        return True
+
+    files_dir = os.path.join(
+        SOURCE_FILES_DIR, table_name_from(selected_collection["id"])
+    )
+
+    # If the files directory does not exist, the chat should be disabled
+    if not os.path.exists(files_dir):
+        return True
+
+    # If there are no files in the files directory, the chat should be disabled
+    files = os.listdir(
+        os.path.join(SOURCE_FILES_DIR, table_name_from(selected_collection["id"]))
+    )
+    if len(files) == 0:
+        return True
+
+    # Otherwise, the chat should not be disabled
+    return False
 
 
 # Function to get response from the backend
 def get_response(request: RagPredictRequest) -> RagPredictResponse:
+    """
+    Get a response from the backend.
+
+    Args:
+        request (RagPredictRequest): The request to send to the backend.
+
+    Returns:
+        RagPredictResponse: The response from the backend.
+    """
     fastapi_port = os.environ["FASTAPI_PORT"]
     if fastapi_port is None:
         fastapi_port = 8000
@@ -86,6 +133,15 @@ def get_response(request: RagPredictRequest) -> RagPredictResponse:
 
 # Function to log feedback
 def log_feedback(request: RagFeedbackRequest):
+    """
+    Log feedback.
+
+    Args:
+        request (RagFeedbackRequest): The request to log feedback.
+
+    Returns:
+        dict: The response from the backend.
+    """
     fastapi_port = os.environ["FASTAPI_PORT"]
     if fastapi_port is None:
         fastapi_port = 8000
@@ -219,8 +275,19 @@ prompt_col, reset_col = st.columns([24, 1])
 
 # Chat input
 with prompt_col:
+    PLACEHOLDER_TEXT = (
+        "Ask a question!"
+        if not disable_chat(
+            collections=collections, selected_collection=selected_collection
+        )
+        else "Please add files to the selected data source to chat."
+    )
     if prompt := st.chat_input(
-        "Ask a question!", disabled=True if collections == [] else False
+        placeholder=PLACEHOLDER_TEXT,
+        disabled=disable_chat(
+            collections=collections,
+            selected_collection=selected_collection,
+        ),
     ):
         st.session_state.messages.append(RagMessage(role="user", content=prompt))
         st.chat_message("user", avatar=":material/person:").markdown(prompt)
