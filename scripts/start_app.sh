@@ -33,10 +33,6 @@ SQL_DB_ENGINE=postgres SQL_DB_NAME=metrics SQL_DB_OPTIONS=connectTimeout=5 nohup
 
 cd ragmon
 
-echo "Starting MLflow"
-# Start MLflow
-nohup uv run mlflow server --backend-store-uri "sqlite:///$SQL_DB_PATH" &>../mlflow.log &
-
 echo "Starting REST API"
 # Start FastAPI
 nohup uv run fastapi run --host 127.0.0.1 --port $FASTAPI_PORT main.py &>../fastapi.log &
