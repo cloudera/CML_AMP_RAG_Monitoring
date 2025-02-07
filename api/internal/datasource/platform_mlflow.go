@@ -122,10 +122,6 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 	}
 }
 
-func (m *PlatformMLFlow) WaitForReady(ctx context.Context) error {
-	return nil
-}
-
 func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
 	url := fmt.Sprintf("%s/api/v2/projects/%s/experiments/%s/runs/%s", m.baseUrl, m.cfg.CDSWProjectID, run.Info.ExperimentId, run.Info.RunId)
 	req := cbhttp.NewRequest(ctx, "PATCH", url)

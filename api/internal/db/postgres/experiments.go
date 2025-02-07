@@ -34,21 +34,6 @@ func (e *Experiments) CreateExperiment(ctx context.Context, experimentId string,
 	return e.GetExperimentById(ctx, id)
 }
 
-func (e *Experiments) UpdateRemoteExperimentId(ctx context.Context, id int64, remoteExperimentId string) error {
-	query := `
-	UPDATE experiments SET remote_experiment_id=?
-	WHERE id = ?
-	`
-	res, err := e.db.ExecContext(ctx, query, remoteExperimentId, id)
-	if err != nil {
-		return err
-	}
-	if rows, _ := res.RowsAffected(); rows == 0 {
-		log.Printf("no rows affected for experiment %d", id)
-	}
-	return nil
-}
-
 func (e *Experiments) UpdateExperimentCreatedAndTimestamp(ctx context.Context, id int64, created bool, ts time.Time) error {
 	query := `
 	UPDATE experiments SET created=?, created_ts=?
@@ -81,7 +66,7 @@ func (e *Experiments) UpdateExperimentUpdatedAndTimestamp(ctx context.Context, i
 
 func (e *Experiments) GetExperimentById(ctx context.Context, id int64) (*db.Experiment, error) {
 	query := `
-	SELECT id, name, experiment_id, remote_experiment_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
 	WHERE id = ?
 	`
@@ -96,7 +81,7 @@ func (e *Experiments) GetExperimentById(ctx context.Context, id int64) (*db.Expe
 
 func (e *Experiments) GetExperimentByExperimentId(ctx context.Context, experimentId string) (*db.Experiment, error) {
 	query := `
-	SELECT id, name, experiment_id, remote_experiment_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
 	WHERE experiment_id = ?
 	`
@@ -111,13 +96,9 @@ func (e *Experiments) GetExperimentByExperimentId(ctx context.Context, experimen
 
 func (e *Experiments) experimentFromRow(row lsql.RowScanner) (*db.Experiment, error) {
 	experiment := &db.Experiment{}
-	remoteExperimentId := sql.NullString{}
 	name := sql.NullString{}
-	if err := row.Scan(&experiment.Id, &name, &experiment.ExperimentId, &remoteExperimentId, &experiment.Created, &experiment.Updated, &experiment.Deleted, &experiment.CreatedTs, &experiment.UpdatedTs); err != nil {
+	if err := row.Scan(&experiment.Id, &name, &experiment.ExperimentId, &experiment.Created, &experiment.Updated, &experiment.Deleted, &experiment.CreatedTs, &experiment.UpdatedTs); err != nil {
 		return nil, err
-	}
-	if remoteExperimentId.Valid {
-		experiment.RemoteExperimentId = remoteExperimentId.String
 	}
 	if name.Valid {
 		experiment.Name = name.String
@@ -165,7 +146,7 @@ func (e *Experiments) ListExperimentIDsForReconciliation(ctx context.Context, ma
 
 func (e *Experiments) ListExperiments(ctx context.Context) ([]*db.Experiment, error) {
 	query := `
-	SELECT id, name, experiment_id, remote_experiment_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
 	`
 	rows, err := e.db.QueryContext(ctx, query)

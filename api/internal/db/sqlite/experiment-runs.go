@@ -39,7 +39,7 @@ func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.Experi
 
 func (e *ExperimentRuns) GetExperimentRunById(ctx context.Context, id int64) (*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
 	WHERE id = ?
 	`
@@ -54,7 +54,7 @@ func (e *ExperimentRuns) GetExperimentRunById(ctx context.Context, id int64) (*d
 
 func (e *ExperimentRuns) GetExperimentRun(ctx context.Context, experimentId string, runId string) (*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
 	WHERE experiment_id = ? AND run_id = ?
 	`
@@ -69,7 +69,7 @@ func (e *ExperimentRuns) GetExperimentRun(ctx context.Context, experimentId stri
 
 func (e *ExperimentRuns) ListExperimentRuns(ctx context.Context, experimentId string) ([]*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
 	WHERE experiment_id = ?
 	`
@@ -153,20 +153,6 @@ func (e *ExperimentRuns) ListExperimentRunIdsForMetricReconciliation(ctx context
 	return response, nil
 }
 
-func (e *ExperimentRuns) UpdateRemoteRunId(ctx context.Context, id int64, remoteRunId string) error {
-	query := `
-	UPDATE experiment_runs
-	SET remote_run_id = ?
-	WHERE id = ?
-	`
-	args := []interface{}{remoteRunId, id}
-	_, err := e.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (e *ExperimentRuns) UpdateExperimentRunReconcileMetrics(ctx context.Context, id int64, reconcileMetrics bool) error {
 	query := `
 	UPDATE experiment_runs
@@ -207,12 +193,8 @@ func (e *ExperimentRuns) DeleteExperimentRun(ctx context.Context, experimentId s
 
 func ExperimentRunInstance(scanner lsql.RowScanner) (*db.ExperimentRun, error) {
 	run := &db.ExperimentRun{}
-	remoteRunId := sql.NullString{}
-	if err := scanner.Scan(&run.Id, &run.ExperimentId, &run.RunId, &remoteRunId, &run.Created, &run.Updated, &run.Deleted, &run.CreatedTs, &run.UpdatedTs); err != nil {
+	if err := scanner.Scan(&run.Id, &run.ExperimentId, &run.RunId, &run.Created, &run.Updated, &run.Deleted, &run.CreatedTs, &run.UpdatedTs); err != nil {
 		return nil, err
-	}
-	if remoteRunId.Valid {
-		run.RemoteRunId = remoteRunId.String
 	}
 	return run, nil
 }

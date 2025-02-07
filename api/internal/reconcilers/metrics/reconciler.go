@@ -12,15 +12,15 @@ import (
 	"time"
 )
 
-type Reconciler struct {
+type MetricsReconciler struct {
 	config *Config
 	db     db.Database
 	mlFlow datasource.DataStores
 }
 
-func (r *Reconciler) Reboot(_ context.Context) {}
+func (r *MetricsReconciler) Reboot(_ context.Context) {}
 
-func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueue[int64]) {
+func (r *MetricsReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueue[int64]) {
 	if !r.config.Enabled {
 		return
 	}
@@ -43,7 +43,7 @@ func (r *Reconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQueu
 	log.Debugln("completing reconciler resync")
 }
 
-func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
+func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
 	log.Printf("reconciling %d experiment runs for metrics", len(items))
 	for _, item := range items {
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
@@ -51,21 +51,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, dberr)
 			continue
 		}
-		if run.RemoteRunId == "" {
-			log.Printf("experiment run %d has no remote run id, skipping reconciliation", item.ID)
-			continue
-		}
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
 			continue
 		}
-		log.Printf("reconciling metrics for experiment %s with remote ID %s and database ID %d run with remote ID %s and database ID %d",
-			experiment.Name, experiment.RemoteExperimentId, item.ID, run.RemoteRunId, run.Id)
+		log.Printf("reconciling metrics for experiment %s with ID %s and database ID %d run with ID %s and database ID %d",
+			experiment.Name, experiment.ExperimentId, item.ID, run.RunId, run.Id)
 		// Fetch metrics from MLFlow
-		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.ExperimentId, run.RunId)
 		if err != nil {
-			log.Printf("failed to fetch metrics for experiment run %s: %s", run.RemoteRunId, err)
+			log.Printf("failed to fetch metrics for experiment run %s: %s", run.RunId, err)
 			continue
 		}
 		for _, metric := range mlFlowMetrics {
@@ -84,24 +80,24 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 			if err != nil {
 				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
 			} else {
-				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RemoteRunId, run.Id)
+				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RunId, run.Id)
 			}
 		}
 
 		// fetch any text metrics stored as json artifacts
-		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.RemoteExperimentId, run.RemoteRunId)
+		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.ExperimentId, run.RunId)
 		if err != nil {
-			log.Printf("failed to fetch run %s for experiment %s: %s", run.RemoteRunId, experiment.RemoteExperimentId, err)
+			log.Printf("failed to fetch run %s for experiment %s: %s", run.RunId, experiment.ExperimentId, err)
 			continue
 		}
-		log.Printf("found %d artifacts for experiment run %s", len(remoteRun.Data.Files), run.RemoteRunId)
+		log.Printf("found %d artifacts for experiment run %s", len(remoteRun.Data.Files), run.RunId)
 		for _, artifact := range remoteRun.Data.Files {
 			// TODO: filter these
 			if strings.HasSuffix(artifact.Path, ".json") {
-				log.Printf("fetching artifact %s for experiment run %s", artifact.Path, run.RemoteRunId)
-				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RemoteRunId, artifact.Path)
+				log.Printf("fetching artifact %s for experiment run %s", artifact.Path, run.RunId)
+				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RunId, artifact.Path)
 				if err != nil {
-					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RemoteRunId, err)
+					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RunId, err)
 					continue
 				}
 				value := string(data)
@@ -122,7 +118,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
 					continue
 				} else {
-					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RemoteRunId, run.Id)
+					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RunId, run.Id)
 				}
 			}
 		}
@@ -136,7 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, items []reconciler.Reconcile
 	}
 }
 
-func NewReconcilerManager(app *app.Instance, cfg *Config, rec *Reconciler) (*reconciler.Manager[int64], error) {
+func NewMetricsReconcilerManager(app *app.Instance, cfg *Config, rec *MetricsReconciler) (*reconciler.Manager[int64], error) {
 	log.Println("experiment run metrics reconciler initializing")
 	reconcilerConfig, err := reconciler.NewConfig(cfg.ResyncFrequency, cfg.MaxWorkers, cfg.RunMaxItems)
 
@@ -146,14 +142,14 @@ func NewReconcilerManager(app *app.Instance, cfg *Config, rec *Reconciler) (*rec
 	return reconciler.NewManager[int64](app.Context(), reconcilerConfig, rec), nil
 }
 
-func NewReconciler(config *Config, db db.Database, mlFlow datasource.DataStores) *Reconciler {
-	return &Reconciler{
+func NewMetricsReconciler(config *Config, db db.Database, mlFlow datasource.DataStores) *MetricsReconciler {
+	return &MetricsReconciler{
 		config: config,
 		db:     db,
 		mlFlow: mlFlow,
 	}
 }
 
-func (r *Reconciler) Name() string {
+func (r *MetricsReconciler) Name() string {
 	return "metrics-reconciler"
 }

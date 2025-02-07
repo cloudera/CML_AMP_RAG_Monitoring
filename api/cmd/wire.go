@@ -32,9 +32,9 @@ func InitializeDependencies() (*dependencies, error) {
 		restapi.NewMetricsAPI, restapi.NewExperimentRunsAPI, restapi.NewExperimentAPI,
 		server.NewSwaggerApiServer,
 		datasource.NewConfigFromEnv, datasource.NewDataStores,
-		recexperiments.NewConfigFromEnv, recexperiments.NewExperimentReconciler, recexperiments.NewSyncReconciler,
+		recexperiments.NewConfigFromEnv, recexperiments.NewExperimentReconciler, recexperiments.NewExperimentRunReconciler,
 		recruns.NewConfigFromEnv, recruns.NewRunReconciler,
-		recmetrics.NewConfigFromEnv, recmetrics.NewReconciler,
+		recmetrics.NewConfigFromEnv, recmetrics.NewMetricsReconciler,
 		reconcilers.NewReconcilerSet,
 		newDependencies)
 	return &dependencies{}, nil

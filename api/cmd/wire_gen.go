@@ -92,7 +92,7 @@ func InitializeDependencies() (*dependencies, error) {
 		return nil, err
 	}
 	experimentReconciler := experiments.NewExperimentReconciler(experimentsConfig, database, dataStores)
-	syncReconciler := experiments.NewSyncReconciler(experimentsConfig, database, dataStores)
+	experimentRunReconciler := experiments.NewExperimentRunReconciler(experimentsConfig, database, dataStores)
 	runsConfig, err := runs.NewConfigFromEnv()
 	if err != nil {
 		return nil, err
@@ -102,8 +102,8 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	reconciler := metrics.NewReconciler(metricsConfig, database, dataStores)
-	reconcilerSet := reconcilers.NewReconcilerSet(instance, experimentsConfig, experimentReconciler, syncReconciler, runsConfig, runReconciler, metricsConfig, reconciler)
+	metricsReconciler := metrics.NewMetricsReconciler(metricsConfig, database, dataStores)
+	reconcilerSet := reconcilers.NewReconcilerSet(instance, experimentsConfig, experimentReconciler, experimentRunReconciler, runsConfig, runReconciler, metricsConfig, metricsReconciler)
 	mainDependencies := newDependencies(instance, configConfig, sbhttpserverInstance, swaggerApiServer, v, database, migration, connections, dataStores, reconcilerSet)
 	return mainDependencies, nil
 }

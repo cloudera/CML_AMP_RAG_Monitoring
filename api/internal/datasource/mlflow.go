@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// TODO: Remove this entire file once we are certain none of it is getting used
+
 type MLFlow struct {
 	baseUrl     string
 	cfg         *Config
@@ -26,26 +28,6 @@ func NewMLFlow(baseUrl string, cfg *Config, connections *clientbase.Connections)
 		cfg:         cfg,
 		connections: connections,
 	}
-}
-
-func (m *MLFlow) WaitForReady(ctx context.Context) error {
-	log.Println("waiting for mlflow to be ready")
-	done := false
-	for {
-		if done {
-			break
-		}
-		experiments, err := m.ListExperiments(ctx, 1, "")
-		if err != nil {
-			time.Sleep(1 * time.Second)
-		} else {
-			if len(experiments) > 0 {
-				log.Println("mlflow is ready")
-				done = true
-			}
-		}
-	}
-	return nil
 }
 
 func (m *MLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {

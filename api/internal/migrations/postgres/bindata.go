@@ -25,6 +25,42 @@ func bindata_read(data []byte, name string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+var __10_experiments_drop_remote_id_down_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x29\x56\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x4a\xcd\xcd\x2f\x49\x8d\x47\xc8\xc6\x67\xa6\x28\x84\x39\x06\x39\x7b\x38\x06\x69\x18\x1a\x18\x68\x2a\xb8\xb8\xba\x39\x86\xfa\x84\x28\xf8\x85\xfa\xf8\x58\x03\x02\x00\x00\xff\xff\xf4\xb4\x1d\xc0\x52\x00\x00\x00")
+
+func _10_experiments_drop_remote_id_down_sql() ([]byte, error) {
+	return bindata_read(
+		__10_experiments_drop_remote_id_down_sql,
+		"10_experiments_drop_remote_id.down.sql",
+	)
+}
+
+var __10_experiments_drop_remote_id_up_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x29\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x4a\xcd\xcd\x2f\x49\x8d\x47\x48\xc7\x67\xa6\x58\x03\x02\x00\x00\xff\xff\xce\xe0\xf4\x6b\x39\x00\x00\x00")
+
+func _10_experiments_drop_remote_id_up_sql() ([]byte, error) {
+	return bindata_read(
+		__10_experiments_drop_remote_id_up_sql,
+		"10_experiments_drop_remote_id.up.sql",
+	)
+}
+
+var __11_experiment_runs_drop_remote_id_down_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x89\x2f\x2a\xcd\x2b\x56\x70\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x4a\xcd\xcd\x2f\x49\x05\x09\xc7\x67\xa6\x28\x84\x39\x06\x39\x7b\x38\x06\x69\x18\x1a\x18\x68\x2a\xb8\xb8\xba\x39\x86\xfa\x84\x28\xf8\x85\xfa\xf8\x58\x03\x02\x00\x00\xff\xff\xeb\xe5\x55\x0d\x4f\x00\x00\x00")
+
+func _11_experiment_runs_drop_remote_id_down_sql() ([]byte, error) {
+	return bindata_read(
+		__11_experiment_runs_drop_remote_id_down_sql,
+		"11_experiment_runs_drop_remote_id.down.sql",
+	)
+}
+
+var __11_experiment_runs_drop_remote_id_up_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\xad\x28\x48\x2d\xca\xcc\x4d\xcd\x2b\x89\x2f\x2a\xcd\x2b\x56\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x4a\xcd\xcd\x2f\x49\x05\x89\xc7\x67\xa6\x58\x03\x02\x00\x00\xff\xff\x98\x7e\x9e\x18\x36\x00\x00\x00")
+
+func _11_experiment_runs_drop_remote_id_up_sql() ([]byte, error) {
+	return bindata_read(
+		__11_experiment_runs_drop_remote_id_up_sql,
+		"11_experiment_runs_drop_remote_id.up.sql",
+	)
+}
+
 var __1_mutex_down_sql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x72\x75\xf7\xf4\x53\xd0\xd7\x52\xb4\x34\x30\x30\x30\x50\x08\x70\x0d\x0e\xf6\xf4\xf5\x0c\x0e\xf1\x74\x56\xd0\xd2\xb7\xe6\xe2\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\xc8\x2d\x2d\x49\xad\xb0\xe6\xe2\x72\xf6\xf7\xf5\xf5\x0c\xb1\xe6\x02\x04\x00\x00\xff\xff\x23\x97\xbe\x14\x45\x00\x00\x00")
 
 func _1_mutex_down_sql() ([]byte, error) {
@@ -209,6 +245,10 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
+	"10_experiments_drop_remote_id.down.sql":       _10_experiments_drop_remote_id_down_sql,
+	"10_experiments_drop_remote_id.up.sql":         _10_experiments_drop_remote_id_up_sql,
+	"11_experiment_runs_drop_remote_id.down.sql":   _11_experiment_runs_drop_remote_id_down_sql,
+	"11_experiment_runs_drop_remote_id.up.sql":     _11_experiment_runs_drop_remote_id_up_sql,
 	"1_mutex.down.sql":                             _1_mutex_down_sql,
 	"1_mutex.up.sql":                               _1_mutex_up_sql,
 	"2_experiment_runs.down.sql":                   _2_experiment_runs_down_sql,
@@ -272,6 +312,10 @@ type _bintree_t struct {
 }
 
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
+	"10_experiments_drop_remote_id.down.sql":       &_bintree_t{_10_experiments_drop_remote_id_down_sql, map[string]*_bintree_t{}},
+	"10_experiments_drop_remote_id.up.sql":         &_bintree_t{_10_experiments_drop_remote_id_up_sql, map[string]*_bintree_t{}},
+	"11_experiment_runs_drop_remote_id.down.sql":   &_bintree_t{_11_experiment_runs_drop_remote_id_down_sql, map[string]*_bintree_t{}},
+	"11_experiment_runs_drop_remote_id.up.sql":     &_bintree_t{_11_experiment_runs_drop_remote_id_up_sql, map[string]*_bintree_t{}},
 	"1_mutex.down.sql":                             &_bintree_t{_1_mutex_down_sql, map[string]*_bintree_t{}},
 	"1_mutex.up.sql":                               &_bintree_t{_1_mutex_up_sql, map[string]*_bintree_t{}},
 	"2_experiment_runs.down.sql":                   &_bintree_t{_2_experiment_runs_down_sql, map[string]*_bintree_t{}},
