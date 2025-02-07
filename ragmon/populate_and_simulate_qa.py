@@ -32,8 +32,6 @@ from data_types import (
 )
 from config import settings
 
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
-
 COLLECTIONS_JSON = os.path.join(data_dir, "collections", "collections.json")
 SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
 CUSTOM_EVAL_DIR = os.path.join(data_dir, "custom_evaluators")

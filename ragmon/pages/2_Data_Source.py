@@ -61,7 +61,6 @@ import mimetypes
 from utils import get_collections
 
 Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))

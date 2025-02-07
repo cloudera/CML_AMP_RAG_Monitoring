@@ -82,8 +82,6 @@ logger.setLevel(settings.rag_log_level)
 
 tracer = opentelemetry.trace.get_tracer(__name__)
 
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
-
 router = APIRouter(
     prefix="/index",
     tags=["index"],
