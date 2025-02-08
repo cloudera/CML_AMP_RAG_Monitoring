@@ -127,7 +127,7 @@ func (e *ExperimentRuns) ListExperimentRunIdsForMetricReconciliation(ctx context
 	query := `
 	SELECT id
 	FROM experiment_runs
-	WHERE deleted = false AND updated = true AND reconcile_metrics = true
+	WHERE deleted = false AND reconcile_metrics = true
 	LIMIT ?
 	`
 
