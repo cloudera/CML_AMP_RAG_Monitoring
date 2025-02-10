@@ -99,12 +99,11 @@ if not experiment_ids:
     st.write("No Data Sources or Entries Found")
 
 if experiment_ids:
-    experiment_ids.sort(key=lambda x: int(x))
-
     data_source_names = {
-        exp_id: collection["name"]
-        for exp_id, collection in zip(experiment_ids, collections)
-    }
+        collection["mlflow_exp_id"]: collection["name"]
+        for collection in collections
+        if collection["mlflow_exp_id"] in experiment_ids
+        }
 
     selected_experiment = st.selectbox(
         "Select a Data Source :material/database:",
