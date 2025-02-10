@@ -4,30 +4,33 @@ import (
 	"context"
 	"database/sql"
 	log "github.com/sirupsen/logrus"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
 	"time"
 )
 
 type Experiments struct {
-	db *lsql.Instance
+	db  *lsql.Instance
+	cfg *config.Config
 }
 
 var _ db.ExperimentService = &Experiments{}
 
-func NewExperiments(instance *lsql.Instance) db.ExperimentService {
+func NewExperiments(instance *lsql.Instance, cfg *config.Config) db.ExperimentService {
 	return &Experiments{
-		db: instance,
+		db:  instance,
+		cfg: cfg,
 	}
 }
 
 func (e *Experiments) CreateExperiment(ctx context.Context, experimentId string, name string, createdTs time.Time, updatedTs time.Time) (*db.Experiment, error) {
 	query := `
-	INSERT INTO experiments (experiment_id, name, created, created_ts, updated, updated_ts, deleted) 
-	VALUES (?, ?, true, ?, false, ?, false)
+	INSERT INTO experiments (project_id, experiment_id, name, created, created_ts, updated, updated_ts, deleted) 
+	VALUES (?, ?, ?, true, ?, false, ?, false)
 	RETURNING id
 	`
-	id, err := e.db.ExecAndReturnId(ctx, query, experimentId, name, createdTs, updatedTs)
+	id, err := e.db.ExecAndReturnId(ctx, query, e.cfg.CDSWProjectID, experimentId, name, createdTs, updatedTs)
 	if err != nil {
 		return nil, err
 	}
@@ -68,9 +71,9 @@ func (e *Experiments) GetExperimentById(ctx context.Context, id int64) (*db.Expe
 	query := `
 	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
-	WHERE id = ?
+	WHERE id = ? AND project_id = ?
 	`
-	row := e.db.QueryRowContext(ctx, query, id)
+	row := e.db.QueryRowContext(ctx, query, id, e.cfg.CDSWProjectID)
 
 	experiment, err := e.experimentFromRow(row)
 	if err != nil {
@@ -83,9 +86,9 @@ func (e *Experiments) GetExperimentByExperimentId(ctx context.Context, experimen
 	query := `
 	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
-	WHERE experiment_id = ?
+	WHERE experiment_id = ? AND project_id = ?
 	`
-	row := e.db.QueryRowContext(ctx, query, experimentId)
+	row := e.db.QueryRowContext(ctx, query, experimentId, e.cfg.CDSWProjectID)
 
 	experiment, err := e.experimentFromRow(row)
 	if err != nil {
@@ -125,9 +128,9 @@ func (e *Experiments) ListExperimentIDsForReconciliation(ctx context.Context, ma
 	query := `
 	SELECT id
 	FROM experiments
-	WHERE created = true OR updated = true
+	WHERE created = true OR updated = true AND project_id = ?
 	`
-	rows, err := e.db.QueryContext(ctx, query)
+	rows, err := e.db.QueryContext(ctx, query, e.cfg.CDSWProjectID)
 
 	if err != nil {
 		return nil, err
@@ -148,8 +151,9 @@ func (e *Experiments) ListExperiments(ctx context.Context) ([]*db.Experiment, er
 	query := `
 	SELECT id, name, experiment_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiments
+	WHERE project_id = ?
 	`
-	rows, err := e.db.QueryContext(ctx, query)
+	rows, err := e.db.QueryContext(ctx, query, e.cfg.CDSWProjectID)
 
 	if err != nil {
 		return nil, err

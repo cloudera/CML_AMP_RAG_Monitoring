@@ -54,9 +54,9 @@ func InitializeDependencies() (*dependencies, error) {
 	}
 	lsqlInstance := postgres.NewInstance(lsqlConfig)
 	swaggerApiServer := server.NewSwaggerApiServer(instance, configConfig, lsqlInstance)
-	experimentService := postgres.NewExperiments(lsqlInstance)
-	experimentRunService := postgres.NewExperimentRuns(lsqlInstance)
-	metricsService := postgres.NewMetrics(lsqlInstance)
+	experimentService := postgres.NewExperiments(lsqlInstance, configConfig)
+	experimentRunService := postgres.NewExperimentRuns(lsqlInstance, configConfig)
+	metricsService := postgres.NewMetrics(lsqlInstance, configConfig)
 	database := postgres.NewDatabase(experimentService, experimentRunService, metricsService)
 	metricsAPI := restapi.NewMetricsAPI(database)
 	experimentRunsAPI := restapi.NewExperimentRunsAPI(database)
