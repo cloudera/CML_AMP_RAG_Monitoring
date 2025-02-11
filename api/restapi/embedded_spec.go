@@ -258,6 +258,46 @@ func init() {
           }
         }
       }
+    },
+    "/runs/parameters": {
+      "get": {
+        "description": "Get a list of monitored experiment run parameters.",
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get a list of monitored experiment run parameters.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The ID of the run",
+            "name": "run_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -642,6 +682,46 @@ func init() {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/ExperimentRun"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
+    },
+    "/runs/parameters": {
+      "get": {
+        "description": "Get a list of monitored experiment run parameters.",
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get a list of monitored experiment run parameters.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The ID of the run",
+            "name": "run_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },

@@ -37,6 +37,31 @@
         description: "bad request"
       500:
         description: "internal service error"
+/runs/parameters:
+  get:
+    tags: [runs]
+    summary: Get a list of monitored experiment run parameters.
+    description: Get a list of monitored experiment run parameters.
+    parameters:
+      - name: experiment_id
+        in: query
+        type: string
+        description: The ID of the experiment
+      - name: run_id
+        in: query
+        type: string
+        description: The ID of the run
+    responses:
+      200:
+        description: "success"
+        schema:
+          type: array
+          items:
+            type: string
+      400:
+        description: "bad request"
+      500:
+        description: "internal service error"
 /runs/list:
   post:
     tags: [runs]

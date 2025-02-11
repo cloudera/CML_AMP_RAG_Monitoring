@@ -59,7 +59,20 @@ func InitializeDependencies() (*dependencies, error) {
 	metricsService := postgres.NewMetrics(lsqlInstance, configConfig)
 	database := postgres.NewDatabase(experimentService, experimentRunService, metricsService)
 	metricsAPI := restapi.NewMetricsAPI(database)
-	experimentRunsAPI := restapi.NewExperimentRunsAPI(database)
+	datasourceConfig, err := datasource.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	clientbaseConfig, err := clientbase.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	connections, err := clientbase.NewConnections(clientbaseConfig, cbhttpInstance)
+	if err != nil {
+		return nil, err
+	}
+	dataStores := datasource.NewDataStores(datasourceConfig, connections)
+	experimentRunsAPI := restapi.NewExperimentRunsAPI(database, dataStores)
 	experimentAPI := restapi.NewExperimentAPI(database)
 	restapiConfig, err := server.NewSwaggerConfig(metricsAPI, experimentRunsAPI, experimentAPI)
 	if err != nil {
@@ -74,19 +87,6 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	clientbaseConfig, err := clientbase.NewConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	connections, err := clientbase.NewConnections(clientbaseConfig, cbhttpInstance)
-	if err != nil {
-		return nil, err
-	}
-	datasourceConfig, err := datasource.NewConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	dataStores := datasource.NewDataStores(datasourceConfig, connections)
 	experimentsConfig, err := experiments.NewConfigFromEnv()
 	if err != nil {
 		return nil, err

@@ -55,6 +55,9 @@ func NewMetricsAPI(spec *loads.Document) *MetricsAPI {
 		MetricsGetMetricsNamesHandler: metrics.GetMetricsNamesHandlerFunc(func(params metrics.GetMetricsNamesParams) middleware.Responder {
 			return middleware.NotImplemented("operation metrics.GetMetricsNames has not yet been implemented")
 		}),
+		RunsGetRunsParametersHandler: runs.GetRunsParametersHandlerFunc(func(params runs.GetRunsParametersParams) middleware.Responder {
+			return middleware.NotImplemented("operation runs.GetRunsParameters has not yet been implemented")
+		}),
 		MetricsPostMetricsHandler: metrics.PostMetricsHandlerFunc(func(params metrics.PostMetricsParams) middleware.Responder {
 			return middleware.NotImplemented("operation metrics.PostMetrics has not yet been implemented")
 		}),
@@ -109,6 +112,8 @@ type MetricsAPI struct {
 	ExperimentsGetExperimentsHandler experiments.GetExperimentsHandler
 	// MetricsGetMetricsNamesHandler sets the operation handler for the get metrics names operation
 	MetricsGetMetricsNamesHandler metrics.GetMetricsNamesHandler
+	// RunsGetRunsParametersHandler sets the operation handler for the get runs parameters operation
+	RunsGetRunsParametersHandler runs.GetRunsParametersHandler
 	// MetricsPostMetricsHandler sets the operation handler for the post metrics operation
 	MetricsPostMetricsHandler metrics.PostMetricsHandler
 	// MetricsPostMetricsListHandler sets the operation handler for the post metrics list operation
@@ -202,6 +207,9 @@ func (o *MetricsAPI) Validate() error {
 	}
 	if o.MetricsGetMetricsNamesHandler == nil {
 		unregistered = append(unregistered, "metrics.GetMetricsNamesHandler")
+	}
+	if o.RunsGetRunsParametersHandler == nil {
+		unregistered = append(unregistered, "runs.GetRunsParametersHandler")
 	}
 	if o.MetricsPostMetricsHandler == nil {
 		unregistered = append(unregistered, "metrics.PostMetricsHandler")
@@ -315,6 +323,10 @@ func (o *MetricsAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/metrics/names"] = metrics.NewGetMetricsNames(o.context, o.MetricsGetMetricsNamesHandler)
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/runs/parameters"] = runs.NewGetRunsParameters(o.context, o.RunsGetRunsParametersHandler)
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
