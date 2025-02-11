@@ -80,12 +80,12 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 			}
 		}
 		log.Printf("flagging experiment %s with ID %s (database ID %d) for run reconciliation", remote.Name, experiment.ExperimentId, experiment.Id)
-		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id)
+		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id, true)
 		if err != nil {
 			log.Printf("failed to update experiment %s with ID %s timestamp: %s", remote.Name, item.ID, err)
 			continue
 		}
-
+		item.Callback(nil)
 		log.Debugf("finished reconciling experiment %s with ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
 }

@@ -7,7 +7,6 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
-	"time"
 )
 
 type RunReconciler struct {
@@ -35,8 +34,7 @@ func (r *RunReconciler) Resync(ctx context.Context, queue *reconciler.ReconcileQ
 		queue.Add(id)
 	}
 
-	log.Printf("%d runs for are queued for reconciliation", len(queue.Pending))
-	log.Debugln("completing reconciler resync")
+	log.Debugln("completing run reconciler resync")
 }
 
 func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[int64]) {
@@ -59,7 +57,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		// TODO: validate that the run has updated data prior to queueing metrics reconciliation
 
 		// Update the flag and timestamp of the run to indicate that it has completed reconciliation
-		err = r.db.ExperimentRuns().UpdateExperimentRunUpdatedAndTimestamp(ctx, run.Id, false, time.Now())
+		err = r.db.ExperimentRuns().MarkExperimentRunForReconciliation(ctx, run.Id, false)
 		if err != nil {
 			log.Printf("failed to update run %d timestamp: %s", item.ID, err)
 			continue
@@ -67,11 +65,12 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 
 		// Update the experiment run to indicate that metrics reconciliation is required
 		log.Printf("flagging run %s with run ID %s and database ID %d for metrics reconciliation", remoteRun.Info.Name, remoteRun.Info.RunId, item.ID)
-		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, true)
+		err = r.db.ExperimentRuns().MarkExperimentRunForMetricsReconciliation(ctx, run.Id, true)
 		if err != nil {
 			log.Printf("failed to update run %d reconcile metrics flag: %s", item.ID, err)
 			continue
 		}
+		item.Callback(nil)
 	}
 	log.Printf("finished run reconiliation for %d experiment runs", len(items))
 }

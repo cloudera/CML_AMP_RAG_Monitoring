@@ -68,7 +68,17 @@ func (e *ExperimentRunsMock) ListExperimentRunIdsForReconciliation(_ context.Con
 	return runIds, nil
 }
 
-func (e *ExperimentRunsMock) UpdateExperimentRunUpdatedAndTimestamp(_ context.Context, id int64, updated bool, ts time.Time) error {
+func (e *ExperimentRunsMock) MarkExperimentRunForReconciliation(_ context.Context, id int64, reconcile bool) error {
+	for _, run := range e.ExperimentRuns {
+		if run.Id == id {
+			run.UpdatedTs = run.UpdatedTs.Add(1)
+			return nil
+		}
+	}
+	return fmt.Errorf("run id %d not found", id)
+}
+
+func (e *ExperimentRunsMock) MarkExperimentRunForMetricsReconciliation(_ context.Context, id int64, reconcile bool) error {
 	for _, run := range e.ExperimentRuns {
 		if run.Id == id {
 			run.UpdatedTs = run.UpdatedTs.Add(1)
@@ -110,7 +120,7 @@ func (e *ExperimentsMock) ListExperimentIDsForReconciliation(ctx context.Context
 	panic("implement me")
 }
 
-func (e *ExperimentsMock) MarkExperimentIDForReconciliation(ctx context.Context, id int64) error {
+func (e *ExperimentsMock) MarkExperimentIDForReconciliation(ctx context.Context, id int64, reconcile bool) error {
 	//TODO implement me
 	panic("implement me")
 }
@@ -145,6 +155,11 @@ type MetricsMock struct {
 	CreatedMetrics []*Metric
 }
 
+func (mm *MetricsMock) UpdateMetric(ctx context.Context, m *Metric) (*Metric, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (mm *MetricsMock) CreateMetric(_ context.Context, m *Metric) (*Metric, error) {
 	now := time.Now()
 	m.Timestamp = &now
@@ -159,6 +174,15 @@ func (mm *MetricsMock) GetMetric(ctx context.Context, id int64) (*Metric, error)
 		}
 	}
 	return nil, fmt.Errorf("metric id %d not found", id)
+}
+
+func (mm *MetricsMock) GetMetricByName(ctx context.Context, experimentId string, runId string, name string) (*Metric, error) {
+	for _, metric := range mm.CreatedMetrics {
+		if metric.Name == name {
+			return metric, nil
+		}
+	}
+	return nil, fmt.Errorf("metric %s not found", name)
 }
 
 func (mm *MetricsMock) ListMetrics(_ context.Context, experimentId *string, runIds []string, metricNames []string) ([]*Metric, error) {

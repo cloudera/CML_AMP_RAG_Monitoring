@@ -153,7 +153,7 @@ func (e *ExperimentRuns) ListExperimentRunIdsForMetricReconciliation(ctx context
 	return response, nil
 }
 
-func (e *ExperimentRuns) UpdateExperimentRunReconcileMetrics(ctx context.Context, id int64, reconcileMetrics bool) error {
+func (e *ExperimentRuns) MarkExperimentRunForMetricsReconciliation(ctx context.Context, id int64, reconcileMetrics bool) error {
 	query := `
 	UPDATE experiment_runs
 	SET reconcile_metrics = ?
@@ -167,13 +167,13 @@ func (e *ExperimentRuns) UpdateExperimentRunReconcileMetrics(ctx context.Context
 	return nil
 }
 
-func (e *ExperimentRuns) UpdateExperimentRunUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, updatedAt time.Time) error {
+func (e *ExperimentRuns) MarkExperimentRunForReconciliation(ctx context.Context, id int64, reconcile bool) error {
 	query := `
 	UPDATE experiment_runs
 	SET updated = ?, updated_ts = ?
 	WHERE id = ? 
 	`
-	args := []interface{}{updated, updatedAt, id}
+	args := []interface{}{reconcile, time.Now(), id}
 	_, err := e.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err

@@ -104,12 +104,12 @@ func (e *Experiments) experimentFromRow(row lsql.RowScanner) (*db.Experiment, er
 	return experiment, nil
 }
 
-func (e *Experiments) MarkExperimentIDForReconciliation(ctx context.Context, id int64) error {
+func (e *Experiments) MarkExperimentIDForReconciliation(ctx context.Context, id int64, reconcile bool) error {
 	query := `
 	UPDATE experiments SET updated=?, updated_ts=?
 	WHERE id = ?
 	`
-	res, err := e.db.ExecContext(ctx, query, true, time.Now(), id)
+	res, err := e.db.ExecContext(ctx, query, reconcile, time.Now(), id)
 	if err != nil {
 		return err
 	}

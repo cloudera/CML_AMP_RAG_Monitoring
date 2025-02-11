@@ -12,8 +12,8 @@ type ExperimentRunService interface {
 	ListExperimentRuns(ctx context.Context, experimentId string) ([]*ExperimentRun, error)
 	ListExperimentRunIdsForReconciliation(ctx context.Context, maxItems int64) ([]int64, error)
 	ListExperimentRunIdsForMetricReconciliation(ctx context.Context, maxItems int64) ([]int64, error)
-	UpdateExperimentRunReconcileMetrics(ctx context.Context, id int64, reconcileMetrics bool) error
-	UpdateExperimentRunUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, updatedAt time.Time) error
+	MarkExperimentRunForMetricsReconciliation(ctx context.Context, id int64, reconcileMetrics bool) error
+	MarkExperimentRunForReconciliation(ctx context.Context, id int64, reconcile bool) error
 	DeleteExperimentRun(ctx context.Context, experimentId string, runId string) error
 }
 

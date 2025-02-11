@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
@@ -66,21 +68,48 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		}
 		for _, metric := range mlFlowMetrics {
 			ts := time.Unix(0, metric.Timestamp*int64(time.Millisecond))
-			m, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
-				ExperimentId: run.ExperimentId,
-				RunId:        run.RunId,
-				Name:         metric.Key,
-				Type:         db.MetricTypeNumeric,
-				ValueNumeric: &metric.Value,
-				Tags: map[string]string{
-					"step": strconv.Itoa(metric.Step),
-				},
-				Timestamp: &ts,
-			})
+
+			// check and see if the metric already exists in the database
+			existing, err := r.db.Metrics().GetMetricByName(ctx, run.ExperimentId, run.RunId, metric.Key)
 			if err != nil {
-				log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
+				if !errors.Is(err, sql.ErrNoRows) {
+					log.Printf("failed to query database: %s", err)
+					continue
+				}
+			}
+			if existing != nil {
+				log.Printf("metric %s already exists with database ID %d for experiment run %s", metric.Key, existing.Id, run.RunId)
+				if existing.Timestamp == nil || existing.Timestamp.Before(ts) {
+					log.Printf("updating timestamp for metric %s with database ID %d for experiment run %s", metric.Key, existing.Id, run.RunId)
+					existing.Tags["step"] = strconv.Itoa(metric.Step)
+					if existing.Type == db.MetricTypeNumeric {
+						existing.ValueNumeric = &metric.Value
+					} else {
+						log.Printf("metric %s is not numeric, skipping update", metric.Key)
+					}
+					_, err := r.db.Metrics().UpdateMetric(ctx, existing)
+					if err != nil {
+						log.Printf("failed to update metric %s with database ID %d for experiment run %s: %s", metric.Key, existing.Id, run.RunId, err)
+					}
+				}
 			} else {
-				log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RunId, run.Id)
+				log.Printf("metric %s does not exist in the database for experiment run %s", metric.Key, run.RunId)
+				m, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
+					ExperimentId: run.ExperimentId,
+					RunId:        run.RunId,
+					Name:         metric.Key,
+					Type:         db.MetricTypeNumeric,
+					ValueNumeric: &metric.Value,
+					Tags: map[string]string{
+						"step": strconv.Itoa(metric.Step),
+					},
+					Timestamp: &ts,
+				})
+				if err != nil {
+					log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
+				} else {
+					log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RunId, run.Id)
+				}
 			}
 		}
 
@@ -107,28 +136,52 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 				if lastIndex != -1 {
 					name = name[lastIndex+1:]
 				}
-				textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
-					ExperimentId: run.ExperimentId,
-					RunId:        run.RunId,
-					Name:         name,
-					Type:         db.MetricTypeText,
-					ValueText:    &value,
-				})
+				existing, err := r.db.Metrics().GetMetricByName(ctx, run.ExperimentId, run.RunId, name)
 				if err != nil {
-					log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
-					continue
+					if !errors.Is(err, sql.ErrNoRows) {
+						log.Printf("failed to query database: %s", err)
+						continue
+					}
+				}
+				if existing != nil {
+					log.Printf("metric %s already exists with database ID %d for experiment run %s", name, existing.Id, run.RunId)
+					// Artifacts don't have a timestamp to compare for updates, compare the value instead
+					if existing.ValueText != nil && *existing.ValueText != value {
+						log.Printf("updating value for metric %s with database ID %d for experiment run %s", name, existing.Id, run.RunId)
+						existing.ValueText = &value
+						_, err := r.db.Metrics().UpdateMetric(ctx, existing)
+						if err != nil {
+							log.Printf("failed to update metric %s with database ID %d for experiment run %s: %s", name, existing.Id, run.RunId, err)
+						}
+					} else {
+						log.Printf("value for metric %s with database ID %d for experiment run %s has not changed", name, existing.Id, run.RunId)
+					}
 				} else {
-					log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RunId, run.Id)
+					log.Printf("metric %s does not exist in the database for experiment run %s", name, run.RunId)
+					textMetric, err := r.db.Metrics().CreateMetric(ctx, &db.Metric{
+						ExperimentId: run.ExperimentId,
+						RunId:        run.RunId,
+						Name:         name,
+						Type:         db.MetricTypeText,
+						ValueText:    &value,
+					})
+					if err != nil {
+						log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+						continue
+					} else {
+						log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RunId, run.Id)
+					}
 				}
 			}
 		}
 
 		// Update the metrics flag of the experiment run to indicate that it has been reconciled
-		err = r.db.ExperimentRuns().UpdateExperimentRunReconcileMetrics(ctx, run.Id, false)
+		err = r.db.ExperimentRuns().MarkExperimentRunForMetricsReconciliation(ctx, run.Id, false)
 		if err != nil {
 			log.Printf("failed to update experiment run %d for metrics reconciliation: %s", item.ID, err)
 		}
 		log.Printf("finished reconciling metrics for experiment %s and run %s", run.ExperimentId, run.RunId)
+		item.Callback(nil)
 	}
 }
 

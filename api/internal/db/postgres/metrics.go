@@ -97,6 +97,53 @@ func (r *Metrics) GetMetric(ctx context.Context, id int64) (*db.Metric, error) {
 	}
 }
 
+func (r *Metrics) GetMetricByName(ctx context.Context, experimentId string, runId string, name string) (*db.Metric, error) {
+	query := `
+	SELECT id, experiment_id, run_id, name, value_numeric, value_text, tags, ts
+	FROM metrics
+	WHERE experiment_id = ? AND run_id = ? AND name = ? AND project_id = ?
+	`
+	row := r.db.QueryRowContext(ctx, query, experimentId, runId, name, r.cfg.CDSWProjectID)
+
+	if response, err := MetricInstance(row); err != nil {
+		return nil, err
+	} else {
+		return response, nil
+	}
+}
+
+func (r *Metrics) UpdateMetric(ctx context.Context, m *db.Metric) (*db.Metric, error) {
+	query := `
+	UPDATE metrics
+	SET value_numeric = ?, value_text = ?, tags = ?, ts = ?
+	WHERE id = ? AND project_id = ?
+	`
+	ts := time.Now()
+	if m.Timestamp != nil {
+		ts = *m.Timestamp
+	}
+
+	tags, err := json.Marshal(m.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	args := []interface{}{m.ValueNumeric, m.ValueText, tags, ts, m.Id, r.cfg.CDSWProjectID}
+	id, err := r.db.ExecAndReturnId(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &db.Metric{
+		Id:           id,
+		ExperimentId: m.ExperimentId,
+		RunId:        m.RunId,
+		Name:         m.Name,
+		ValueNumeric: m.ValueNumeric,
+		ValueText:    m.ValueText,
+		Timestamp:    &ts,
+	}, nil
+}
+
 func (r *Metrics) ListMetrics(ctx context.Context, experimentId *string, runIds []string, metricNames []string) ([]*db.Metric, error) {
 	query := `
 	SELECT id, experiment_id, run_id, name, value_numeric, value_text, tags, ts
