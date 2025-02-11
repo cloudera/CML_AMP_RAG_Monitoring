@@ -46,12 +46,19 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 	for _, item := range items {
 		experiment, err := r.db.Experiments().GetExperimentById(ctx, item.ID)
 		if err != nil {
-			log.Printf("failed to fetch experiment %d for sync reconciliation: %s", item.ID, err)
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("experiment %d not found in DB, skipping reconciliation", item.ID)
+				item.Callback(nil)
+				continue
+			}
+			log.Printf("failed to fetch experiment %d for run reconciliation: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 
 		if experiment == nil || experiment.ExperimentId == "" || experiment.ExperimentId == "0" {
 			log.Printf("experiment %d is nil or has no experiment ID, skipping reconciliation", item.ID)
+			item.Callback(nil)
 			continue
 		}
 
@@ -60,6 +67,7 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 		remoteRuns, rerr := r.dataStores.Remote.ListRuns(ctx, experiment.ExperimentId)
 		if rerr != nil {
 			log.Printf("failed to fetch local runs for experiment %s with experiment ID %s and database ID %d: %s", experiment.Name, experiment.ExperimentId, item.ID, rerr)
+			item.Callback(err)
 			continue
 		}
 		log.Printf("fetched %d remote runs for experiment %s with experiment ID %s and database ID %d", len(remoteRuns), experiment.Name, experiment.ExperimentId, item.ID)
@@ -70,6 +78,7 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 			existing, dberr := r.db.ExperimentRuns().GetExperimentRun(ctx, experiment.ExperimentId, run.Info.RunId)
 			if dberr != nil && !errors.Is(dberr, sql.ErrNoRows) {
 				log.Printf("failed to fetch run %s with run ID %s from DB: %s", run.Info.Name, run.Info.RunId, dberr)
+				item.Callback(err)
 				continue
 			}
 			var id int64
@@ -85,6 +94,7 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 				})
 				if cdberr != nil {
 					log.Printf("failed to insert run %s with run ID %s into DB: %s", run.Info.Name, run.Info.RunId, cdberr)
+					item.Callback(err)
 					continue
 				}
 				id = newRun.Id
@@ -94,6 +104,7 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 			dberr = r.db.ExperimentRuns().MarkExperimentRunForReconciliation(ctx, id, true)
 			if dberr != nil {
 				log.Printf("failed to update timestamp for run %s with run ID %s and database ID %d: %s", run.Info.Name, run.Info.RunId, id, dberr)
+				item.Callback(err)
 				continue
 			}
 		}
@@ -102,6 +113,7 @@ func (r *ExperimentRunReconciler) Reconcile(ctx context.Context, items []reconci
 		udberr := r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id, false)
 		if udberr != nil {
 			log.Printf("failed to clear reconcile flag for experiment %d: %s", item.ID, udberr)
+			item.Callback(err)
 			continue
 		}
 		log.Printf("finished reconciling experiment runs for experiment %s with experiment ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)

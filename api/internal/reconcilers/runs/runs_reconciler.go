@@ -43,6 +43,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		run, err := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if err != nil {
 			log.Printf("failed to fetch run %d for reconciliation: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 		log.Printf("reconciling run %s with experiment ID %s and database ID %d", run.ExperimentId, run.RunId, item.ID)
@@ -51,6 +52,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		remoteRun, err := r.dataStores.Remote.GetRun(ctx, run.ExperimentId, run.RunId)
 		if err != nil {
 			log.Printf("failed to fetch run %d from remote store: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 
@@ -60,6 +62,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		err = r.db.ExperimentRuns().MarkExperimentRunForReconciliation(ctx, run.Id, false)
 		if err != nil {
 			log.Printf("failed to update run %d timestamp: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 
@@ -68,6 +71,7 @@ func (r *RunReconciler) Reconcile(ctx context.Context, items []reconciler.Reconc
 		err = r.db.ExperimentRuns().MarkExperimentRunForMetricsReconciliation(ctx, run.Id, true)
 		if err != nil {
 			log.Printf("failed to update run %d reconcile metrics flag: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 		item.Callback(nil)

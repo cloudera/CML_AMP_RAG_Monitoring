@@ -54,10 +54,11 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
 	log.Debugf("reconciling %d experiments", len(items))
 	for _, item := range items {
-		// Fetch the experiment MLFlow
+		// Fetch the experiment from MLFlow
 		remote, err := r.dataStores.Remote.GetExperiment(ctx, item.ID)
 		if err != nil {
 			log.Debugf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 		log.Debugf("reconciling mlflow experiment %s with experiment ID %s", remote.Name, item.ID)
@@ -70,12 +71,15 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 				ex, err := r.db.Experiments().CreateExperiment(ctx, remote.ExperimentId, remote.Name, util.TimeStamp(remote.CreatedTime), util.TimeStamp(remote.LastUpdatedTime))
 				if err != nil {
 					log.Printf("failed to insert experiment %s with ID %s: %s", remote.Name, item.ID, err)
+					item.Callback(err)
 					continue
 				}
 				log.Printf("finished creating experiment %s with mlflow ID %s.  Database ID is %d", remote.Name, ex.ExperimentId, ex.Id)
+				item.Callback(nil)
 				continue
 			} else {
 				log.Printf("failed to fetch local experiment with %s mlflow ID %s for reconciliation: %s", remote.Name, item.ID, err)
+				item.Callback(err)
 				continue
 			}
 		}
@@ -83,6 +87,7 @@ func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler
 		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id, true)
 		if err != nil {
 			log.Printf("failed to update experiment %s with ID %s timestamp: %s", remote.Name, item.ID, err)
+			item.Callback(err)
 			continue
 		}
 		item.Callback(nil)

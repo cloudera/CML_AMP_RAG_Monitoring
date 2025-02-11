@@ -51,11 +51,13 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		run, dberr := r.db.ExperimentRuns().GetExperimentRunById(ctx, item.ID)
 		if dberr != nil {
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, dberr)
+			item.Callback(dberr)
 			continue
 		}
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, run.ExperimentId)
 		if err != nil {
 			log.Printf("failed to fetch experiment run %d for reconciliation: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
 		log.Printf("reconciling metrics for experiment %s with ID %s and database ID %d run with ID %s and database ID %d",
@@ -64,6 +66,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		mlFlowMetrics, err := r.mlFlow.Remote.Metrics(ctx, experiment.ExperimentId, run.RunId)
 		if err != nil {
 			log.Printf("failed to fetch metrics for experiment run %s: %s", run.RunId, err)
+			item.Callback(err)
 			continue
 		}
 		for _, metric := range mlFlowMetrics {
@@ -74,6 +77,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 			if err != nil {
 				if !errors.Is(err, sql.ErrNoRows) {
 					log.Printf("failed to query database: %s", err)
+					item.Callback(err)
 					continue
 				}
 			}
@@ -107,6 +111,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 				})
 				if err != nil {
 					log.Printf("failed to insert numeric metric %s for experiment run %d: %s", metric.Key, run.Id, err)
+					item.Callback(err)
 				} else {
 					log.Printf("inserted numeric metric %s with database ID %d for experiment run %s with database ID %d", m.Name, m.Id, run.RunId, run.Id)
 				}
@@ -117,6 +122,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		remoteRun, err := r.mlFlow.Remote.GetRun(ctx, experiment.ExperimentId, run.RunId)
 		if err != nil {
 			log.Printf("failed to fetch run %s for experiment %s: %s", run.RunId, experiment.ExperimentId, err)
+			item.Callback(err)
 			continue
 		}
 		log.Printf("found %d artifacts for experiment run %s", len(remoteRun.Data.Files), run.RunId)
@@ -127,6 +133,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 				data, err := r.mlFlow.Remote.GetArtifact(ctx, run.RunId, artifact.Path)
 				if err != nil {
 					log.Printf("failed to fetch artifact %s for experiment run %s: %s", artifact.Path, run.RunId, err)
+					item.Callback(err)
 					continue
 				}
 				value := string(data)
@@ -140,6 +147,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 				if err != nil {
 					if !errors.Is(err, sql.ErrNoRows) {
 						log.Printf("failed to query database: %s", err)
+						item.Callback(err)
 						continue
 					}
 				}
@@ -152,6 +160,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 						_, err := r.db.Metrics().UpdateMetric(ctx, existing)
 						if err != nil {
 							log.Printf("failed to update metric %s with database ID %d for experiment run %s: %s", name, existing.Id, run.RunId, err)
+							item.Callback(err)
 						}
 					} else {
 						log.Printf("value for metric %s with database ID %d for experiment run %s has not changed", name, existing.Id, run.RunId)
@@ -167,6 +176,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 					})
 					if err != nil {
 						log.Printf("failed to insert text metric %s for experiment run %d: %s", artifact.Path, run.Id, err)
+						item.Callback(err)
 						continue
 					} else {
 						log.Printf("inserted text metric %s with database ID %d for experiment run %s with database ID %d", textMetric.Name, textMetric.Id, run.RunId, run.Id)
@@ -179,9 +189,11 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		err = r.db.ExperimentRuns().MarkExperimentRunForMetricsReconciliation(ctx, run.Id, false)
 		if err != nil {
 			log.Printf("failed to update experiment run %d for metrics reconciliation: %s", item.ID, err)
+			item.Callback(err)
+		} else {
+			log.Printf("finished reconciling metrics for experiment %s and run %s", run.ExperimentId, run.RunId)
+			item.Callback(nil)
 		}
-		log.Printf("finished reconciling metrics for experiment %s and run %s", run.ExperimentId, run.RunId)
-		item.Callback(nil)
 	}
 }
 
