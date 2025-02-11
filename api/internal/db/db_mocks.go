@@ -155,6 +155,11 @@ type MetricsMock struct {
 	CreatedMetrics []*Metric
 }
 
+func (mm *MetricsMock) ListMetricNames(ctx context.Context, experimentId string) ([]string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (mm *MetricsMock) UpdateMetric(ctx context.Context, m *Metric) (*Metric, error) {
 	//TODO implement me
 	panic("implement me")

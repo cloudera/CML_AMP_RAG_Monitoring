@@ -126,6 +126,40 @@ func init() {
         }
       }
     },
+    "/metrics/names": {
+      "get": {
+        "description": "List monitoring metric names for an experiment",
+        "tags": [
+          "metrics"
+        ],
+        "summary": "List metric names for an experiment.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
+    },
     "/runs": {
       "post": {
         "description": "Register an experiment run for monitoring",
@@ -475,6 +509,40 @@ func init() {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/Metric"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
+    },
+    "/metrics/names": {
+      "get": {
+        "description": "List monitoring metric names for an experiment",
+        "tags": [
+          "metrics"
+        ],
+        "summary": "List metric names for an experiment.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },

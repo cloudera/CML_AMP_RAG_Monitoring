@@ -41,6 +41,8 @@ type ExperimentsAPI interface {
 
 // MetricsAPI
 type MetricsAPI interface {
+	// GetMetricsNames is List monitoring metric names for an experiment
+	GetMetricsNames(ctx context.Context, params metrics.GetMetricsNamesParams) (*metrics.GetMetricsNamesOK, *lhttp.HttpError)
 	// PostMetrics is Create monitoring metrics
 	PostMetrics(ctx context.Context, params metrics.PostMetricsParams) (*metrics.PostMetricsOK, *lhttp.HttpError)
 	// PostMetricsList is List monitoring metrics
@@ -140,6 +142,34 @@ func Handler(c Config) (http.Handler, error) {
 		}
 
 		api.ExperimentsGetExperimentsHandler = experiments.GetExperimentsHandlerFunc(func(params experiments.GetExperimentsParams) middleware.Responder {
+			resp, herr := baseHandler(params.HTTPRequest.Context(), params.HTTPRequest.Header, params)
+			if herr != nil {
+				return herr
+			}
+			return resp.(middleware.Responder)
+		})
+	}
+
+	{
+		info := &swaggerinterceptors.UnaryServerInfo{
+			FullMethod: "Metrics/GetMetricsNames", // TODO: add full package
+		}
+
+		baseHandler := func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+			typedParams := req.(metrics.GetMetricsNamesParams)
+			resp, herr := c.MetricsAPI.GetMetricsNames(ctx, typedParams)
+			return resp, herr
+		}
+
+		for i := len(c.Interceptors) - 1; i >= 0; i-- {
+			interceptor := c.Interceptors[i]
+			currentHandler := baseHandler
+			baseHandler = func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+				return interceptor(ctx, header, req, info, currentHandler)
+			}
+		}
+
+		api.MetricsGetMetricsNamesHandler = metrics.GetMetricsNamesHandlerFunc(func(params metrics.GetMetricsNamesParams) middleware.Responder {
 			resp, herr := baseHandler(params.HTTPRequest.Context(), params.HTTPRequest.Header, params)
 			if herr != nil {
 				return herr

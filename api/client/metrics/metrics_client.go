@@ -20,6 +20,11 @@ import (
 // API is the interface of the metrics client
 type API interface {
 	/*
+	   GetMetricsNames lists metric names for an experiment
+	   List monitoring metric names for an experiment
+	*/
+	GetMetricsNames(ctx context.Context, params *GetMetricsNamesParams) (*GetMetricsNamesOK, error)
+	/*
 	   PostMetrics creates metrics
 	   Create monitoring metrics
 	*/
@@ -47,6 +52,39 @@ type Client struct {
 	transport runtime.ClientTransport
 	formats   strfmt.Registry
 	authInfo  runtime.ClientAuthInfoWriter
+}
+
+/*
+GetMetricsNames lists metric names for an experiment
+
+List monitoring metric names for an experiment
+*/
+func (a *Client) GetMetricsNames(ctx context.Context, params *GetMetricsNamesParams) (*GetMetricsNamesOK, error) {
+
+	operation := &runtime.ClientOperation{
+		ID:                 "GetMetricsNames",
+		Method:             "GET",
+		PathPattern:        "/metrics/names",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetMetricsNamesReader{formats: a.formats},
+		Context:            ctx,
+		Client:             params.HTTPClient,
+	}
+	result, err := a.transport.Submit(operation)
+	if err != nil {
+		// Make sure to convert back to an error type so that nil comparisons work as expected
+		var richError error
+		richError, err = lswagger.NewRichError(operation, err)
+		if err == nil {
+			err = richError
+		}
+		return nil, err
+	}
+	return result.(*GetMetricsNamesOK), nil
+
 }
 
 /*

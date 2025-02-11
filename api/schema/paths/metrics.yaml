@@ -15,6 +15,27 @@
         description: "bad request"
       500:
         description: "internal service error"
+/metrics/names:
+    get:
+        tags: [metrics]
+        summary: List metric names for an experiment.
+        description: List monitoring metric names for an experiment
+        parameters:
+          - name: experiment_id
+            in: query
+            type: string
+            description: The ID of the experiment
+        responses:
+          200:
+            description: "success"
+            schema:
+              type: array
+              items:
+                type: string
+          400:
+            description: "bad request"
+          500:
+            description: "internal service error"
 /metrics/list:
   post:
     tags: [metrics]

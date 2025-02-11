@@ -144,6 +144,28 @@ func (r *Metrics) UpdateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 	}, nil
 }
 
+func (r *Metrics) ListMetricNames(ctx context.Context, experimentId string) ([]string, error) {
+	query := `
+	SELECT DISTINCT name
+	FROM metrics
+	WHERE experiment_id = ? AND project_id = ?
+	`
+	rows, err := r.db.QueryContext(ctx, query, experimentId, r.cfg.CDSWProjectID)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]string, 0)
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, name)
+	}
+	return response, nil
+}
+
 func (r *Metrics) ListMetrics(ctx context.Context, experimentId *string, runIds []string, metricNames []string) ([]*db.Metric, error) {
 	query := `
 	SELECT id, experiment_id, run_id, name, value_numeric, value_text, tags, ts

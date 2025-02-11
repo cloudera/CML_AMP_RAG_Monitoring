@@ -15,6 +15,21 @@ type Metrics struct {
 	db *lsql.Instance
 }
 
+func (r *Metrics) GetMetricByName(ctx context.Context, experimentId string, runId string, name string) (*db.Metric, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Metrics) UpdateMetric(ctx context.Context, m *db.Metric) (*db.Metric, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Metrics) ListMetricNames(ctx context.Context, experimentId string) ([]string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 var _ db.MetricsService = &Metrics{}
 
 func NewMetrics(instance *lsql.Instance) db.MetricsService {

@@ -52,6 +52,9 @@ func NewMetricsAPI(spec *loads.Document) *MetricsAPI {
 		ExperimentsGetExperimentsHandler: experiments.GetExperimentsHandlerFunc(func(params experiments.GetExperimentsParams) middleware.Responder {
 			return middleware.NotImplemented("operation experiments.GetExperiments has not yet been implemented")
 		}),
+		MetricsGetMetricsNamesHandler: metrics.GetMetricsNamesHandlerFunc(func(params metrics.GetMetricsNamesParams) middleware.Responder {
+			return middleware.NotImplemented("operation metrics.GetMetricsNames has not yet been implemented")
+		}),
 		MetricsPostMetricsHandler: metrics.PostMetricsHandlerFunc(func(params metrics.PostMetricsParams) middleware.Responder {
 			return middleware.NotImplemented("operation metrics.PostMetrics has not yet been implemented")
 		}),
@@ -104,6 +107,8 @@ type MetricsAPI struct {
 	RunsDeleteRunsHandler runs.DeleteRunsHandler
 	// ExperimentsGetExperimentsHandler sets the operation handler for the get experiments operation
 	ExperimentsGetExperimentsHandler experiments.GetExperimentsHandler
+	// MetricsGetMetricsNamesHandler sets the operation handler for the get metrics names operation
+	MetricsGetMetricsNamesHandler metrics.GetMetricsNamesHandler
 	// MetricsPostMetricsHandler sets the operation handler for the post metrics operation
 	MetricsPostMetricsHandler metrics.PostMetricsHandler
 	// MetricsPostMetricsListHandler sets the operation handler for the post metrics list operation
@@ -194,6 +199,9 @@ func (o *MetricsAPI) Validate() error {
 	}
 	if o.ExperimentsGetExperimentsHandler == nil {
 		unregistered = append(unregistered, "experiments.GetExperimentsHandler")
+	}
+	if o.MetricsGetMetricsNamesHandler == nil {
+		unregistered = append(unregistered, "metrics.GetMetricsNamesHandler")
 	}
 	if o.MetricsPostMetricsHandler == nil {
 		unregistered = append(unregistered, "metrics.PostMetricsHandler")
@@ -303,6 +311,10 @@ func (o *MetricsAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/experiments"] = experiments.NewGetExperiments(o.context, o.ExperimentsGetExperimentsHandler)
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/metrics/names"] = metrics.NewGetMetricsNames(o.context, o.MetricsGetMetricsNamesHandler)
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
