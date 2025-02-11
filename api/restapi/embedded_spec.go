@@ -286,7 +286,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/ExperimentRunParameter"
               }
             }
           },
@@ -336,6 +336,19 @@ func init() {
       "properties": {
         "experiment_id": {
           "description": "The Experiment ID to filter on",
+          "type": "string"
+        }
+      }
+    },
+    "ExperimentRunParameter": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "The name of the parameter",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the parameter",
           "type": "string"
         }
       }
@@ -721,7 +734,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/ExperimentRunParameter"
               }
             }
           },
@@ -771,6 +784,19 @@ func init() {
       "properties": {
         "experiment_id": {
           "description": "The Experiment ID to filter on",
+          "type": "string"
+        }
+      }
+    },
+    "ExperimentRunParameter": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "The name of the parameter",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the parameter",
           "type": "string"
         }
       }

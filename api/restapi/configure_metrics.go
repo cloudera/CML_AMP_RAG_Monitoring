@@ -330,6 +330,7 @@ var (
 	ExperimentQueryParse              = query.MustNewBuilder(&query.Config{Model: models.Experiment{}}).ParseRequest
 	ExperimentRunQueryParse           = query.MustNewBuilder(&query.Config{Model: models.ExperimentRun{}}).ParseRequest
 	ExperimentRunListFilterQueryParse = query.MustNewBuilder(&query.Config{Model: models.ExperimentRunListFilter{}}).ParseRequest
+	ExperimentRunParameterQueryParse  = query.MustNewBuilder(&query.Config{Model: models.ExperimentRunParameter{}}).ParseRequest
 	MetricQueryParse                  = query.MustNewBuilder(&query.Config{Model: models.Metric{}}).ParseRequest
 	MetricListFilterQueryParse        = query.MustNewBuilder(&query.Config{Model: models.MetricListFilter{}}).ParseRequest
 	MetricTagQueryParse               = query.MustNewBuilder(&query.Config{Model: models.MetricTag{}}).ParseRequest

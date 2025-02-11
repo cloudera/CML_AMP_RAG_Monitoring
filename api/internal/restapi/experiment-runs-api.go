@@ -54,12 +54,15 @@ func (e ExperimentRunsAPI) GetRunsParameters(ctx context.Context, params runs.Ge
 	if err != nil {
 		return nil, lhttp.NewInternalError(err.Error())
 	}
-	names := make([]string, 0)
+	runParams := make([]*models.ExperimentRunParameter, 0)
 	for _, param := range run.Data.Params {
-		names = append(names, param.Key)
+		runParams = append(runParams, &models.ExperimentRunParameter{
+			Key:   param.Key,
+			Value: param.Value,
+		})
 	}
 	return &runs.GetRunsParametersOK{
-		Payload: names,
+		Payload: runParams,
 	}, nil
 }
 
