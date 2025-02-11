@@ -76,7 +76,7 @@ func (m MetricsAPI) GetMetricsNames(ctx context.Context, params metrics.GetMetri
 	if params.ExperimentID == nil || *params.ExperimentID == "" {
 		return nil, lhttp.NewBadRequest("experiment_id is required")
 	}
-	results, err := m.db.Metrics().ListMetricNames(ctx, params.ExperimentID)
+	results, err := m.db.Metrics().ListMetricNames(ctx, *params.ExperimentID)
 	if err != nil {
 		return nil, lhttp.NewInternalError(err.Error())
 	}
