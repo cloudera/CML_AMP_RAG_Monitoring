@@ -63,6 +63,7 @@ from utils.dashboard import (
     get_numeric_metrics_df,
     show_i_o_component,
     show_feedback_component,
+    show_feedback_kpi,
     show_numeric_metric_kpi,
     show_live_df_component,
     show_pie_chart_component,
@@ -200,6 +201,14 @@ if experiment_ids:
                     metric_kpi = metric_rows[i // 6][i % 6]
                     if not "feedback" in metric_name.lower():
                         show_numeric_metric_kpi(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            kpi_placeholder=metric_kpi,
+                            label=metric_name.replace("_", " ").title(),
+                            tooltip=f"Average {metric_name.replace('_', ' ').title()}",
+                        )
+                    else:
+                        show_feedback_kpi(
                             metric_key=metric_name,
                             metrics_df=metric_df,
                             kpi_placeholder=metric_kpi,

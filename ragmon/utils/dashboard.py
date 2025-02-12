@@ -491,6 +491,42 @@ def show_feedback_component(
         st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
 
 
+def show_feedback_kpi(
+    metric_key: str,
+    metrics_df: pd.DataFrame,
+    kpi_placeholder: DeltaGenerator,
+    label: str,
+    tooltip: Optional[
+        str
+    ] = "Average pass rate of responses. Includes thumbs up and no feecback.",
+):
+    """
+    Display feedback KPIs.
+
+    Parameters:
+    metric_key (str): The key to identify the metric in the DataFrame.
+    metrics_df (pd.DataFrame): DataFrame containing feedback and timestamps.
+    kpi_placeholder (DeltaGenerator): Streamlit placeholder for feedback KPI.
+    label (str): The label for the feedback KPI.
+    tooltip (str): The tooltip text for the feedback KPI.
+
+    Returns:
+    None
+    """
+    if metric_key in metrics_df:
+        thumbs_down_count = metrics_df[metric_key].to_list().count(0)
+        prev_thumbs_down_count = metrics_df[metric_key].to_list()[:-1].count(0)
+        metric_value = 1 - (thumbs_down_count / len(metrics_df)) * 100
+        metric_value = round(metric_value, 2)
+        prev_metric_value = 1 - (prev_thumbs_down_count / len(metrics_df)) * 100
+        prev_metric_value = round(prev_metric_value, 2)
+        delta_value = metric_value - prev_metric_value if len(metrics_df) > 1 else 0
+        metric_value = f"{metric_value}%"
+        kpi_placeholder.metric(
+            label=label, help=tooltip, value=metric_value, delta=delta_value
+        )
+
+
 def show_numeric_metric_kpi(
     metric_key: str,
     metrics_df: pd.DataFrame,
