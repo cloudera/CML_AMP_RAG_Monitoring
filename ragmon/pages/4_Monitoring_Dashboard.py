@@ -144,16 +144,19 @@ if experiment_ids:
             "live_results.json",
         ]
 
-        # create requests for metrics
-        metrics_requests = {}
+        numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
+        non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]
 
-        for metric_name in metric_names:
+        # create requests for metrics
+        numeric_metrics_requests = {}
+
+        for metric_name in numeric_metrics:
             metric_request = MLFlowStoreMetricRequest(
                 experiment_id=str(selected_experiment),
                 run_ids=run_ids,
                 metric_names=[metric_name],
             )
-            metrics_requests[metric_name] = metric_request
+            numeric_metrics_requests[metric_name] = metric_request
 
         placeholder = st.empty()
 
@@ -162,40 +165,80 @@ if experiment_ids:
 
         # get metrics responses
         metric_dfs = {}
-        for metric_name, metric_request in metrics_requests.items():
+        for metric_name, metric_request in numeric_metrics_requests.items():
             metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
 
         with placeholder.container():
-            # Metrics
-            if metric_names:
+            # Non empty metrics
+            non_empty_metrics = [
+                metric_name
+                for metric_name, metric_df in metric_dfs.items()
+                if not metric_df.empty
+            ]
+            if non_empty_metrics:
                 metric_rows = [
                     st.columns([1, 1, 1, 1, 1, 1])
-                    for _ in range(len(metric_names) // 6 + 1)
+                    for _ in range(len(non_empty_metrics) // 6 + 1)
                 ]
                 with st.expander(
                     ":material/analytics: **Custom Metrics Overview**", expanded=True
                 ):
                     metric_fig_rows = [
-                        st.columns([1, 1, 1]) for _ in range(len(metric_names) // 3 + 1)
+                        st.columns([1, 1, 1], border=True)
+                        for _ in range(len(non_empty_metrics) // 3 + 1)
                     ]
-                for i, metric_name in enumerate(metric_names):
+                for i, metric_name in enumerate(non_empty_metrics):
                     metric_df = metric_dfs[metric_name]
                     metric_kpi = metric_rows[i // 6][i % 6]
-                    show_numeric_metric_kpi(
-                        metric_key=metric_name,
-                        metrics_df=metric_df,
-                        kpi_placeholder=metric_kpi,
-                        label=metric_name.replace("_", " ").title(),
-                    )
-                    metric_fig = metric_fig_rows[i // 3][i % 3]
-                    show_time_series_component(
-                        metric_key=metric_name,
-                        metrics_df=metric_df,
-                        title=metric_name.replace("_", " ").title(),
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                        fig_placeholder=metric_fig,
-                    )
+                    if not "feedback" in metric_name.lower():
+                        show_numeric_metric_kpi(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            kpi_placeholder=metric_kpi,
+                            label=metric_name.replace("_", " ").title(),
+                        )
+                    if "faithfulness" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_pie_chart_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()} Distribution",
+                            labels=["Faithful", "Not Faithful"],
+                            update_timestamp=update_timestamp,
+                            fig_placeholder=metric_fig,
+                        )
+                    elif "relevance" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_pie_chart_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()} Distribution",
+                            labels=["Relevant", "Not Relevant"],
+                            update_timestamp=update_timestamp,
+                            fig_placeholder=metric_fig,
+                        )
+                    elif "feedback" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        with metric_fig:
+                            kpi_cols = st.columns([1, 1, 1])
+                            feedback_df = metric_df
+                            show_feedback_component(
+                                feedback_df=feedback_df,
+                                thumbs_up_placeholder=kpi_cols[0],
+                                thumbs_down_placeholder=kpi_cols[1],
+                                no_feedback_placeholder=kpi_cols[2],
+                                update_timestamp=update_timestamp,
+                            )
+                    else:
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_time_series_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()} Time Series",
+                            update_timestamp=update_timestamp,
+                            frequency="h",
+                            fig_placeholder=metric_fig,
+                        )
 
             # TODO: reimplement of detailed logs
             # Show keywords wordcloud

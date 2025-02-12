@@ -472,24 +472,23 @@ def show_feedback_component(
             value=no_feedback_count,
         )
 
-        with st.expander("# :material/feedback: **Feedback Overview**", expanded=True):
-            st.markdown(
-                "### Feedback Received",
-                help="Feedback received from users.",
+        st.markdown(
+            "### Feedback Received",
+            help="Feedback received from users.",
+        )
+        fig = go.Figure(
+            data=go.Pie(
+                labels=["Thumbs Up", "Thumbs Down", "No Feedback"],
+                values=[
+                    thumbs_up_count,
+                    thumbs_down_count,
+                    no_feedback_count,
+                ],
+                hole=0.5,
+                hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
             )
-            fig = go.Figure(
-                data=go.Pie(
-                    labels=["Thumbs Up", "Thumbs Down", "No Feedback"],
-                    values=[
-                        thumbs_up_count,
-                        thumbs_down_count,
-                        no_feedback_count,
-                    ],
-                    hole=0.5,
-                    hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
-                )
-            )
-            st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
+        )
+        st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
 
 
 def show_numeric_metric_kpi(
