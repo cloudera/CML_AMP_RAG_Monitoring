@@ -516,9 +516,9 @@ def show_feedback_kpi(
     if metric_key in metrics_df:
         thumbs_down_count = metrics_df[metric_key].to_list().count(0)
         prev_thumbs_down_count = metrics_df[metric_key].to_list()[:-1].count(0)
-        metric_value = 1 - (thumbs_down_count / len(metrics_df)) * 100
+        metric_value = (1 - (thumbs_down_count / len(metrics_df))) * 100
         metric_value = round(metric_value, 2)
-        prev_metric_value = 1 - (prev_thumbs_down_count / len(metrics_df)) * 100
+        prev_metric_value = (1 - (prev_thumbs_down_count / (len(metrics_df) - 1))) * 100
         prev_metric_value = round(prev_metric_value, 2)
         delta_value = metric_value - prev_metric_value if len(metrics_df) > 1 else 0
         metric_value = f"{metric_value}%"
