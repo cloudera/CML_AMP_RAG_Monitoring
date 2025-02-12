@@ -117,7 +117,7 @@ if experiment_ids:
     )
 
     # select run
-    runs = get_runs(MLFlowExperimentRequest(experiment_id=str(selected_experiment)))
+    runs = get_runs(experiment_id=str(selected_experiment))
 
     if not runs:
         st.write("No Metrics Logged Yet")

@@ -59,12 +59,12 @@ def get_experiment_ids():
     return list(set(response_json))
 
 
-def get_runs(request: MLFlowExperimentRequest):
+def get_runs(experiment_id: str):
     """
     Fetches the list of runs for a given experiment ID from the MLflow store.
 
     Args:
-        experiment_id (str): The ID of the experiment for which to fetch the runs.
+        request (MLFlowExperimentRequest): The request object containing the experiment ID.
 
     Returns:
         list: A list of runs for the given experiment ID. Returns an empty list if no runs are found or if the response is empty.
@@ -75,7 +75,7 @@ def get_runs(request: MLFlowExperimentRequest):
     uri = "http://localhost:3000/runs/list"
     response = requests.post(
         url=uri,
-        json=request.json(),
+        json={"experiment_id": experiment_id},
         headers={
             "Content-Type": "application/json",
         },
