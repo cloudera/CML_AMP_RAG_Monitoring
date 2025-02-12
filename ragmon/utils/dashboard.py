@@ -11,7 +11,11 @@ import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 from wordcloud import WordCloud
 
-from data_types import MLFlowStoreRequest
+from data_types import (
+    MLFlowStoreMetricRequest,
+    MLFlowExperimentRequest,
+    MLFlowStoreIdentifier,
+)
 
 table_cols_to_show = [
     "response_id",
@@ -55,7 +59,7 @@ def get_experiment_ids():
     return list(set(response_json))
 
 
-def get_runs(experiment_id: str):
+def get_runs(request: MLFlowExperimentRequest):
     """
     Fetches the list of runs for a given experiment ID from the MLflow store.
 
@@ -71,7 +75,7 @@ def get_runs(experiment_id: str):
     uri = "http://localhost:3000/runs/list"
     response = requests.post(
         url=uri,
-        json={"experiment_id": experiment_id},
+        json=request.json(),
         headers={
             "Content-Type": "application/json",
         },
@@ -107,14 +111,14 @@ def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
 
 
 def parse_live_results_table(
-    table_request: MLFlowStoreRequest,
+    table_request: MLFlowStoreMetricRequest,
     table_cols_to_show: List[str] = table_cols_to_show,
 ):
     """
-    Parses the live results table from the given MLFlowStoreRequest.
+    Parses the live results table from the given MLFlowStoreMetricRequest.
 
     Args:
-        table_request (MLFlowStoreRequest): The request object containing the necessary parameters to fetch metrics.
+        table_request (MLFlowStoreMetricRequest): The request object containing the necessary parameters to fetch metrics.
 
     Returns:
         pd.DataFrame: A DataFrame containing the parsed results with columns specified in `table_cols_to_show`.
@@ -190,15 +194,25 @@ def parse_live_results_table(
     return result_df
 
 
+def get_metric_names(MLFlowExperimentRequest):
+    # TODO: Implement this function
+    pass
+
+
+def get_parameters(MLFlowStoreIdentifier):
+    # TODO: Implement this function
+    pass
+
+
 # pull data from metric store
 def get_metrics(
-    request: MLFlowStoreRequest,
+    request: MLFlowStoreMetricRequest,
 ):
     """
     Sends a POST request to the MLflow store to retrieve metrics.
 
     Args:
-        request (MLFlowStoreRequest): The request object containing the data to be sent in the POST request.
+        request (MLFlowStoreMetricRequest): The request object containing the data to be sent in the POST request.
 
     Returns:
         list: A list of metrics retrieved from the response. If the response is not successful, returns an empty list.
@@ -218,12 +232,12 @@ def get_metrics(
     return response.json()
 
 
-def get_numeric_metrics_df(request: MLFlowStoreRequest):
+def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     """
     Retrieve numeric metrics from MLFlow store and return them as a DataFrame.
 
     Args:
-        request (MLFlowStoreRequest): The request object containing parameters to fetch metrics.
+        request (MLFlowStoreMetricRequest): The request object containing parameters to fetch metrics.
 
     Returns:
         pd.DataFrame: A DataFrame containing the following columns:
