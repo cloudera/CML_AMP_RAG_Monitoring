@@ -51,7 +51,7 @@ def get_experiment_ids():
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     response_json = response.json()
     if not response_json:
@@ -73,14 +73,16 @@ def get_runs(request: MLFlowExperimentRequest):
         requests.exceptions.RequestException: If there is an issue with the HTTP request.
     """
     uri = "http://localhost:3000/runs/list"
+    print("REQUEST: ", request.json())
     response = requests.post(
         url=uri,
         json=request.json(),
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
+    print("RESPONSE: ", response.json())
     response_json = response.json()
     if not response_json:
         return []
@@ -211,7 +213,7 @@ def get_metric_names(request: MLFlowExperimentRequest):
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     response_json = response.json()
     if not response_json:
@@ -244,7 +246,7 @@ def get_metrics(
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     # if response is not successful, return empty list
     if not response.ok:
