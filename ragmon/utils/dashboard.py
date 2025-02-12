@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -497,7 +497,7 @@ def show_numeric_metric_kpi(
     metrics_df: pd.DataFrame,
     kpi_placeholder: DeltaGenerator,
     label: str,
-    tooltip: str,
+    tooltip: Optional[str] = None,
 ):
     """
     Display numeric metric KPIs.
@@ -532,10 +532,10 @@ def show_pie_chart_component(
     metric_key: str,
     metrics_df: pd.DataFrame,
     title: str,
-    tooltip: str,
     labels: List[str],
     update_timestamp: str,
     fig_placeholder: DeltaGenerator = None,
+    tooltip: Optional[str] = None,
 ):
     """
     Displays a pie chart component in a Streamlit app.
@@ -576,10 +576,10 @@ def show_time_series_component(
     metric_key: str,
     metrics_df: pd.DataFrame,
     title: str,
-    tooltip: str,
     update_timestamp: str,
     frequency: str = "h",
     fig_placeholder: DeltaGenerator = None,
+    tooltip: Optional[str] = None,
 ):
     """
     Displays a time series component in a Streamlit app.
