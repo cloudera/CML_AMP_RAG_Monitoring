@@ -454,6 +454,10 @@ def show_feedback_component(
         thumbs_down_count = feedback_df["feedback"].to_list().count(0)
         no_feedback_count = feedback_df["feedback"].isna().sum()
 
+        st.markdown(
+            "### Feedback Received",
+            help="Feedback received from users.",
+        )
         thumbs_up_placeholder.metric(
             label="Thumbs Up :material/thumb_up:",
             help="The number of thumbs up received.",
@@ -470,11 +474,6 @@ def show_feedback_component(
             label="No Feedback :material/indeterminate_question_box:",
             help="The number of no feedback received.",
             value=no_feedback_count,
-        )
-
-        st.markdown(
-            "### Feedback Received",
-            help="Feedback received from users.",
         )
         fig = go.Figure(
             data=go.Pie(
