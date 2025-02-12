@@ -552,7 +552,6 @@ def show_pie_chart_component(
     None
     """
     if metric_key in metrics_df:
-        st.markdown(f"### {title}", help=tooltip)
         fig = go.Figure(
             data=go.Pie(
                 labels=labels,
@@ -566,8 +565,10 @@ def show_pie_chart_component(
             )
         )
         if fig_placeholder is None:
+            st.markdown(f"### {title}", help=tooltip)
             st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
             return
+        fig_placeholder.markdown(f"### {title}", help=tooltip)
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
@@ -653,7 +654,7 @@ def show_wordcloud_component(df: pd.DataFrame):
             q_col, r_col = st.columns(2)
             with q_col:
                 st.markdown("### Query Keywords")
-                st.image(q_fig.to_image(), use_column_width=True)
+                st.image(q_fig.to_image(), use_container_width=True)
             with r_col:
                 st.markdown("### Response Keywords")
-                st.image(r_fig.to_image(), use_column_width=True)
+                st.image(r_fig.to_image(), use_container_width=True)

@@ -130,17 +130,17 @@ if experiment_ids:
 
         # creating requests for metrics
         metric_names = [
+            "input_length",
+            "output_length",
+            "feedback",
             "faithfulness_score",
             "relevance_score",
             "context_relevancy_score",
-            "input_length",
-            "output_length",
             "maliciousness_score",
             "toxicity_score",
             "comprehensiveness_score",
             "precision",
             "recall",
-            "feedback",
             "live_results.json",
         ]
 
@@ -178,14 +178,22 @@ if experiment_ids:
             if non_empty_metrics:
                 metric_rows = [
                     st.columns([1, 1, 1, 1, 1, 1])
-                    for _ in range(len(non_empty_metrics) // 6 + 1)
+                    for _ in range(
+                        len(non_empty_metrics) // 6 + 1
+                        if len(non_empty_metrics) % 6 != 0
+                        else len(non_empty_metrics) // 6
+                    )
                 ]
                 with st.expander(
                     ":material/analytics: **Custom Metrics Overview**", expanded=True
                 ):
                     metric_fig_rows = [
                         st.columns([1, 1, 1], border=True)
-                        for _ in range(len(non_empty_metrics) // 3 + 1)
+                        for _ in range(
+                            len(non_empty_metrics) // 3 + 1
+                            if len(non_empty_metrics) % 3 != 0
+                            else len(non_empty_metrics) // 3
+                        )
                     ]
                 for i, metric_name in enumerate(non_empty_metrics):
                     metric_df = metric_dfs[metric_name]
@@ -202,7 +210,7 @@ if experiment_ids:
                         show_pie_chart_component(
                             metric_key=metric_name,
                             metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()} Distribution",
+                            title=f"{metric_name.replace('_', ' ').title()}",
                             labels=["Faithful", "Not Faithful"],
                             update_timestamp=update_timestamp,
                             fig_placeholder=metric_fig,
@@ -212,7 +220,7 @@ if experiment_ids:
                         show_pie_chart_component(
                             metric_key=metric_name,
                             metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()} Distribution",
+                            title=f"{metric_name.replace('_', ' ').title()}",
                             labels=["Relevant", "Not Relevant"],
                             update_timestamp=update_timestamp,
                             fig_placeholder=metric_fig,
@@ -234,7 +242,7 @@ if experiment_ids:
                         show_time_series_component(
                             metric_key=metric_name,
                             metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()} Time Series",
+                            title=f"{metric_name.replace('_', ' ').title()}",
                             update_timestamp=update_timestamp,
                             frequency="h",
                             fig_placeholder=metric_fig,
