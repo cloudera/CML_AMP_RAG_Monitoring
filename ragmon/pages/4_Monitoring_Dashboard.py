@@ -59,6 +59,7 @@ from utils.dashboard import (
     get_custom_evaluators,
     get_experiment_ids,
     get_runs,
+    get_metric_names,
     parse_live_results_table,
     get_numeric_metrics_df,
     show_i_o_component,
@@ -117,8 +118,12 @@ if experiment_ids:
         format_func=lambda x: data_source_names[x],
     )
 
+    selected_experiment_request = MLFlowExperimentRequest(
+        experiment_id=str(selected_experiment)
+    )
+
     # select run
-    runs = get_runs(experiment_id=str(selected_experiment))
+    runs = get_runs(selected_experiment_request)
 
     if not runs:
         st.write("No Metrics Logged Yet")
@@ -130,20 +135,7 @@ if experiment_ids:
         mock_recall_scores = np.random.random(len(run_ids))
 
         # creating requests for metrics
-        metric_names = [
-            "input_length",
-            "output_length",
-            "feedback",
-            "faithfulness_score",
-            "relevance_score",
-            "context_relevancy_score",
-            "maliciousness_score",
-            "toxicity_score",
-            "comprehensiveness_score",
-            "precision",
-            "recall",
-            "live_results.json",
-        ]
+        metric_names = get_metric_names(selected_experiment_request)
 
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
         non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]
@@ -186,7 +178,7 @@ if experiment_ids:
                     )
                 ]
                 with st.expander(
-                    ":material/analytics: **Custom Metrics Overview**", expanded=True
+                    ":material/analytics: **Metrics Overview**", expanded=True
                 ):
                     metric_fig_rows = [
                         st.columns([1, 1, 1], border=True)

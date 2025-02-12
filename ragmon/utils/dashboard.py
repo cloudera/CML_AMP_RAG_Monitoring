@@ -59,7 +59,7 @@ def get_experiment_ids():
     return list(set(response_json))
 
 
-def get_runs(experiment_id: str):
+def get_runs(request: MLFlowExperimentRequest):
     """
     Fetches the list of runs for a given experiment ID from the MLflow store.
 
@@ -75,7 +75,7 @@ def get_runs(experiment_id: str):
     uri = "http://localhost:3000/runs/list"
     response = requests.post(
         url=uri,
-        json={"experiment_id": experiment_id},
+        json=request.json(),
         headers={
             "Content-Type": "application/json",
         },
@@ -194,9 +194,29 @@ def parse_live_results_table(
     return result_df
 
 
-def get_metric_names(MLFlowExperimentRequest):
-    # TODO: Implement this function
-    pass
+def get_metric_names(request: MLFlowExperimentRequest):
+    """
+    Fetches a list of metric names from the MLflow store.
+
+    Args:
+        request (MLFlowExperimentRequest): The request object containing the experiment ID.
+
+    Returns:
+        list: A list of metric names retrieved from the response. If the response is not successful, returns an empty list.
+    """
+    uri = "http://localhost:3000/metrics/names"
+    response = requests.post(
+        url=uri,
+        json=request.json(),
+        headers={
+            "Content-Type": "application/json",
+        },
+        timeout=10,
+    )
+    response_json = response.json()
+    if not response_json:
+        return []
+    return response_json
 
 
 def get_parameters(MLFlowStoreIdentifier):
