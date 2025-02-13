@@ -73,7 +73,7 @@ def get_runs(request: MLFlowExperimentRequest):
         requests.exceptions.RequestException: If there is an issue with the HTTP request.
     """
     uri = "http://localhost:3000/runs/list"
-    print("REQUEST: ", request.json())
+    st.write("REQUEST: ", request.json())
     response = requests.post(
         url=uri,
         json=request.json(),
@@ -82,7 +82,7 @@ def get_runs(request: MLFlowExperimentRequest):
         },
         timeout=60,
     )
-    print("RESPONSE: ", response.json())
+    st.write("RESPONSE: ", response.json())
     response_json = response.json()
     if not response_json:
         return []
