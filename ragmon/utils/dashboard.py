@@ -205,7 +205,7 @@ def get_metric_names(request: MLFlowExperimentRequest):
         list: A list of metric names retrieved from the response. If the response is not successful, returns an empty list.
     """
     uri = "http://localhost:3000/metrics/names"
-    response = requests.post(
+    response = requests.get(
         url=uri,
         data=request.json(),
         headers={
