@@ -134,9 +134,9 @@ if experiment_ids:
         mock_precision_scores = np.random.random(len(run_ids))
         mock_recall_scores = np.random.random(len(run_ids))
 
-        # creating requests for metrics
+        # create requests for metric names, get metric names and sort it
         metric_names = get_metric_names(selected_experiment_request)
-        st.write(metric_names)
+        metric_names = sorted(metric_names)
 
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
         non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]

@@ -14,7 +14,6 @@ from wordcloud import WordCloud
 from data_types import (
     MLFlowStoreMetricRequest,
     MLFlowExperimentRequest,
-    MLFlowStoreIdentifier,
 )
 
 table_cols_to_show = [
@@ -213,7 +212,6 @@ def get_metric_names(request: MLFlowExperimentRequest):
         },
         timeout=60,
     )
-    st.write(response)
     response_json = response.json()
     if not response_json:
         return []
