@@ -207,9 +207,9 @@ def get_metric_names(request: MLFlowExperimentRequest):
     uri = "http://localhost:3000/metrics/names"
     response = requests.get(
         url=uri,
-        params=request.json(),
+        params=request.dict(),
         headers={
-            "Content-Type": "application/json",
+            "Accept": "application/json",
         },
         timeout=60,
     )
