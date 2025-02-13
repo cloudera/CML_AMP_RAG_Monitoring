@@ -31,7 +31,7 @@ table_cols_to_show = [
 ]
 
 
-def get_experiment_ids():
+def get_experiments():
     """
     Fetches a list of unique experiment IDs from a MLFLow store.
 
@@ -55,7 +55,7 @@ def get_experiment_ids():
     response_json = response.json()
     if not response_json:
         return []
-    return list(set(response_json))
+    return response_json
 
 
 def get_runs(request: MLFlowExperimentRequest):

@@ -56,32 +56,23 @@ from data_types import (
 )
 from utils import get_collections
 from utils.dashboard import (
-    get_custom_evaluators,
-    get_experiment_ids,
+    get_experiments,
     get_runs,
     get_metric_names,
-    parse_live_results_table,
     get_numeric_metrics_df,
-    show_i_o_component,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
-    show_live_df_component,
     show_pie_chart_component,
     show_time_series_component,
-    show_wordcloud_component,
 )
 
 warnings.filterwarnings("ignore")
 
-# get resources directory
 file_path = Path(os.path.realpath(__file__))
 st_app_dir = file_path.parents[1]
 data_dir = os.path.join(st_app_dir, "data")
-cols_dir = os.path.join(data_dir, "collections")
-COLLECTIONS_JSON = os.path.join(cols_dir, "collections.json")
-CUSTOM_EVAL_DIR = os.path.join(data_dir, "custom_evaluators")
-
+custom_evals_dir = Path(os.path.join(data_dir, "custom_evaluators"))
 
 title_col, refresh_col = st.columns([12, 1])
 # dashboard title
@@ -97,29 +88,24 @@ with refresh_col:
         st.rerun()
 
 # select experiment/data source
-experiment_ids = get_experiment_ids()
-collections = get_collections(COLLECTIONS_JSON=COLLECTIONS_JSON)
-custom_evals = get_custom_evaluators(custom_evals_dir=CUSTOM_EVAL_DIR)
+experiments = get_experiments()
 
-if not experiment_ids:
+st.write(experiments)
+
+if not experiments:
     st.write("No Data Sources or Entries Found")
 
-if experiment_ids:
-    data_source_names = {
-        collection["mlflow_exp_id"]: collection["name"]
-        for collection in collections
-        if collection["mlflow_exp_id"] in experiment_ids
-    }
-
+if experiments:
     selected_experiment = st.selectbox(
         "Select a Data Source :material/database:",
-        options=experiment_ids,
-        index=len(experiment_ids) - 1,
-        format_func=lambda x: data_source_names[x],
+        options=experiments,
+        index=len(experiments) - 1,
+        format_func=lambda x: x["name"],
     )
 
+    selected_experiment_id = selected_experiment["experiment_id"]
     selected_experiment_request = MLFlowExperimentRequest(
-        experiment_id=str(selected_experiment)
+        experiment_id=str(selected_experiment_id)
     )
 
     # select run
@@ -247,13 +233,13 @@ if experiment_ids:
                             fig_placeholder=metric_fig,
                         )
 
-            # TODO: reimplement of detailed logs
+            # TODO: reimplementation of keywords
             # Show keywords wordcloud
             # show_wordcloud_component(
             #     df=live_results_df,
             # )
 
-            # Live Results
+            # TODO: reimplementation of detailed logs
             # metrics_dfs = [
             #     faithfulness_df.drop(columns=["timestamp"]),
             #     relevance_df.drop(columns=["timestamp"]),
