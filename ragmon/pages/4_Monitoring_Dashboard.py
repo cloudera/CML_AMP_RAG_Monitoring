@@ -230,13 +230,9 @@ if experiment_ids:
                     elif "feedback" in metric_name.lower():
                         metric_fig = metric_fig_rows[i // 3][i % 3]
                         with metric_fig:
-                            kpi_cols = st.columns([1, 1, 1])
                             feedback_df = metric_df
                             show_feedback_component(
                                 feedback_df=feedback_df,
-                                thumbs_up_placeholder=kpi_cols[0],
-                                thumbs_down_placeholder=kpi_cols[1],
-                                no_feedback_placeholder=kpi_cols[2],
                                 update_timestamp=update_timestamp,
                             )
                     else:

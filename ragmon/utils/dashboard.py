@@ -452,9 +452,7 @@ def show_i_o_component(
 
 def show_feedback_component(
     feedback_df: pd.DataFrame,
-    thumbs_up_placeholder: DeltaGenerator,
-    thumbs_down_placeholder: DeltaGenerator,
-    no_feedback_placeholder: DeltaGenerator,
+    label: str,
     update_timestamp: str,
 ):
     """
@@ -474,9 +472,14 @@ def show_feedback_component(
         no_feedback_count = feedback_df["feedback"].isna().sum()
 
         st.markdown(
-            "### Feedback Received",
+            f"### {label}",
             help="Feedback received from users.",
         )
+
+        thumbs_up_placeholder, thumbs_down_placeholder, no_feedback_placeholder = (
+            st.columns(3)
+        )
+
         thumbs_up_placeholder.metric(
             label="Thumbs Up :material/thumb_up:",
             help="The number of thumbs up received.",
