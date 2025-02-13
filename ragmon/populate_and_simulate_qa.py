@@ -142,7 +142,7 @@ def main():
         print("Sample data already exists.")
         return
 
-    mlflow_exp_id = mlflow.create_experiment(table_name_from(len(collections) + 1))
+    mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
         "name": "CML Docs (Example)",
