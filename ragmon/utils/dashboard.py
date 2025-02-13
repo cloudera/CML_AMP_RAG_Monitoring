@@ -73,16 +73,14 @@ def get_runs(request: MLFlowExperimentRequest):
         requests.exceptions.RequestException: If there is an issue with the HTTP request.
     """
     uri = "http://localhost:3000/runs/list"
-    st.write("REQUEST: ", request.json())
     response = requests.post(
         url=uri,
-        json=request.json(),
+        data=request.json(),
         headers={
             "Content-Type": "application/json",
         },
         timeout=60,
     )
-    st.write("RESPONSE: ", response.json())
     response_json = response.json()
     if not response_json:
         return []
@@ -209,7 +207,7 @@ def get_metric_names(request: MLFlowExperimentRequest):
     uri = "http://localhost:3000/metrics/names"
     response = requests.post(
         url=uri,
-        json=request.json(),
+        data=request.json(),
         headers={
             "Content-Type": "application/json",
         },
