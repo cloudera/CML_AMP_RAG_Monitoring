@@ -213,6 +213,7 @@ def get_metric_names(request: MLFlowExperimentRequest):
         },
         timeout=60,
     )
+    st.write(response)
     response_json = response.json()
     if not response_json:
         return []

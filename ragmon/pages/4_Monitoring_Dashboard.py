@@ -125,8 +125,6 @@ if experiment_ids:
     # select run
     runs = get_runs(selected_experiment_request)
 
-    st.write(runs)
-
     if not runs:
         st.write("No Metrics Logged Yet")
 
