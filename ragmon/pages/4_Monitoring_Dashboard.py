@@ -49,16 +49,22 @@ import plotly.graph_objects as go  # interactive charts
 import streamlit as st  # 🎈 data web app development
 
 from qdrant_client import QdrantClient
-from data_types import MLFlowStoreRequest
+from data_types import (
+    MLFlowExperimentRequest,
+    MLFlowStoreMetricRequest,
+    MLFlowStoreIdentifier,
+)
 from utils import get_collections
 from utils.dashboard import (
     get_custom_evaluators,
     get_experiment_ids,
     get_runs,
+    get_metric_names,
     parse_live_results_table,
     get_numeric_metrics_df,
     show_i_o_component,
     show_feedback_component,
+    show_feedback_kpi,
     show_numeric_metric_kpi,
     show_live_df_component,
     show_pie_chart_component,
@@ -103,7 +109,7 @@ if experiment_ids:
         collection["mlflow_exp_id"]: collection["name"]
         for collection in collections
         if collection["mlflow_exp_id"] in experiment_ids
-        }
+    }
 
     selected_experiment = st.selectbox(
         "Select a Data Source :material/database:",
@@ -112,8 +118,12 @@ if experiment_ids:
         format_func=lambda x: data_source_names[x],
     )
 
+    selected_experiment_request = MLFlowExperimentRequest(
+        experiment_id=str(selected_experiment)
+    )
+
     # select run
-    runs = get_runs(selected_experiment)
+    runs = get_runs(selected_experiment_request)
 
     if not runs:
         st.write("No Metrics Logged Yet")
@@ -124,343 +134,138 @@ if experiment_ids:
         mock_precision_scores = np.random.random(len(run_ids))
         mock_recall_scores = np.random.random(len(run_ids))
 
-        # creating requests for metrics
+        # create requests for metric names, get metric names and sort it
+        metric_names = get_metric_names(selected_experiment_request)
+        metric_names = sorted(metric_names)
 
-        faithfulness_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["faithfulness_score"],
-        )
+        numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
+        non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]
 
-        relevancy_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["relevance_score"],
-        )
+        # create requests for metrics
+        numeric_metrics_requests = {}
 
-        context_relevancy_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["context_relevancy_score"],
-        )
-
-        input_lengths_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["input_length"],
-        )
-
-        output_lengths_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["output_length"],
-        )
-
-        maliciousness_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["maliciousness_score"],
-        )
-
-        toxicity_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["toxicity_score"],
-        )
-
-        comprehensiveness_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["comprehensiveness_score"],
-        )
-
-        precision_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["precision"],
-        )
-
-        recall_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["recall"],
-        )
-
-        feedback_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["feedback"],
-        )
-
-        table_request = MLFlowStoreRequest(
-            experiment_id=str(selected_experiment),
-            run_ids=run_ids,
-            metric_names=["live_results.json"],
-        )
-
-        # custom metrics requests
-        custom_metrics_requests = {}
-        for custom_eval in custom_evals:
-            custom_metric_request = MLFlowStoreRequest(
+        for metric_name in numeric_metrics:
+            metric_request = MLFlowStoreMetricRequest(
                 experiment_id=str(selected_experiment),
                 run_ids=run_ids,
-                metric_names=[f"{custom_eval['name'].lower().replace(' ', '_')}_score"],
+                metric_names=[metric_name],
             )
-            custom_metrics_requests[
-                f"{custom_eval['name'].lower().replace(' ', '_')}_score"
-            ] = custom_metric_request
+            numeric_metrics_requests[metric_name] = metric_request
 
         placeholder = st.empty()
 
         # near real-time / live feed simulation
         update_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # get live results
-        live_results_df = parse_live_results_table(table_request)
-
-        # get remaining metrics
-        faithfulness_df = get_numeric_metrics_df(faithfulness_request)
-        relevance_df = get_numeric_metrics_df(relevancy_request)
-        context_relevancy_df = get_numeric_metrics_df(context_relevancy_request)
-        input_lengths_df = get_numeric_metrics_df(input_lengths_request)
-        output_lengths_df = get_numeric_metrics_df(output_lengths_request)
-        maliciousness_df = get_numeric_metrics_df(maliciousness_request)
-        toxicity_df = get_numeric_metrics_df(toxicity_request)
-        comprehensiveness_df = get_numeric_metrics_df(comprehensiveness_request)
-        precision_df = get_numeric_metrics_df(precision_request)
-        recall_df = get_numeric_metrics_df(recall_request)
-        feedback_df = get_numeric_metrics_df(feedback_request)
-
-        # get custom metrics responses
-        custom_metrics_dfs = {}
-        for (
-            custom_metric_name,
-            custom_metric_request,
-        ) in custom_metrics_requests.items():
-            custom_metrics_dfs[custom_metric_name] = get_numeric_metrics_df(
-                custom_metric_request
-            )
+        # get metrics responses
+        metric_dfs = {}
+        for metric_name, metric_request in numeric_metrics_requests.items():
+            metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
 
         with placeholder.container():
-
-            kpi9, kpi10, kpi11, kpi12, kpi13 = st.columns([3, 3, 1, 1, 1])
-
-            io_col, feedback_col = st.columns([3, 2])
-
-            with io_col:
-                show_i_o_component(
-                    input_lengths_df=input_lengths_df,
-                    output_lengths_df=output_lengths_df,
-                    input_kpi_placeholder=kpi9,
-                    output_kpi_placeholder=kpi10,
-                    update_timestamp=update_timestamp,
-                )
-
-            # Show thumbs up count, thumbs down count, no feedback count
-            with feedback_col:
-                show_feedback_component(
-                    feedback_df=feedback_df,
-                    thumbs_down_placeholder=kpi11,
-                    thumbs_up_placeholder=kpi12,
-                    no_feedback_placeholder=kpi13,
-                    update_timestamp=update_timestamp,
-                )
-
-            # metric columns
-            kpi1, kpi2, kpi3, kpi4, kpi5, kpi6, kpi7 = st.columns([1, 1, 1, 1, 1, 1, 2])
-
-            show_numeric_metric_kpi(
-                metric_key="faithfulness_score",
-                metrics_df=faithfulness_df,
-                kpi_placeholder=kpi1,
-                label="Faithfulness",
-                tooltip="Faithfulness is the degree to which the model"
-                " generates responses that are faithful to the input.",
-            )
-
-            show_numeric_metric_kpi(
-                metric_key="relevance_score",
-                metrics_df=relevance_df,
-                kpi_placeholder=kpi2,
-                label="Relevance",
-                tooltip="Relevance is the degree to which the model generates"
-                " responses that are relevant to the input.",
-            )
-
-            show_numeric_metric_kpi(
-                metric_key="context_relevancy_score",
-                metrics_df=context_relevancy_df,
-                kpi_placeholder=kpi3,
-                label="Context Relevance",
-                tooltip="Context Relevance is the degree to which contexts"
-                " retrieved are contextually relevant.",
-            )
-
-            show_numeric_metric_kpi(
-                metric_key="maliciousness_score",
-                metrics_df=maliciousness_df,
-                kpi_placeholder=kpi4,
-                label="Maliciousness",
-                tooltip="The degree to which the model generates responses"
-                " that are malicious or harmful.",
-            )
-
-            show_numeric_metric_kpi(
-                metric_key="toxicity_score",
-                metrics_df=toxicity_df,
-                kpi_placeholder=kpi5,
-                label="Toxicity",
-                tooltip="The degree to which the model generates responses"
-                " that are toxic.",
-            )
-
-            show_numeric_metric_kpi(
-                metric_key="comprehensiveness_score",
-                metrics_df=comprehensiveness_df,
-                kpi_placeholder=kpi6,
-                label="Comprehensiveness",
-                tooltip="The degree to which the model generates responses"
-                " that are comprehensive.",
-            )
-
-            with kpi7.container():
-                metric_col1, metric_col2 = st.columns(2)
-                precision_scores = mock_precision_scores
-                avg_precision = np.mean(precision_scores)
-                metric_col1.metric(
-                    label="Precision",
-                    help="The precision of contexts retrieved.",
-                    value=round(avg_precision, 2),
-                )
-
-                recall_scores = mock_recall_scores
-                avg_recall = np.mean(recall_scores)
-                metric_col2.metric(
-                    label="Recall",
-                    help="The recall of contexts retrieved.",
-                    value=round(avg_recall, 2),
-                )
-                st.caption("Coming Soon! :material/sunny:")
-
-            # Graphs
-            with st.expander(
-                ":material/analytics: **Metrics Overview**", expanded=True
-            ):
-                fig_col1, fig_col2, fig_col3 = st.columns(3)
-                with fig_col1:
-                    show_pie_chart_component(
-                        metric_key="faithfulness_score",
-                        metrics_df=faithfulness_df,
-                        title="Faithfulness",
-                        tooltip="Faithfulness of the answer received.",
-                        labels=["Faithful", "Not Faithful", "No Records"],
-                        update_timestamp=update_timestamp,
-                    )
-
-                with fig_col2:
-                    show_pie_chart_component(
-                        metric_key="relevance_score",
-                        metrics_df=relevance_df,
-                        title="Relevance",
-                        tooltip="Relevance of the answer received.",
-                        labels=["Relevant", "Not Relevant", "No Records"],
-                        update_timestamp=update_timestamp,
-                    )
-
-                with fig_col3:
-                    show_time_series_component(
-                        metric_key="context_relevancy_score",
-                        metrics_df=context_relevancy_df,
-                        title="Context Relevance",
-                        tooltip="Relevance of the contexts received.",
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                    )
-
-                fig_col4, fig_col5, fig_col6 = st.columns(3)
-
-                with fig_col4:
-                    show_time_series_component(
-                        metric_key="maliciousness_score",
-                        metrics_df=maliciousness_df,
-                        title="Maliciousness",
-                        tooltip="Maliciousness of the answer received.",
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                    )
-
-                with fig_col5:
-                    show_time_series_component(
-                        metric_key="toxicity_score",
-                        metrics_df=toxicity_df,
-                        title="Toxicity",
-                        tooltip="Toxicity of the answer received.",
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                    )
-                with fig_col6:
-                    show_time_series_component(
-                        metric_key="comprehensiveness_score",
-                        metrics_df=comprehensiveness_df,
-                        title="Comprehensiveness",
-                        tooltip="Comprehensiveness of the answer received.",
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                    )
-
-            # Custom Metrics
-            if custom_evals:
-                custom_metric_rows = [
+            # Non empty metrics
+            non_empty_metrics = [
+                metric_name
+                for metric_name, metric_df in metric_dfs.items()
+                if not metric_df.empty
+            ]
+            if non_empty_metrics:
+                metric_rows = [
                     st.columns([1, 1, 1, 1, 1, 1])
-                    for _ in range(len(custom_evals) // 6 + 1)
+                    for _ in range(
+                        len(non_empty_metrics) // 6 + 1
+                        if len(non_empty_metrics) % 6 != 0
+                        else len(non_empty_metrics) // 6
+                    )
                 ]
                 with st.expander(
-                    ":material/analytics: **Custom Metrics Overview**", expanded=True
+                    ":material/analytics: **Metrics Overview**", expanded=True
                 ):
-                    custom_metric_fig_rows = [
-                        st.columns([1, 1, 1]) for _ in range(len(custom_evals) // 3 + 1)
+                    metric_fig_rows = [
+                        st.columns([1, 1, 1], border=False)
+                        for _ in range(
+                            len(non_empty_metrics) // 3 + 1
+                            if len(non_empty_metrics) % 3 != 0
+                            else len(non_empty_metrics) // 3
+                        )
                     ]
-                for i, custom_eval in enumerate(custom_evals):
-                    metric_key = (
-                        f"{custom_eval['name'].lower().replace(' ', '_')}_score"
-                    )
-                    custom_metric_df = custom_metrics_dfs[metric_key]
-                    custom_metric_kpi = custom_metric_rows[i // 6][i % 6]
-                    show_numeric_metric_kpi(
-                        metric_key=metric_key,
-                        metrics_df=custom_metric_df,
-                        kpi_placeholder=custom_metric_kpi,
-                        label=custom_eval["name"].title(),
-                        tooltip=custom_eval["eval_definition"],
-                    )
-                    custom_metric_fig = custom_metric_fig_rows[i // 3][i % 3]
-                    show_time_series_component(
-                        metric_key=metric_key,
-                        metrics_df=custom_metric_df,
-                        title=custom_eval["name"].title(),
-                        tooltip=custom_eval["eval_definition"],
-                        update_timestamp=update_timestamp,
-                        frequency="h",
-                        fig_placeholder=custom_metric_fig,
-                    )
+                for i, metric_name in enumerate(non_empty_metrics):
+                    metric_df = metric_dfs[metric_name]
+                    metric_kpi = metric_rows[i // 6][i % 6]
+                    if not "feedback" in metric_name.lower():
+                        show_numeric_metric_kpi(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            kpi_placeholder=metric_kpi,
+                            label=metric_name.replace("_", " ").title(),
+                            tooltip=f"Average {metric_name.replace('_', ' ').title()}",
+                        )
+                    else:
+                        show_feedback_kpi(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            kpi_placeholder=metric_kpi,
+                            label=metric_name.replace("_", " ").title(),
+                        )
+                    if "faithfulness" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_pie_chart_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()}",
+                            labels=["Faithful", "Not Faithful"],
+                            update_timestamp=update_timestamp,
+                            fig_placeholder=metric_fig,
+                        )
+                    elif "relevance" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_pie_chart_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()}",
+                            labels=["Relevant", "Not Relevant"],
+                            update_timestamp=update_timestamp,
+                            fig_placeholder=metric_fig,
+                        )
+                    elif "feedback" in metric_name.lower():
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        with metric_fig:
+                            feedback_df = metric_df
+                            show_feedback_component(
+                                feedback_df=feedback_df,
+                                label=metric_name.replace("_", " ").title(),
+                                update_timestamp=update_timestamp,
+                            )
+                    else:
+                        metric_fig = metric_fig_rows[i // 3][i % 3]
+                        show_time_series_component(
+                            metric_key=metric_name,
+                            metrics_df=metric_df,
+                            title=f"{metric_name.replace('_', ' ').title()}",
+                            update_timestamp=update_timestamp,
+                            frequency="h",
+                            fig_placeholder=metric_fig,
+                        )
+
+            # TODO: reimplement of detailed logs
             # Show keywords wordcloud
-            show_wordcloud_component(
-                df=live_results_df,
-            )
+            # show_wordcloud_component(
+            #     df=live_results_df,
+            # )
 
             # Live Results
-            metrics_dfs = [
-                faithfulness_df.drop(columns=["timestamp"]),
-                relevance_df.drop(columns=["timestamp"]),
-                context_relevancy_df.drop(columns=["timestamp"]),
-                maliciousness_df.drop(columns=["timestamp"]),
-                toxicity_df.drop(columns=["timestamp"]),
-                comprehensiveness_df.drop(columns=["timestamp"]),
-                feedback_df.drop(columns=["timestamp"]),
-            ]
+            # metrics_dfs = [
+            #     faithfulness_df.drop(columns=["timestamp"]),
+            #     relevance_df.drop(columns=["timestamp"]),
+            #     context_relevancy_df.drop(columns=["timestamp"]),
+            #     maliciousness_df.drop(columns=["timestamp"]),
+            #     toxicity_df.drop(columns=["timestamp"]),
+            #     comprehensiveness_df.drop(columns=["timestamp"]),
+            #     feedback_df.drop(columns=["timestamp"]),
+            # ]
 
-            # append custom metrics to metrics_dfs
-            for _, custom_metric_df in custom_metrics_dfs.items():
-                metrics_dfs.append(custom_metric_df.drop(columns=["timestamp"]))
+            # # append custom metrics to metrics_dfs
+            # for _, custom_metric_df in custom_metrics_dfs.items():
+            #     metrics_dfs.append(custom_metric_df.drop(columns=["timestamp"]))
 
-            show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
+            # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)

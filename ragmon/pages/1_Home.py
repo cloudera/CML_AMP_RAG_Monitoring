@@ -49,16 +49,21 @@ logo_path = os.path.join(
     file_path.parents[1], "resources", "logos", "RAG-Monitoring-icon.png"
 )
 
+
 def has_updates():
-    result = subprocess.run(["bash /home/cdsw/scripts/check_updates.sh"], shell=True, text=True)
+    result = subprocess.run(
+        ["bash /home/cdsw/scripts/check_updates.sh"], shell=True, text=True
+    )
     return result.returncode != 0
+
 
 def restart():
     try:
         import cmlapi
         import os
+
         client = cmlapi.default_client()
-        project_id = os.environ['CDSW_PROJECT_ID']
+        project_id = os.environ["CDSW_PROJECT_ID"]
         jobs = client.list_jobs(project_id=project_id)
         update_job = None
         for job in jobs.jobs:
@@ -73,20 +78,24 @@ def restart():
         st.warning("Error while fetching job details. Please update manually.")
         st.stop()
 
+
 @st.dialog("RAG Monitoring is restarting", width="large")
 def restarting():
     st.write("You will need to reload the page after the restart.")
     restart()
     st.stop()
 
+
 if has_updates():
-    st.warning("Your RAG Monitoring version is out of date. Please update to the latest version.")
+    st.warning(
+        "Your RAG Monitoring version is out of date. Please update to the latest version."
+    )
     if st.button("Click here to update"):
         restarting()
 
 _, img_col, _ = st.columns([1, 5, 1])
 with img_col:
-    st.image(logo_path, use_column_width=True)
+    st.image(logo_path, use_container_width=True)
 st.markdown(
     """
 Real-time monitoring for RAG chatbots—powered by best practices and leading frameworks.
@@ -105,4 +114,3 @@ _, _, button_col, _, _ = st.columns([1, 1, 1, 1, 1])
 with button_col:
     if st.button("Get Started", key="get_started"):
         st.switch_page("pages/2_Data_Source.py")
-

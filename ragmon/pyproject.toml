@@ -22,9 +22,9 @@ dependencies = [
     "pydantic==2.8.2",
     "ruff>=0.8.2",
     "streamlit-autorefresh==1.0.1",
-    "streamlit==1.39.0",
     "typing-extensions==4.12.2",
     "urllib3<2",
     "keybert>=0.8.5",
     "wordcloud>=1.9.4",
+    "streamlit==1.42.0",
 ]

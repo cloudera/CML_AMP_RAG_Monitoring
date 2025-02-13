@@ -275,7 +275,7 @@ st.title(
 _, create_col, _ = st.columns([4, 1, 4])
 
 with create_col:
-    st.image(os.path.join(RESOURCES_DIR, "database.png"), use_column_width=True)
+    st.image(os.path.join(RESOURCES_DIR, "database.png"), use_container_width=True)
 
 _, create_button_col, _ = st.columns([11, 3, 11])
 
