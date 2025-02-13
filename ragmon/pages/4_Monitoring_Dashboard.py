@@ -233,6 +233,7 @@ if experiment_ids:
                             feedback_df = metric_df
                             show_feedback_component(
                                 feedback_df=feedback_df,
+                                label=metric_name.replace("_", " ").title(),
                                 update_timestamp=update_timestamp,
                             )
                     else:
