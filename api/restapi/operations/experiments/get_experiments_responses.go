@@ -11,6 +11,8 @@ import (
 	"github.com/go-openapi/runtime"
 
 	lhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/http"
+
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/models"
 )
 
 // GetExperimentsOKCode is the HTTP code returned for type GetExperimentsOK
@@ -26,7 +28,7 @@ type GetExperimentsOK struct {
 	/*
 	  In: Body
 	*/
-	Payload []string `json:"body,omitempty"`
+	Payload []*models.Experiment `json:"body,omitempty"`
 }
 
 // NewGetExperimentsOK creates GetExperimentsOK with default headers values
@@ -37,13 +39,13 @@ func NewGetExperimentsOK() *GetExperimentsOK {
 }
 
 // WithPayload adds the payload to the get experiments o k response
-func (o *GetExperimentsOK) WithPayload(payload []string) *GetExperimentsOK {
+func (o *GetExperimentsOK) WithPayload(payload []*models.Experiment) *GetExperimentsOK {
 	o.Payload = payload
 	return o
 }
 
 // SetPayload sets the payload to the get experiments o k response
-func (o *GetExperimentsOK) SetPayload(payload []string) {
+func (o *GetExperimentsOK) SetPayload(payload []*models.Experiment) {
 	o.Payload = payload
 }
 
@@ -54,7 +56,7 @@ func (o *GetExperimentsOK) WriteResponse(rw http.ResponseWriter, producer runtim
 	payload := o.Payload
 	if payload == nil {
 		// return empty array
-		payload = make([]string, 0, 50)
+		payload = make([]*models.Experiment, 0, 50)
 	}
 
 	if err := producer.Produce(rw, payload); err != nil {

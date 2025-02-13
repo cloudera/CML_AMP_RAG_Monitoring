@@ -15,6 +15,8 @@ import (
 	lswagger "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/swagger"
 
 	strfmt "github.com/go-openapi/strfmt"
+
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/models"
 )
 
 // GetExperimentsReader is a Reader for the GetExperiments structure.
@@ -60,7 +62,7 @@ GetExperimentsOK handles this case with default header values.
 success
 */
 type GetExperimentsOK struct {
-	Payload []string
+	Payload []*models.Experiment
 }
 
 // Code gets the status code for the get experiments o k response
@@ -72,7 +74,7 @@ func (o *GetExperimentsOK) Error() string {
 	return fmt.Sprintf("[GET /experiments][%d] getExperimentsOK  %+v", 200, o.Payload)
 }
 
-func (o *GetExperimentsOK) GetPayload() []string {
+func (o *GetExperimentsOK) GetPayload() []*models.Experiment {
 	return o.Payload
 }
 

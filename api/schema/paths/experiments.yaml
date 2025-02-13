@@ -9,7 +9,7 @@
         schema:
           type: array
           items:
-            type: string
+            $ref: "#/definitions/Experiment"
       400:
         description: "bad request"
       500:

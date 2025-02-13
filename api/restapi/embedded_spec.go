@@ -49,7 +49,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/Experiment"
               }
             }
           },
@@ -311,6 +311,10 @@ func init() {
         "id": {
           "description": "The ID",
           "type": "integer"
+        },
+        "name": {
+          "description": "The name of the experiment",
+          "type": "string"
         }
       }
     },
@@ -497,7 +501,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/Experiment"
               }
             }
           },
@@ -759,6 +763,10 @@ func init() {
         "id": {
           "description": "The ID",
           "type": "integer"
+        },
+        "name": {
+          "description": "The name of the experiment",
+          "type": "string"
         }
       }
     },
