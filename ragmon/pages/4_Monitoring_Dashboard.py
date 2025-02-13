@@ -182,7 +182,7 @@ if experiment_ids:
                     ":material/analytics: **Metrics Overview**", expanded=True
                 ):
                     metric_fig_rows = [
-                        st.columns([1, 1, 1], border=True)
+                        st.columns([1, 1, 1], border=False)
                         for _ in range(
                             len(non_empty_metrics) // 3 + 1
                             if len(non_empty_metrics) % 3 != 0
