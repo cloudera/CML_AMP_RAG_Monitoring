@@ -138,7 +138,7 @@ if experiment_ids:
 
         # creating requests for metrics
         metric_names = get_metric_names(selected_experiment_request)
-        st.run(metric_names)
+        st.write(metric_names)
 
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
         non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]
