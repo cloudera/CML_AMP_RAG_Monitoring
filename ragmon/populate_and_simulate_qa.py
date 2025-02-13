@@ -138,13 +138,11 @@ def main():
     # Function to get or create a Qdrant vector store
     client = QdrantClient(host="localhost", port=6333)
 
-    # Check if the sample data already exists
     if check_if_collection_exists(collections, "CML Docs (Example)"):
         print("Sample data already exists.")
         return
 
-    # Create a new collection
-    mlflow_exp_id = mlflow.create_experiment(f"CML Docs (Example)")
+    mlflow_exp_id = mlflow.create_experiment(table_name_from(len(collections) + 1))
     collection_config = {
         "id": len(collections) + 1,
         "name": "CML Docs (Example)",

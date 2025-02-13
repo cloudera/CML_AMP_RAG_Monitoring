@@ -44,10 +44,7 @@ import os
 from pathlib import Path
 import uuid
 import sys
-from typing import Dict, Union
-import mlflow
-from mlflow.tracking import MlflowClient
-
+from typing import Dict
 import opentelemetry.trace
 from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole

@@ -103,6 +103,9 @@ if experiments:
         format_func=lambda x: x["name"],
     )
 
+    st.write(f"Selected experiment:")
+    st.write(selected_experiment)
+
     selected_experiment_id = selected_experiment["experiment_id"]
     selected_experiment_request = MLFlowExperimentRequest(
         experiment_id=str(selected_experiment_id)
