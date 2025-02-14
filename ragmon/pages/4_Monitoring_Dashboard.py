@@ -89,7 +89,6 @@ with refresh_col:
 
 # select experiment/data source
 experiments = get_experiments()
-st.write(experiments)
 
 if not experiments:
     st.write("No Data Sources or Entries Found")
@@ -101,9 +100,6 @@ if experiments:
         index=len(experiments) - 1,
         format_func=lambda x: x["name"],
     )
-
-    st.write(f"Selected experiment:")
-    st.write(selected_experiment)
 
     selected_experiment_id = selected_experiment["experiment_id"]
     selected_experiment_request = MLFlowExperimentRequest(
