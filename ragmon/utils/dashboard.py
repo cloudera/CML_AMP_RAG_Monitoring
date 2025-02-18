@@ -109,6 +109,76 @@ def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
     return custom_evaluators
 
 
+def get_metric_names(request: MLFlowExperimentRequest):
+    """
+    Fetches a list of metric names from the MLflow store.
+
+    Args:
+        request (MLFlowExperimentRequest): The request object containing the experiment ID.
+
+    Returns:
+        list: A list of metric names retrieved from the response. If the response is not successful, returns an empty list.
+    """
+    uri = "http://localhost:3000/metrics/names"
+    response = requests.get(
+        url=uri,
+        params=request.dict(),
+        headers={
+            "Accept": "application/json",
+        },
+        timeout=60,
+    )
+    response_json = response.json()
+    if not response_json:
+        return []
+    return response_json
+
+
+def get_parameters(MLFlowStoreIdentifier):
+    # TODO: Implement this function
+    pass
+
+
+def merge_jsons(*dicts):
+    """
+    Merges multiple dictionaries into a single dictionary.
+
+    Args:
+        *dicts: A variable number of dictionaries to merge.
+
+    Returns:
+        dict: A dictionary containing the merged key-value pairs from all input dictionaries.
+    """
+    merged = {}
+
+    for d in dicts:
+        for key, value in d.items():
+            if key in merged:
+                if merged[key] != value:
+                    if not isinstance(merged[key], list):
+                        merged[key] = [merged[key]]
+                    if value not in merged[key]:
+                        merged[key].append(value)
+            else:
+                merged[key] = value
+
+    return merged
+
+
+def get_jsons(request: MLFlowStoreMetricRequest):
+    """
+    Fetches JSON data from the MLflow store.
+
+    Args:
+        request (MLFlowStoreMetricRequest): The request object containing the data to be sent in the POST request.
+
+    Returns:
+        list: A list of JSON data retrieved from the response. If the response is not successful, returns an empty list.
+    """
+    # TODO: Implement this function
+    pass
+
+
 def parse_live_results_table(
     table_request: MLFlowStoreMetricRequest,
     table_cols_to_show: List[str] = table_cols_to_show,
@@ -191,36 +261,6 @@ def parse_live_results_table(
     )
     result_df = result_df.sort_values(by="timestamp", ascending=True)
     return result_df
-
-
-def get_metric_names(request: MLFlowExperimentRequest):
-    """
-    Fetches a list of metric names from the MLflow store.
-
-    Args:
-        request (MLFlowExperimentRequest): The request object containing the experiment ID.
-
-    Returns:
-        list: A list of metric names retrieved from the response. If the response is not successful, returns an empty list.
-    """
-    uri = "http://localhost:3000/metrics/names"
-    response = requests.get(
-        url=uri,
-        params=request.dict(),
-        headers={
-            "Accept": "application/json",
-        },
-        timeout=60,
-    )
-    response_json = response.json()
-    if not response_json:
-        return []
-    return response_json
-
-
-def get_parameters(MLFlowStoreIdentifier):
-    # TODO: Implement this function
-    pass
 
 
 # pull data from metric store

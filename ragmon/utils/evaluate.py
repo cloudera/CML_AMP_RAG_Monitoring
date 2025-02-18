@@ -382,9 +382,7 @@ async def evaluate_json_data(data):
                     {
                         "response_id": data.id,
                         "input": query,
-                        "input_length": len(query.split()),
                         "output": response,
-                        "output_length": len(response.split()),
                         "source_nodes": data.source_nodes,
                         "query_keywords": ", ".join(query_keywords or []),
                         "response_keywords": ", ".join(response_keywords or []),

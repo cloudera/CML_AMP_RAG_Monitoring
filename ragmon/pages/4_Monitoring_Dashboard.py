@@ -61,6 +61,7 @@ from utils.dashboard import (
     get_metric_names,
     get_numeric_metrics_df,
     get_metrics,
+    merge_jsons,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
@@ -243,10 +244,16 @@ if experiments:
                     )
                     json_dicts[json_file] = get_metrics(json_file_request)
                     for json_dict in json_dicts[json_file]:
+                        new_json_list = []
                         if json_dict["value"]["metricType"] == "text":
                             json_dict["value"]["stringValue"] = json.loads(
                                 json_dict["value"]["stringValue"]
                             )
+                        columns = json_dict["value"]["stringValue"]["columns"]
+                        for data in json_dict["value"]["stringValue"]["data"]:
+                            new_json_list.append(dict(zip(columns, data)))
+                        merged_json = merge_jsons(*new_json_list)
+                        json_dict["value"] = merged_json
 
             st.write("### JSON Files: ")
             st.write(json_dicts)
