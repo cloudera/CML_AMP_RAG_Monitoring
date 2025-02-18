@@ -134,7 +134,6 @@ if experiments:
                 run_ids=run_ids,
                 metric_names=[metric_name],
             )
-            st.write(metric_request)
             numeric_metrics_requests[metric_name] = metric_request
 
         placeholder = st.empty()
