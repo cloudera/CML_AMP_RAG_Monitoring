@@ -112,6 +112,7 @@ class RagPredictResponse(BaseModel):
     metrics_logged_status: Optional[str] = None
     feedback: Optional[RagFeedback] = RagFeedback()
     feedback_logged_status: Optional[str] = None
+    timestamp: Optional[str] = None
 
 
 class RagFeedbackRequest(BaseModel):

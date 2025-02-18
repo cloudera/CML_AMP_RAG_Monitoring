@@ -42,6 +42,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import time
 import uuid
 import sys
 from typing import Dict
@@ -195,6 +196,7 @@ async def predict(
         source_nodes=response_source_nodes,
         chat_history=new_history,
         metrics_logged_status="pending",
+        timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     if request.do_evaluate:

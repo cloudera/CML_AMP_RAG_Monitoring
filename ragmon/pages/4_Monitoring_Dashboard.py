@@ -60,6 +60,7 @@ from utils.dashboard import (
     get_runs,
     get_metric_names,
     get_numeric_metrics_df,
+    get_metrics,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
@@ -123,7 +124,7 @@ if experiments:
         metric_names = sorted(metric_names)
 
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
-        non_numeric_metrics = [x for x in metric_names if x.endswith(".json")]
+        json_files = [x for x in metric_names if x.endswith(".json")]
 
         # create requests for metrics
         numeric_metrics_requests = {}
@@ -230,6 +231,19 @@ if experiments:
                             frequency="h",
                             fig_placeholder=metric_fig,
                         )
+
+            # Get logged json files
+            json_dicts = {}
+            if json_files:
+                for json_file in json_files:
+                    json_file_request = MLFlowStoreMetricRequest(
+                        experiment_id=str(selected_experiment_id),
+                        run_ids=run_ids,
+                        metric_names=[json_file],
+                    )
+                    json_dicts[json_file] = get_metrics(json_file_request)
+            st.write("### JSON Files: ")
+            st.write(json_dicts)
 
             # TODO: reimplementation of keywords
             # Show keywords wordcloud
