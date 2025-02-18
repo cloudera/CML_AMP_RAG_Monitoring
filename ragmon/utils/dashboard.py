@@ -165,7 +165,9 @@ def merge_jsons(*dicts):
     return merged
 
 
-def get_jsons(request: MLFlowStoreMetricRequest):
+def get_json(
+    request: MLFlowStoreMetricRequest,
+):
     """
     Fetches JSON data from the MLflow store.
 
@@ -175,8 +177,19 @@ def get_jsons(request: MLFlowStoreMetricRequest):
     Returns:
         list: A list of JSON data retrieved from the response. If the response is not successful, returns an empty list.
     """
-    # TODO: Implement this function
-    pass
+    json_dicts = get_metrics(request)
+    for json_dict in json_dicts:
+        new_json_list = []
+        if json_dict["value"]["metricType"] == "text":
+            json_dict["value"]["stringValue"] = json.loads(
+                json_dict["value"]["stringValue"]
+            )
+        columns = json_dict["value"]["stringValue"]["columns"]
+        for data in json_dict["value"]["stringValue"]["data"]:
+            new_json_list.append(dict(zip(columns, data)))
+        merged_json = merge_jsons(*new_json_list)
+        json_dict["value"] = merged_json
+    return json_dicts
 
 
 def parse_live_results_table(
