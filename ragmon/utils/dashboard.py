@@ -246,7 +246,6 @@ def get_metrics(
         timeout=60,
     )
     # if response is not successful, return empty list
-    st.write(response.json())
     if not response.ok:
         return []
     return response.json()
