@@ -130,7 +130,7 @@ if experiments:
 
         for metric_name in numeric_metrics:
             metric_request = MLFlowStoreMetricRequest(
-                experiment_id=str(selected_experiment),
+                experiment_id=str(selected_experiment_id),
                 run_ids=run_ids,
                 metric_names=[metric_name],
             )
