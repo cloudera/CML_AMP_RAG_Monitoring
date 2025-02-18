@@ -242,6 +242,12 @@ if experiments:
                         metric_names=[json_file],
                     )
                     json_dicts[json_file] = get_metrics(json_file_request)
+                    for json_dict in json_dicts[json_file]:
+                        if json_dict["value"]["metricType"] == "text":
+                            json_dict["value"]["stringValue"] = json.loads(
+                                json_dict["value"]["stringValue"]
+                            )
+
             st.write("### JSON Files: ")
             st.write(json_dicts)
 
