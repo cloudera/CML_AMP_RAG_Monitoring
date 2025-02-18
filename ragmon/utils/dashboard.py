@@ -246,6 +246,7 @@ def get_metrics(
         timeout=60,
     )
     # if response is not successful, return empty list
+    st.write(response.json())
     if not response.ok:
         return []
     return response.json()
@@ -266,7 +267,6 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     """
     metric_name = request.metric_names[0]
     metrics_response = get_metrics(request)
-    st.write(metrics_response)
     if metrics_response != []:
         metric_response_ids = [x["experiment_run_id"] for x in metrics_response]
         metric_scores = [
