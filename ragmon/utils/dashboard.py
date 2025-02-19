@@ -392,6 +392,25 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     return metrics_df
 
 
+def get_df_from_json(json_data: Dict[str, Union[str, List[str]]]) -> pd.DataFrame:
+    """
+    Converts a dictionary of lists to a pandas DataFrame.
+
+    Args:
+        json_data (Dict[str, Union[str, List[str]]]): A dictionary containing lists of data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the data from the input dictionary.
+    """
+    keys_to_keep = []
+    for key, value in json_data.items():
+        if not isinstance(value, list) or not isinstance(value, dict):
+            keys_to_keep.append(key)
+    json_data = {key: value for key, value in json_data.items() if key in keys_to_keep}
+    df = pd.DataFrame(json_data)
+    return df
+
+
 def highlight_words(s, words):
     for word in words:
         if word in s:
@@ -434,7 +453,13 @@ def show_detailed_logs_component(
             )
         with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
             st.write("### Detailed Logs")
-            st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
+            if not "timestamp" in live_results_df.columns:
+                st.dataframe(live_results_df)
+                return
+            live_results_df["timestamp"] = live_results_df["timestamp"].dt.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            st.write(live_results_df.sort_values(by="timestamp", ascending=False))
 
 
 def show_i_o_component(

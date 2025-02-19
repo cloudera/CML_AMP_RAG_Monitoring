@@ -281,10 +281,13 @@ async def evaluate_json_data(data):
                 # log request params
                 mlflow.log_params(
                     {
+                        "input": query,
+                        "output": response,
                         "data_source_id": data_source_id,
                         "top_k": top_k,
                         "chunk_size": chunk_size,
                         "model_name": model_name,
+                        "timestamp": data.timestamp,
                     }
                 )
 
@@ -386,7 +389,6 @@ async def evaluate_json_data(data):
                         "source_nodes": data.source_nodes,
                         "query_keywords": ", ".join(query_keywords or []),
                         "response_keywords": ", ".join(response_keywords or []),
-                        "timestamp": data.timestamp,
                     },
                     artifact_file="live_results.json",
                 )
