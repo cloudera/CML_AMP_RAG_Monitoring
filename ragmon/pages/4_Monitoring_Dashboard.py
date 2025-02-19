@@ -278,7 +278,7 @@ if experiments:
                     experiment_id=str(selected_experiment_id), run_id=run_id
                 )
                 run_params = get_parameters(run_params_request)
-                run_params = {k: v for d in run_params for k, v in d.items()}
+                run_params = {d.values()[0]: d.values()[1] for d in run_params}
                 run_params["run_id"] = run_id
 
                 run_params_list.append(run_params)
