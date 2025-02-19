@@ -452,7 +452,6 @@ def show_detailed_logs_component(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
             )
         with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
-            st.write("### Detailed Logs")
             if not "timestamp" in live_results_df.columns:
                 st.dataframe(live_results_df)
                 return
