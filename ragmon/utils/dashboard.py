@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Union, Optional
+from typing import Dict, List, Union, Optional
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -740,7 +740,22 @@ def show_time_series_component(
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
-def show_wordcloud_component(df: pd.DataFrame):
+def keywords_in_dict(d: Dict):
+    """
+    Check if the dictionary contains keywords.
+
+    Args:
+        d (Dict): The dictionary to check for keywords.
+
+    Returns:
+        bool: True if the dictionary contains keywords, False otherwise.
+    """
+    if "query_keywords" in d or "response_keywords" in d:
+        return True
+    return False
+
+
+def show_wordcloud_component(live_results_dict: List[Dict]):
     """
     Displays a word cloud component in Streamlit.
 
@@ -751,20 +766,25 @@ def show_wordcloud_component(df: pd.DataFrame):
     Returns:
     None
     """
-    if "query_keywords" and "response_keywords" in df.columns:
-        query_keywords = " ".join(df["query_keywords"].to_list())
-        response_keywords = " ".join(df["response_keywords"].to_list())
+    if "query_keywords" in live_results_dict:
         q_wc = WordCloud()
-        r_wc = WordCloud()
-
         q_fig = q_wc.generate(query_keywords)
+
+    if "response_keywords" in live_results_dict:
+        r_wc = WordCloud()
         r_fig = r_wc.generate(response_keywords)
 
+    if (
+        "query_keywords" in live_results_dict
+        or "response_keywords" in live_results_dict
+    ):
         with st.expander(":material/label: **Word Cloud**", expanded=True):
             q_col, r_col = st.columns(2)
-            with q_col:
-                st.markdown("### Query Keywords")
-                st.image(q_fig.to_image(), use_container_width=True)
-            with r_col:
-                st.markdown("### Response Keywords")
-                st.image(r_fig.to_image(), use_container_width=True)
+            if "query_keywords" in live_results_dict:
+                with q_col:
+                    st.markdown("### Query Keywords")
+                    st.image(q_fig.to_image(), use_container_width=True)
+            if "response_keywords" in live_results_dict:
+                with r_col:
+                    st.markdown("### Response Keywords")
+                    st.image(r_fig.to_image(), use_container_width=True)

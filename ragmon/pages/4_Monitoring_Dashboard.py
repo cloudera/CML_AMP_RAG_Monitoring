@@ -66,6 +66,8 @@ from utils.dashboard import (
     show_numeric_metric_kpi,
     show_pie_chart_component,
     show_time_series_component,
+    keywords_in_dict,
+    show_wordcloud_component,
 )
 
 warnings.filterwarnings("ignore")
@@ -246,7 +248,21 @@ if experiments:
             st.write("### JSON Files: ")
             st.write(json_dicts)
 
-            # TODO: reimplementation of keywords
+            # find json file which contains the keywords
+            keywords_file = None
+            for json_file, json_list in json_dicts.items():
+                for d in json_list:
+                    if keywords_in_dict(d["value"]):
+                        keywords_file = json_file
+                        break
+                if keywords_file:
+                    break
+
+            if keywords_file:
+                dict_w_keyword = json_dicts.get(keywords_file, None)
+                if dict_w_keyword:
+                    st.write("### Keywords in JSON File: ")
+                    st.write(dict_w_keyword)
             # Show keywords wordcloud
             # show_wordcloud_component(
             #     df=live_results_df,
