@@ -392,9 +392,7 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     return metrics_df
 
 
-def get_df_from_json(
-    json_dicts: List[Dict[str, Union[str, List[str]]]]
-) -> pd.DataFrame:
+def get_df_from_json_list(json_dicts: List[Dict]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
@@ -410,7 +408,7 @@ def get_df_from_json(
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
         for key, value in json_data.items():
-            if not isinstance(value, list) or not isinstance(value, dict):
+            if not isinstance(value, List) or not isinstance(value, Dict):
                 keys_to_keep.append(key)
         json_data = {
             key: value for key, value in json_data.items() if key in keys_to_keep
@@ -419,7 +417,37 @@ def get_df_from_json(
     return pd.DataFrame(json_list)
 
 
+def get_df_from_json_dict(json_dict: Dict[List[Dict]]) -> pd.DataFrame:
+    """
+    Converts a dictionary of lists to a pandas DataFrame.
+
+    Args:
+        json_dict (Dict[str, List[Dict]]): A dictionary containing lists of data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the data from the input dictionary.
+    """
+    json_dfs = {}
+    for json_file, json_list in json_dict.items():
+        json_dfs[json_file] = get_df_from_json_list(json_list)
+    json_df = reduce(
+        lambda left, right: pd.merge(left, right, on="run_id", how="left"),
+        [df for df in json_dfs.values()],
+    )
+    return json_df
+
+
 def highlight_words(s, words):
+    """
+    Highlights words in a string with a background color.
+
+    Args:
+        s (str): The string to highlight.
+        words (List[str]): A list of words to highlight in the string.
+
+    Returns:
+        str: The string with highlighted words.
+    """
     for word in words:
         if word in s:
             s = s.replace(

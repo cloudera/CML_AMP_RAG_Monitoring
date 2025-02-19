@@ -62,7 +62,7 @@ from utils.dashboard import (
     get_params_df,
     get_numeric_metrics_df,
     get_json,
-    get_df_from_json,
+    get_df_from_json_list,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
@@ -257,17 +257,11 @@ if experiments:
 
             # build dataframes from json files
             if json_files:
-                json_dfs = {}
-                for json_file, json_list in json_dicts.items():
-                    json_dfs[json_file] = get_df_from_json(json_list)
+                json_df = get_df_from_json_list(json_dicts)
 
-            # merge all json dataframes on run_id into one dataframe
-            if json_files:
-                json_df = reduce(
-                    lambda left, right: pd.merge(left, right, on="run_id", how="left"),
-                    [df for df in json_dfs.values()],
-                )
+                # merge json_df with params_df
                 params_df = pd.merge(json_df, params_df, on="run_id", how="left")
+
                 st.write(json_df)
                 st.write(params_df)
 
