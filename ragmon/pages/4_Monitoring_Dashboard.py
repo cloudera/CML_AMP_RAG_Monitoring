@@ -247,6 +247,7 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
+            st.write(json_dicts)
             json_df = get_df_from_json(json_dicts)
             st.dataframe(json_df)
 
