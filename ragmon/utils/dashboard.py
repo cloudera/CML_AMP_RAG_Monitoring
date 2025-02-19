@@ -423,9 +423,6 @@ def show_detailed_logs_component(
                 lambda left, right: pd.merge(left, right, on="run_id", how="left"),
                 metrics_dfs,
             )
-        live_results_df = live_results_df.drop_duplicates(
-            subset=["response_id"], keep="last"
-        )
         if "response_id" in live_results_df.columns:
             live_results_df = live_results_df.drop(columns=["response_id"])
         if "run_id" in live_results_df.columns:
