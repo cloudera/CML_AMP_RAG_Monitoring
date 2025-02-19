@@ -246,7 +246,7 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
-            # find json file which contains the keywords
+            # Find json file which contains the keywords
             keywords_file = None
             for json_file, json_list in json_dicts.items():
                 for d in json_list:
@@ -256,9 +256,9 @@ if experiments:
                 if keywords_file:
                     break
 
+            # Show keywords wordcloud
             if keywords_file:
                 dict_w_keyword = json_dicts.get(keywords_file, None)
-                # Show keywords wordcloud
                 show_wordcloud_component(
                     live_results_dict=dict_w_keyword,
                 )
@@ -278,7 +278,7 @@ if experiments:
                     experiment_id=str(selected_experiment_id), run_id=run_id
                 )
                 run_params = get_parameters(run_params_request)
-                run_params = {k: v for k, v in d.items() for d in run_params}
+                run_params = {k: v for d in run_params for k, v in d.items()}
                 run_params["run_id"] = run_id
 
                 run_params_list.append(run_params)
