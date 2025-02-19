@@ -402,10 +402,20 @@ def highlight_words(s, words):
     return s
 
 
-def show_live_df_component(
+def show_detailed_logs_component(
     live_results_df: pd.DataFrame,
     metrics_dfs: List[pd.DataFrame],
 ):
+    """
+    Display detailed logs for live results and metrics.
+
+    Args:
+        live_results_df (pd.DataFrame): DataFrame containing live results.
+        metrics_dfs (List[pd.DataFrame]): List of DataFrames containing metrics.
+
+    Returns:
+        None
+    """
     if not live_results_df.empty:
         if metrics_dfs:
             metrics_dfs = [live_results_df] + metrics_dfs
@@ -416,7 +426,10 @@ def show_live_df_component(
         live_results_df = live_results_df.drop_duplicates(
             subset=["response_id"], keep="last"
         )
-        live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
+        if "response_id" in live_results_df.columns:
+            live_results_df = live_results_df.drop(columns=["response_id"])
+        if "run_id" in live_results_df.columns:
+            live_results_df = live_results_df.drop(columns=["run_id"])
 
         if "feedback" in live_results_df.columns:
             live_results_df["feedback"] = live_results_df["feedback"].apply(

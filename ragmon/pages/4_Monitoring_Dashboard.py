@@ -68,6 +68,7 @@ from utils.dashboard import (
     show_time_series_component,
     keywords_in_dict,
     show_wordcloud_component,
+    show_detailed_logs_component,
 )
 
 warnings.filterwarnings("ignore")
@@ -273,5 +274,4 @@ if experiments:
             params_df = get_params_df(
                 run_ids=runs, experiment_id=selected_experiment_id
             )
-            st.write(params_df)
-            # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
+            show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
