@@ -245,9 +245,6 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
-            st.write("### JSON Files: ")
-            st.write(json_dicts)
-
             # find json file which contains the keywords
             keywords_file = None
             for json_file, json_list in json_dicts.items():
@@ -260,13 +257,10 @@ if experiments:
 
             if keywords_file:
                 dict_w_keyword = json_dicts.get(keywords_file, None)
-                if dict_w_keyword:
-                    st.write("### Keywords in JSON File: ")
-                    st.write(dict_w_keyword)
-            # Show keywords wordcloud
-            # show_wordcloud_component(
-            #     df=live_results_df,
-            # )
+                # Show keywords wordcloud
+                show_wordcloud_component(
+                    live_results_dict=dict_w_keyword,
+                )
 
             # TODO: reimplementation of detailed logs
             # metrics_dfs = [

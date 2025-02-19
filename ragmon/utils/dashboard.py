@@ -760,31 +760,32 @@ def show_wordcloud_component(live_results_dict: List[Dict]):
     Displays a word cloud component in Streamlit.
 
     Parameters:
-    df (pd.DataFrame): DataFrame containing the data (keyword column) for the word cloud.
-    fig_placeholder (DeltaGenerator): Streamlit placeholder for the word cloud.
+    live_results_dict (List[Dict]): A list of dictionaries containing the live results.
 
     Returns:
     None
     """
-    if "query_keywords" in live_results_dict:
-        q_wc = WordCloud()
-        q_fig = q_wc.generate(query_keywords)
+    query_keywords = ""
+    response_keywords = ""
 
-    if "response_keywords" in live_results_dict:
-        r_wc = WordCloud()
-        r_fig = r_wc.generate(response_keywords)
+    for d in live_results_dict:
+        if "query_keywords" in d["value"]:
+            query_keywords += d["value"]["query_keywords"]
+        if "response_keywords" in d["value"]:
+            response_keywords += d["value"]["response_keywords"]
 
-    if (
-        "query_keywords" in live_results_dict
-        or "response_keywords" in live_results_dict
-    ):
-        with st.expander(":material/label: **Word Cloud**", expanded=True):
-            q_col, r_col = st.columns(2)
-            if "query_keywords" in live_results_dict:
-                with q_col:
-                    st.markdown("### Query Keywords")
-                    st.image(q_fig.to_image(), use_container_width=True)
-            if "response_keywords" in live_results_dict:
-                with r_col:
-                    st.markdown("### Response Keywords")
-                    st.image(r_fig.to_image(), use_container_width=True)
+    q_wc = WordCloud()
+    q_fig = q_wc.generate(query_keywords)
+    r_wc = WordCloud()
+    r_fig = r_wc.generate(response_keywords)
+
+    with st.expander(":material/label: **Word Cloud**", expanded=True):
+        q_col, r_col = st.columns(2)
+        if "query_keywords" != "":
+            with q_col:
+                st.markdown("### Query Keywords")
+                st.image(q_fig.to_image(), use_container_width=True)
+        if "response_keywords" != "":
+            with r_col:
+                st.markdown("### Response Keywords")
+                st.image(r_fig.to_image(), use_container_width=True)
