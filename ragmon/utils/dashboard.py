@@ -392,7 +392,9 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     return metrics_df
 
 
-def get_df_from_json(json_data: Dict[str, Union[str, List[str]]]) -> pd.DataFrame:
+def get_df_from_json(
+    json_dicts: List[Dict[str, Union[str, List[str]]]]
+) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
@@ -402,13 +404,19 @@ def get_df_from_json(json_data: Dict[str, Union[str, List[str]]]) -> pd.DataFram
     Returns:
         pd.DataFrame: A DataFrame containing the data from the input dictionary.
     """
-    keys_to_keep = []
-    for key, value in json_data.items():
-        if not isinstance(value, list) or not isinstance(value, dict):
-            keys_to_keep.append(key)
-    json_data = {key: value for key, value in json_data.items() if key in keys_to_keep}
-    df = pd.DataFrame(json_data)
-    return df
+    keys_to_keep = ["run_id"]
+    json_list = []
+    for json_dict in json_dicts:
+        json_data = json_dict["value"]
+        json_data["run_id"] = json_dict["experiment_run_id"]
+        for key, value in json_data.items():
+            if not isinstance(value, list) or not isinstance(value, dict):
+                keys_to_keep.append(key)
+        json_data = {
+            key: value for key, value in json_data.items() if key in keys_to_keep
+        }
+        json_list.append(json_data)
+    return pd.DataFrame(json_list)
 
 
 def highlight_words(s, words):

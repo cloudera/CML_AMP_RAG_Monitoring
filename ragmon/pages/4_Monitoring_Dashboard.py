@@ -61,6 +61,7 @@ from utils.dashboard import (
     get_params_df,
     get_numeric_metrics_df,
     get_json,
+    get_df_from_json,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
@@ -246,7 +247,8 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
-            st.write(json_dicts)
+            json_df = get_df_from_json(json_dicts)
+            st.dataframe(json_df)
 
             # Find json file which contains the keywords
             keywords_file = None
