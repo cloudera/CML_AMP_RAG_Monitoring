@@ -246,6 +246,8 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
+            st.write(json_dicts)
+
             # Find json file which contains the keywords
             keywords_file = None
             for json_file, json_list in json_dicts.items():

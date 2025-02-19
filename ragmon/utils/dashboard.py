@@ -453,10 +453,20 @@ def show_detailed_logs_component(
             )
         with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
             if not "timestamp" in live_results_df.columns:
+                live_results_df = live_results_df.rename(
+                    columns={
+                        x: x.replace("_", " ").title() for x in live_results_df.columns
+                    }
+                )
                 st.dataframe(live_results_df)
                 return
             live_results_df["timestamp"] = live_results_df["timestamp"].dt.strftime(
                 "%Y-%m-%d %H:%M:%S"
+            )
+            live_results_df = live_results_df.rename(
+                columns={
+                    x: x.replace("_", " ").title() for x in live_results_df.columns
+                }
             )
             st.write(live_results_df.sort_values(by="timestamp", ascending=False))
 
