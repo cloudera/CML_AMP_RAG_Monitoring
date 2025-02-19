@@ -125,7 +125,7 @@ class RagFeedbackRequest(BaseModel):
 
 class MLFlowStoreIdentifier(BaseModel):
     experiment_id: str
-    experiment_run_id: str
+    run_id: str
 
 
 class MLFlowStoreMetricRequest(BaseModel):

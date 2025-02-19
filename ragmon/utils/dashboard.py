@@ -14,6 +14,7 @@ from wordcloud import WordCloud
 from data_types import (
     MLFlowStoreMetricRequest,
     MLFlowExperimentRequest,
+    MLFlowStoreIdentifier,
 )
 
 table_cols_to_show = [
@@ -134,9 +135,29 @@ def get_metric_names(request: MLFlowExperimentRequest):
     return response_json
 
 
-def get_parameters(MLFlowStoreIdentifier):
-    # TODO: Implement this function
-    pass
+def get_parameters(request: MLFlowStoreIdentifier):
+    """
+    Fetches the parameters for a given experiment run ID from the MLflow store.
+
+    Args:
+        request (MLFlowStoreIdentifier): The request object containing the experiment run ID.
+
+    Returns:
+        dict: A dictionary containing the parameters for the given experiment run ID. If the response is empty, returns an empty dictionary.
+    """
+    uri = "http://localhost:3000/runs/parameters"
+    response = requests.get(
+        url=uri,
+        params=request.dict(),
+        headers={
+            "Accept": "application/json",
+        },
+        timeout=60,
+    )
+    response_json = response.json()
+    if not response_json:
+        return {}
+    return response_json
 
 
 def merge_jsons(*dicts):

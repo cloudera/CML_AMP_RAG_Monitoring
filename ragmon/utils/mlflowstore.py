@@ -24,7 +24,7 @@ def register_experiment_and_run(
     try:
         mlflowstore = MLFlowStoreIdentifier(
             experiment_id=experiment_id,
-            experiment_run_id=experiment_run_id,
+            run_id=experiment_run_id,
         )
         response = requests.post(
             url=f"{settings.mlflow_store.uri}/runs",

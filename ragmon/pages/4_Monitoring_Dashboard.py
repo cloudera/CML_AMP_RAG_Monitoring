@@ -59,6 +59,7 @@ from utils.dashboard import (
     get_experiments,
     get_runs,
     get_metric_names,
+    get_parameters,
     get_numeric_metrics_df,
     get_json,
     show_feedback_component,
@@ -263,18 +264,21 @@ if experiments:
                 )
 
             # TODO: reimplementation of detailed logs
-            # metrics_dfs = [
-            #     faithfulness_df.drop(columns=["timestamp"]),
-            #     relevance_df.drop(columns=["timestamp"]),
-            #     context_relevancy_df.drop(columns=["timestamp"]),
-            #     maliciousness_df.drop(columns=["timestamp"]),
-            #     toxicity_df.drop(columns=["timestamp"]),
-            #     comprehensiveness_df.drop(columns=["timestamp"]),
-            #     feedback_df.drop(columns=["timestamp"]),
-            # ]
+            metrics_dfs = [
+                df.drop(columns=["timestamp"])
+                for _, df in metric_dfs.items()
+                if not df.empty
+            ]
 
-            # # append custom metrics to metrics_dfs
-            # for _, custom_metric_df in custom_metrics_dfs.items():
-            #     metrics_dfs.append(custom_metric_df.drop(columns=["timestamp"]))
+            # get parameters and construct a dataframe
+            run_params_dict = {}
+            for run in runs:
+                run_id = run["experiment_run_id"]
+                run_params_request = MLFlowStoreIdentifier(
+                    experiment_id=str(selected_experiment_id), run_id=run_id
+                )
+                run_params = get_parameters(run_params_request)
+                run_params_dict[run_id] = run_params
 
+            st.write(run_params_dict)
             # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
