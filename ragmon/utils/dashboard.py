@@ -406,7 +406,7 @@ def get_df_from_json(
     """
     keys_to_keep = ["run_id"]
     json_list = []
-    for json_dict in json_dicts:
+    for key, json_dict in json_dicts.items():
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
         for key, value in json_data.items():
