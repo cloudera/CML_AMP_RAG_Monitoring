@@ -38,6 +38,7 @@
 #
 # ###########################################################################
 
+from functools import reduce
 import time
 import os
 from pathlib import Path
@@ -236,6 +237,11 @@ if experiments:
                             fig_placeholder=metric_fig,
                         )
 
+            # get parameters and construct a dataframe
+            params_df = get_params_df(
+                run_ids=runs, experiment_id=selected_experiment_id
+            )
+
             # Get logged json files
             json_dicts = {}
             if json_files:
@@ -248,8 +254,22 @@ if experiments:
                     json_dicts[json_file] = get_json(json_file_request)
 
             st.write(json_dicts)
-            json_df = get_df_from_json(json_dicts)
-            st.dataframe(json_df)
+
+            # build dataframes from json files
+            if json_files:
+                json_dfs = {}
+                for json_file, json_list in json_dicts.items():
+                    json_dfs[json_file] = get_df_from_json(json_list)
+
+            # merge all json dataframes on run_id into one dataframe
+            if json_files:
+                json_df = reduce(
+                    lambda left, right: pd.merge(left, right, on="run_id", how="left"),
+                    [df for df in json_dfs.values()],
+                )
+                params_df = pd.merge(json_df, params_df, on="run_id", how="left")
+                st.write(json_df)
+                st.write(params_df)
 
             # Find json file which contains the keywords
             keywords_file = None
@@ -275,8 +295,4 @@ if experiments:
                 if not df.empty
             ]
 
-            # get parameters and construct a dataframe
-            params_df = get_params_df(
-                run_ids=runs, experiment_id=selected_experiment_id
-            )
             show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
