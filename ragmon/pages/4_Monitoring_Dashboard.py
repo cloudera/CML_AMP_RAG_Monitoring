@@ -271,14 +271,17 @@ if experiments:
             ]
 
             # get parameters and construct a dataframe
-            run_params_dict = {}
+            run_params_list = []
             for run in runs:
                 run_id = run["experiment_run_id"]
                 run_params_request = MLFlowStoreIdentifier(
                     experiment_id=str(selected_experiment_id), run_id=run_id
                 )
                 run_params = get_parameters(run_params_request)
-                run_params_dict[run_id] = run_params
+                run_params = {k: v for k, v in d.items() for d in run_params}
+                run_params["run_id"] = run_id
 
-            st.write(run_params_dict)
+                run_params_list.append(run_params)
+
+            st.write(run_params_list)
             # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
