@@ -213,6 +213,35 @@ def get_json(
     return json_dicts
 
 
+def get_params_df(run_ids: List[str], experiment_id: str):
+    """
+    Fetches parameters for a list of run IDs from the MLflow store.
+
+    Args:
+        run_ids (List[str]): A list of run IDs.
+        experiment_id (str): The experiment ID.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the parameters for the given run IDs.
+    """
+    run_params_list = []
+    for run in run_ids:
+        run_id = run["experiment_run_id"]
+        run_params_request = MLFlowStoreIdentifier(
+            experiment_id=experiment_id, run_id=run_id
+        )
+        run_params = get_parameters(run_params_request)
+        run_params = {list(d.values())[0]: list(d.values())[1] for d in run_params}
+        run_params["run_id"] = run_id
+
+        run_params_list.append(run_params)
+
+    if not run_params_list:
+        return pd.DataFrame()
+
+    return pd.DataFrame(run_params_list)
+
+
 def parse_live_results_table(
     table_request: MLFlowStoreMetricRequest,
     table_cols_to_show: List[str] = table_cols_to_show,

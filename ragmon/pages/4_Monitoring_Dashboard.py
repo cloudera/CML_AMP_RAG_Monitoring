@@ -52,14 +52,13 @@ from qdrant_client import QdrantClient
 from data_types import (
     MLFlowExperimentRequest,
     MLFlowStoreMetricRequest,
-    MLFlowStoreIdentifier,
 )
 from utils import get_collections
 from utils.dashboard import (
     get_experiments,
     get_runs,
     get_metric_names,
-    get_parameters,
+    get_params_df,
     get_numeric_metrics_df,
     get_json,
     show_feedback_component,
@@ -271,19 +270,6 @@ if experiments:
             ]
 
             # get parameters and construct a dataframe
-            run_params_list = []
-            for run in runs:
-                run_id = run["experiment_run_id"]
-                run_params_request = MLFlowStoreIdentifier(
-                    experiment_id=str(selected_experiment_id), run_id=run_id
-                )
-                run_params = get_parameters(run_params_request)
-                run_params = {
-                    list(d.values())[0]: list(d.values())[1] for d in run_params
-                }
-                run_params["run_id"] = run_id
-
-                run_params_list.append(run_params)
-
-            st.write(run_params_list)
+            params_df = get_params_df(selected_experiment_request)
+            st.write(params_df)
             # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
