@@ -270,6 +270,8 @@ if experiments:
             ]
 
             # get parameters and construct a dataframe
-            params_df = get_params_df(selected_experiment_request)
+            params_df = get_params_df(
+                run_ids=runs, experiment_id=selected_experiment_id
+            )
             st.write(params_df)
             # show_live_df_component(live_results_df, metrics_dfs=metrics_dfs)
