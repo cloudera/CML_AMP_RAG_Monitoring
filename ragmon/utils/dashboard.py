@@ -500,12 +500,13 @@ def show_detailed_logs_component(
             live_results_df["timestamp"] = pd.to_datetime(
                 live_results_df["timestamp"], format="mixed", dayfirst=True
             )
+            live_results_df.sort_values(by="timestamp".title(), ascending=False)
             live_results_df = live_results_df.rename(
                 columns={
                     x: x.replace("_", " ").title() for x in live_results_df.columns
                 }
             )
-            st.write(live_results_df.sort_values(by="timestamp", ascending=False))
+            st.write(live_results_df)
 
 
 def show_i_o_component(
