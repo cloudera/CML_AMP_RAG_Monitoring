@@ -253,8 +253,6 @@ if experiments:
                     )
                     json_dicts[json_file] = get_json(json_file_request)
 
-            st.write(json_dicts)
-
             # build dataframes from json files
             if json_files:
                 json_df = get_df_from_json_list(json_dicts)
