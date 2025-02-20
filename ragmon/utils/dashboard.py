@@ -418,7 +418,7 @@ def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame(json_list)
 
 
-def get_df_from_json_dict(json_dict: Dict[str, List[Dict[str, Any]]]) -> pd.DataFrame:
+def get_df_from_json_dicts(json_dicts: Dict[str, List[Dict[str, Any]]]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
@@ -429,7 +429,7 @@ def get_df_from_json_dict(json_dict: Dict[str, List[Dict[str, Any]]]) -> pd.Data
         pd.DataFrame: A DataFrame containing the data from the input dictionary.
     """
     json_dfs = {}
-    for json_file, json_list in json_dict.items():
+    for json_file, json_list in json_dicts.items():
         json_dfs[json_file] = get_df_from_json_list(json_list)
     json_df = reduce(
         lambda left, right: pd.merge(left, right, on="run_id", how="left"),
