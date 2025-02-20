@@ -49,7 +49,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/Experiment"
               }
             }
           },
@@ -114,6 +114,40 @@ func init() {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/Metric"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
+    },
+    "/metrics/names": {
+      "get": {
+        "description": "List monitoring metric names for an experiment",
+        "tags": [
+          "metrics"
+        ],
+        "summary": "List metric names for an experiment.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },
@@ -224,6 +258,46 @@ func init() {
           }
         }
       }
+    },
+    "/runs/parameters": {
+      "get": {
+        "description": "Get a list of monitored experiment run parameters.",
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get a list of monitored experiment run parameters.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The ID of the run",
+            "name": "run_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExperimentRunParameter"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -237,6 +311,10 @@ func init() {
         "id": {
           "description": "The ID",
           "type": "integer"
+        },
+        "name": {
+          "description": "The name of the experiment",
+          "type": "string"
         }
       }
     },
@@ -262,6 +340,19 @@ func init() {
       "properties": {
         "experiment_id": {
           "description": "The Experiment ID to filter on",
+          "type": "string"
+        }
+      }
+    },
+    "ExperimentRunParameter": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "The name of the parameter",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the parameter",
           "type": "string"
         }
       }
@@ -410,7 +501,7 @@ func init() {
             "schema": {
               "type": "array",
               "items": {
-                "type": "string"
+                "$ref": "#/definitions/Experiment"
               }
             }
           },
@@ -475,6 +566,40 @@ func init() {
               "type": "array",
               "items": {
                 "$ref": "#/definitions/Metric"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
+    },
+    "/metrics/names": {
+      "get": {
+        "description": "List monitoring metric names for an experiment",
+        "tags": [
+          "metrics"
+        ],
+        "summary": "List metric names for an experiment.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
               }
             }
           },
@@ -585,6 +710,46 @@ func init() {
           }
         }
       }
+    },
+    "/runs/parameters": {
+      "get": {
+        "description": "Get a list of monitored experiment run parameters.",
+        "tags": [
+          "runs"
+        ],
+        "summary": "Get a list of monitored experiment run parameters.",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "The ID of the experiment",
+            "name": "experiment_id",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "The ID of the run",
+            "name": "run_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ExperimentRunParameter"
+              }
+            }
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "500": {
+            "description": "internal service error"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -598,6 +763,10 @@ func init() {
         "id": {
           "description": "The ID",
           "type": "integer"
+        },
+        "name": {
+          "description": "The name of the experiment",
+          "type": "string"
         }
       }
     },
@@ -623,6 +792,19 @@ func init() {
       "properties": {
         "experiment_id": {
           "description": "The Experiment ID to filter on",
+          "type": "string"
+        }
+      }
+    },
+    "ExperimentRunParameter": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "The name of the parameter",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value of the parameter",
           "type": "string"
         }
       }

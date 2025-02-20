@@ -32,8 +32,6 @@ from data_types import (
 )
 from config import settings
 
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
-
 COLLECTIONS_JSON = os.path.join(data_dir, "collections", "collections.json")
 SOURCE_FILES_DIR = os.path.join(data_dir, "indexed_files")
 CUSTOM_EVAL_DIR = os.path.join(data_dir, "custom_evaluators")
@@ -93,6 +91,23 @@ def log_feedback(request: RagFeedbackRequest):
     return response.json()
 
 
+def check_if_collection_exists(collections, collection_name):
+    """
+    Check if a collection exists in the collections list.
+
+    Args:
+        collections (list): A list of collections.
+        collection_name (str): The name of the collection to check for.
+
+    Returns:
+        bool: True if the collection exists, False otherwise.
+    """
+    for collection in collections:
+        if collection["name"] == collection_name:
+            return True
+    return False
+
+
 def copy_files(src_dir, dest_dir):
     """Copies all files from src_dir to dest_dir."""
 
@@ -122,10 +137,15 @@ def main():
 
     # Function to get or create a Qdrant vector store
     client = QdrantClient(host="localhost", port=6333)
+
+    if check_if_collection_exists(collections, "CML Docs (Example)"):
+        print("Sample data already exists.")
+        return
+
     mlflow_exp_id = mlflow.create_experiment(f"{len(collections) + 1}_live")
     collection_config = {
         "id": len(collections) + 1,
-        "name": "CML Docs",
+        "name": "CML Docs (Example)",
         "vector_size": EMBED_DIMS,
         "distance_metric": "Cosine",
         "chunk_size": 512,

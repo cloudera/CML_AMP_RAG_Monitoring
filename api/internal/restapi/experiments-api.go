@@ -3,6 +3,7 @@ package restapi
 import (
 	"context"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/models"
 	lhttp "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/http"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/restapi"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/restapi/operations/experiments"
@@ -23,10 +24,14 @@ func (e *ExperimentAPI) GetExperiments(ctx context.Context, params experiments.G
 	if err != nil {
 		return nil, lhttp.NewInternalError(err.Error())
 	}
-	payload := make([]string, 0)
+	payload := make([]*models.Experiment, 0)
 
 	for _, experiment := range result {
-		payload = append(payload, experiment.ExperimentId)
+		payload = append(payload, &models.Experiment{
+			ExperimentID: experiment.ExperimentId,
+			ID:           experiment.Id,
+			Name:         experiment.Name,
+		})
 	}
 	return &experiments.GetExperimentsOK{
 		Payload: payload,

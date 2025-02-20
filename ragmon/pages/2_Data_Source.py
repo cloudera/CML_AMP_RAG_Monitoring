@@ -61,7 +61,6 @@ import mimetypes
 from utils import get_collections, table_name_from
 
 Settings.embed_model, EMBED_DIMS = get_embedding_model_and_dims()
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))
@@ -303,7 +302,7 @@ st.title(
 _, create_col, _ = st.columns([4, 1, 4])
 
 with create_col:
-    st.image(os.path.join(RESOURCES_DIR, "database.png"), use_column_width=True)
+    st.image(os.path.join(RESOURCES_DIR, "database.png"), use_container_width=True)
 
 _, create_button_col, _ = st.columns([11, 3, 11])
 

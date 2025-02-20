@@ -1,0 +1,1 @@
+ALTER TABLE `experiments` DROP COLUMN `remote_experiment_id`;

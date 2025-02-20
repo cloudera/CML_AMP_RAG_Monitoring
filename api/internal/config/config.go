@@ -8,8 +8,9 @@ type HeaderEndpoints map[string]string
 
 type Config struct {
 	lconfig.PodInfo
-	Migrate          bool  `env:"MIGRATE" envDefault:"true"`
-	MigrationVersion *uint `env:"MIGRATION_VERSION"`
+	Migrate          bool   `env:"MIGRATE" envDefault:"true"`
+	MigrationVersion *uint  `env:"MIGRATION_VERSION"`
+	CDSWProjectID    string `env:"CDSW_PROJECT_ID" envDefault:""`
 }
 
 func NewConfigFromEnv() (*Config, error) {

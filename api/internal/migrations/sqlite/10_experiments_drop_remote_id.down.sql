@@ -1,0 +1,1 @@
+ALTER TABLE `experiments` ADD COLUMN `remote_experiment_id` VARCHAR(100) DEFAULT NULL;

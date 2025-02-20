@@ -12,6 +12,7 @@ import (
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 )
 
+// ExperimentReconciler Scan MLFlow for experiments and queue reconciliation for new and updated data
 type ExperimentReconciler struct {
 	config     *Config
 	db         db.Database
@@ -28,13 +29,7 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 
 	maxItems := int64(r.config.ResyncMaxItems)
 
-	// fetch the locally stored experiments to use as a filter
-	//localExperiments, err := r.db.Experiments().ListExperiments(ctx)
-	//if err != nil {
-	//	log.Printf("failed to fetch experiments from database: %s", err)
-	//}
-
-	experiments, err := r.dataStores.Local.ListExperiments(ctx, maxItems, "")
+	experiments, err := r.dataStores.Remote.ListExperiments(ctx, maxItems, "")
 	if err != nil {
 		log.Debugf("failed to fetch experiments from local mlflow: %s", err)
 	}
@@ -57,57 +52,45 @@ func (r *ExperimentReconciler) Resync(ctx context.Context, queue *reconciler.Rec
 }
 
 func (r *ExperimentReconciler) Reconcile(ctx context.Context, items []reconciler.ReconcileItem[string]) {
-	log.Debugf("reconciling %d local experiments", len(items))
+	log.Debugf("reconciling %d experiments", len(items))
 	for _, item := range items {
-		// Fetch the experiment MLFlow
-		local, err := r.dataStores.Local.GetExperiment(ctx, item.ID)
+		// Fetch the experiment from MLFlow
+		remote, err := r.dataStores.Remote.GetExperiment(ctx, item.ID)
 		if err != nil {
 			log.Debugf("failed to fetch experiment %s from mlflow: %s", item.ID, err)
+			item.Callback(err)
 			continue
 		}
-		log.Debugf("reconciling mlflow experiment %s with experiment ID %s", local.Name, item.ID)
+		log.Debugf("reconciling mlflow experiment %s with experiment ID %s", remote.Name, item.ID)
 		// Fetch the experiment from the database
 		experiment, err := r.db.Experiments().GetExperimentByExperimentId(ctx, item.ID)
 		// If the experiment does not exist in the database, insert it
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				log.Printf("mlflow experiment %s with ID %s not found in database, inserting", local.Name, item.ID)
-				ex, err := r.db.Experiments().CreateExperiment(ctx, local.ExperimentId, local.Name, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
+				log.Printf("mlflow experiment %s with ID %s not found in database, inserting", remote.Name, item.ID)
+				ex, err := r.db.Experiments().CreateExperiment(ctx, remote.ExperimentId, remote.Name, util.TimeStamp(remote.CreatedTime), util.TimeStamp(remote.LastUpdatedTime))
 				if err != nil {
-					log.Printf("failed to insert experiment %s with ID %s: %s", local.Name, item.ID, err)
+					log.Printf("failed to insert experiment %s with ID %s: %s", remote.Name, item.ID, err)
+					item.Callback(err)
 					continue
 				}
-				log.Printf("finished creating experiment %s with mlflow ID %s.  Database ID is %d", local.Name, ex.ExperimentId, ex.Id)
+				log.Printf("finished creating experiment %s with mlflow ID %s.  Database ID is %d", remote.Name, ex.ExperimentId, ex.Id)
+				item.Callback(nil)
 				continue
 			} else {
-				log.Printf("failed to fetch local experiment with %s mlflow ID %s for reconciliation: %s", local.Name, item.ID, err)
+				log.Printf("failed to fetch local experiment with %s mlflow ID %s for reconciliation: %s", remote.Name, item.ID, err)
+				item.Callback(err)
 				continue
 			}
 		}
-		if experiment == nil {
-			log.Printf("mlflow experiment %s with ID %s not found in database, inserting", local.Name, item.ID)
-			ex, err := r.db.Experiments().CreateExperiment(ctx, item.ID, local.Name, util.TimeStamp(local.CreatedTime), util.TimeStamp(local.LastUpdatedTime))
-			if err != nil {
-				log.Printf("failed to insert experiment %s: %s", item.ID, err)
-				continue
-			}
-			log.Printf("finished creating experiment %s with mlflow ID %s.  Database ID is %d", local.Name, ex.ExperimentId, ex.Id)
+		log.Printf("flagging experiment %s with ID %s (database ID %d) for run reconciliation", remote.Name, experiment.ExperimentId, experiment.Id)
+		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id, true)
+		if err != nil {
+			log.Printf("failed to update experiment %s with ID %s timestamp: %s", remote.Name, item.ID, err)
+			item.Callback(err)
 			continue
 		}
-		// If the experiment exists in the database, compare the updated timestamps
-		//lastUpdated := util.TimeStamp(local.LastUpdatedTime)
-		//updated := false
-		//if experiment.UpdatedTs.Before(lastUpdated) {
-		//	// Update the flag of the experiment to indicate that it requires reconciliation
-		//  log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
-		//	updated = true
-		//}
-		log.Printf("experiment %s with ID %s (database ID %d) is out-of-date, flagging for sync reconciliation", local.Name, experiment.ExperimentId, experiment.Id)
-		err = r.db.Experiments().MarkExperimentIDForReconciliation(ctx, experiment.Id)
-		if err != nil {
-			log.Printf("failed to update experiment %s with ID %s timestamp: %s", local.Name, item.ID, err)
-		}
-
+		item.Callback(nil)
 		log.Debugf("finished reconciling experiment %s with ID %s and database ID %d", experiment.Name, experiment.ExperimentId, experiment.Id)
 	}
 }

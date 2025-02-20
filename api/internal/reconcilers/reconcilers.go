@@ -9,26 +9,26 @@ import (
 )
 
 type ReconcilerSet struct {
-	ExperimentReconciler *experiments.ExperimentReconciler
-	SyncReconciler       *experiments.SyncReconciler
-	RunReconciler        *runs.RunReconciler
-	MetricsReconciler    *metrics.Reconciler
+	ExperimentReconciler    *experiments.ExperimentReconciler
+	ExperimentRunReconciler *experiments.ExperimentRunReconciler
+	RunReconciler           *runs.RunReconciler
+	MetricsReconciler       *metrics.MetricsReconciler
 
-	experimentManager *reconciler.Manager[string]
-	syncManager       *reconciler.Manager[int64]
-	runManager        *reconciler.Manager[int64]
-	metricsManager    *reconciler.Manager[int64]
+	experimentManager    *reconciler.Manager[string]
+	experimentRunManager *reconciler.Manager[int64]
+	runManager           *reconciler.Manager[int64]
+	metricsManager       *reconciler.Manager[int64]
 }
 
-func NewReconcilerSet(app *app.Instance, experimentsCfg *experiments.Config, experimentReconciler *experiments.ExperimentReconciler, syncReconciler *experiments.SyncReconciler,
+func NewReconcilerSet(app *app.Instance, experimentsCfg *experiments.Config, experimentReconciler *experiments.ExperimentReconciler, experimentRunReconciler *experiments.ExperimentRunReconciler,
 	runCfg *runs.Config, runReconciler *runs.RunReconciler,
-	metricsCfg *metrics.Config, metricsReconciler *metrics.Reconciler) *ReconcilerSet {
+	metricsCfg *metrics.Config, metricsReconciler *metrics.MetricsReconciler) *ReconcilerSet {
 
 	experimentManager, err := experiments.NewExperimentReconcilerManager(app, experimentsCfg, experimentReconciler)
 	if err != nil {
 		panic(err)
 	}
-	syncManager, err := experiments.NewSyncReconcilerManager(app, experimentsCfg, syncReconciler)
+	experimentRunManager, err := experiments.NewExperimentRunReconcilerManager(app, experimentsCfg, experimentRunReconciler)
 	if err != nil {
 		panic(err)
 	}
@@ -36,34 +36,34 @@ func NewReconcilerSet(app *app.Instance, experimentsCfg *experiments.Config, exp
 	if err != nil {
 		panic(err)
 	}
-	metricsManager, err := metrics.NewReconcilerManager(app, metricsCfg, metricsReconciler)
+	metricsManager, err := metrics.NewMetricsReconcilerManager(app, metricsCfg, metricsReconciler)
 	if err != nil {
 		panic(err)
 	}
 
 	return &ReconcilerSet{
-		ExperimentReconciler: experimentReconciler,
-		SyncReconciler:       syncReconciler,
-		RunReconciler:        runReconciler,
-		MetricsReconciler:    metricsReconciler,
+		ExperimentReconciler:    experimentReconciler,
+		ExperimentRunReconciler: experimentRunReconciler,
+		RunReconciler:           runReconciler,
+		MetricsReconciler:       metricsReconciler,
 
-		experimentManager: experimentManager,
-		syncManager:       syncManager,
-		runManager:        runManager,
-		metricsManager:    metricsManager,
+		experimentManager:    experimentManager,
+		experimentRunManager: experimentRunManager,
+		runManager:           runManager,
+		metricsManager:       metricsManager,
 	}
 }
 
 func (r *ReconcilerSet) Start() {
 	r.experimentManager.Start()
-	r.syncManager.Start()
+	r.experimentRunManager.Start()
 	r.runManager.Start()
 	r.metricsManager.Start()
 }
 
 func (r *ReconcilerSet) Finish() {
 	r.experimentManager.Finish()
-	r.syncManager.Finish()
+	r.experimentRunManager.Finish()
 	r.runManager.Finish()
 	r.metricsManager.Finish()
 }

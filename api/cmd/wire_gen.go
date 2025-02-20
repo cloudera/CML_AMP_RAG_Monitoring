@@ -54,12 +54,25 @@ func InitializeDependencies() (*dependencies, error) {
 	}
 	lsqlInstance := postgres.NewInstance(lsqlConfig)
 	swaggerApiServer := server.NewSwaggerApiServer(instance, configConfig, lsqlInstance)
-	experimentService := postgres.NewExperiments(lsqlInstance)
-	experimentRunService := postgres.NewExperimentRuns(lsqlInstance)
-	metricsService := postgres.NewMetrics(lsqlInstance)
+	experimentService := postgres.NewExperiments(lsqlInstance, configConfig)
+	experimentRunService := postgres.NewExperimentRuns(lsqlInstance, configConfig)
+	metricsService := postgres.NewMetrics(lsqlInstance, configConfig)
 	database := postgres.NewDatabase(experimentService, experimentRunService, metricsService)
 	metricsAPI := restapi.NewMetricsAPI(database)
-	experimentRunsAPI := restapi.NewExperimentRunsAPI(database)
+	datasourceConfig, err := datasource.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	clientbaseConfig, err := clientbase.NewConfigFromEnv()
+	if err != nil {
+		return nil, err
+	}
+	connections, err := clientbase.NewConnections(clientbaseConfig, cbhttpInstance)
+	if err != nil {
+		return nil, err
+	}
+	dataStores := datasource.NewDataStores(datasourceConfig, connections)
+	experimentRunsAPI := restapi.NewExperimentRunsAPI(database, dataStores)
 	experimentAPI := restapi.NewExperimentAPI(database)
 	restapiConfig, err := server.NewSwaggerConfig(metricsAPI, experimentRunsAPI, experimentAPI)
 	if err != nil {
@@ -74,25 +87,12 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	clientbaseConfig, err := clientbase.NewConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	connections, err := clientbase.NewConnections(clientbaseConfig, cbhttpInstance)
-	if err != nil {
-		return nil, err
-	}
-	datasourceConfig, err := datasource.NewConfigFromEnv()
-	if err != nil {
-		return nil, err
-	}
-	dataStores := datasource.NewDataStores(datasourceConfig, connections)
 	experimentsConfig, err := experiments.NewConfigFromEnv()
 	if err != nil {
 		return nil, err
 	}
 	experimentReconciler := experiments.NewExperimentReconciler(experimentsConfig, database, dataStores)
-	syncReconciler := experiments.NewSyncReconciler(experimentsConfig, database, dataStores)
+	experimentRunReconciler := experiments.NewExperimentRunReconciler(experimentsConfig, database, dataStores)
 	runsConfig, err := runs.NewConfigFromEnv()
 	if err != nil {
 		return nil, err
@@ -102,8 +102,8 @@ func InitializeDependencies() (*dependencies, error) {
 	if err != nil {
 		return nil, err
 	}
-	reconciler := metrics.NewReconciler(metricsConfig, database, dataStores)
-	reconcilerSet := reconcilers.NewReconcilerSet(instance, experimentsConfig, experimentReconciler, syncReconciler, runsConfig, runReconciler, metricsConfig, reconciler)
+	metricsReconciler := metrics.NewMetricsReconciler(metricsConfig, database, dataStores)
+	reconcilerSet := reconcilers.NewReconcilerSet(instance, experimentsConfig, experimentReconciler, experimentRunReconciler, runsConfig, runReconciler, metricsConfig, metricsReconciler)
 	mainDependencies := newDependencies(instance, configConfig, sbhttpserverInstance, swaggerApiServer, v, database, migration, connections, dataStores, reconcilerSet)
 	return mainDependencies, nil
 }

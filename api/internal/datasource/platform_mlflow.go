@@ -48,6 +48,11 @@ type PlatformRun struct {
 	Data        PlatformRunData `json:"data"`
 }
 
+type PlatformRunsResponse struct {
+	ExperimentRuns []PlatformRun `json:"experiment_runs"`
+	NextPageToken  string        `json:"next_page_token"`
+}
+
 type PlatformRunUpdate struct {
 	Id          string          `json:"id"`
 	Name        string          `json:"name"`
@@ -120,10 +125,6 @@ func NewPlatformMLFlow(baseUrl string, cfg *Config, connections *clientbase.Conn
 			connections: connections,
 		},
 	}
-}
-
-func (m *PlatformMLFlow) WaitForReady(ctx context.Context) error {
-	return nil
 }
 
 func (m *PlatformMLFlow) UpdateRun(ctx context.Context, run *Run) (*Run, error) {
@@ -351,14 +352,56 @@ func (m *PlatformMLFlow) ListRuns(ctx context.Context, experimentId string) ([]*
 			log.Printf("failed to read body: %s", ioerr)
 			return nil, err
 		}
-		var runsResponse RunsResponse
+		var runsResponse PlatformRunsResponse
 		serr := json.Unmarshal(respBody, &runsResponse)
 		if serr != nil {
 			log.Printf("failed to unmarshal body: %s", serr)
 			return nil, serr
 		}
-		for _, run := range runsResponse.Runs {
-			runs = append(runs, &run)
+		for _, run := range runsResponse.ExperimentRuns {
+			r := &Run{
+				Info: RunInfo{
+					RunId:        run.Id,
+					Name:         run.Name,
+					ExperimentId: experimentId,
+					Status:       FromPlatformStatus(run.Status),
+					StartTime:    run.StartTime.UnixMilli(),
+					EndTime:      run.EndTime.UnixMilli(),
+					ArtifactUri:  run.ArtifactUri,
+				},
+				Data: RunData{
+					Metrics: make([]Metric, 0),
+					Params:  run.Data.Params,
+					Tags:    run.Data.Tags,
+					Files:   make([]Artifact, 0),
+				},
+			}
+			for _, metric := range run.Data.Metrics {
+				step, err := strconv.Atoi(metric.Step)
+				if err != nil {
+					log.Printf("failed to convert step to int: %s", err)
+					return nil, err
+				}
+				r.Data.Metrics = append(r.Data.Metrics, Metric{
+					Key:       metric.Key,
+					Value:     metric.Value,
+					Timestamp: metric.Timestamp.Unix(),
+					Step:      step,
+				})
+			}
+			for _, artifact := range run.Data.Files {
+				size, err := strconv.Atoi(artifact.FileSize)
+				if err != nil {
+					log.Printf("failed to convert file size to int: %s", err)
+					return nil, err
+				}
+				r.Data.Files = append(r.Data.Files, Artifact{
+					Path:     artifact.Path,
+					IsDir:    artifact.IsDir,
+					FileSize: int64(size),
+				})
+			}
+			runs = append(runs, r)
 		}
 		if runsResponse.NextPageToken == "" {
 			done = true
@@ -581,13 +624,20 @@ func (m *PlatformMLFlow) GetExperiment(ctx context.Context, experimentId string)
 	if ioerr != nil {
 		return nil, err
 	}
-	var experimentResponse ExperimentResponse
-	jerr := json.Unmarshal(body, &experimentResponse)
+	var experiment PlatformExperiment
+	jerr := json.Unmarshal(body, &experiment)
 	if jerr != nil {
 		return nil, err
 	}
-	experiment := experimentResponse.Experiment
-	return &experiment, nil
+	return &Experiment{
+		ExperimentId:     experiment.Id,
+		Name:             experiment.Name,
+		ArtifactLocation: experiment.ArtifactLocation,
+		LifecycleStage:   experiment.LifecycleStage,
+		LastUpdatedTime:  experiment.LastUpdatedTime,
+		CreatedTime:      experiment.CreatedTime,
+		Tags:             experiment.Tags,
+	}, nil
 }
 
 func (m *PlatformMLFlow) Metrics(ctx context.Context, experimentId string, runId string) ([]Metric, error) {

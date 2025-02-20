@@ -112,6 +112,7 @@ class RagPredictResponse(BaseModel):
     metrics_logged_status: Optional[str] = None
     feedback: Optional[RagFeedback] = RagFeedback()
     feedback_logged_status: Optional[str] = None
+    timestamp: Optional[str] = None
 
 
 class RagFeedbackRequest(BaseModel):
@@ -122,15 +123,19 @@ class RagFeedbackRequest(BaseModel):
     feedback_str: Optional[str] = None
 
 
-class MLflowStoreIdentifier(BaseModel):
+class MLFlowStoreIdentifier(BaseModel):
     experiment_id: str
-    experiment_run_id: str
+    run_id: str
 
 
-class MLFlowStoreRequest(BaseModel):
+class MLFlowStoreMetricRequest(BaseModel):
     experiment_id: str
     run_ids: List[str] = []
     metric_names: List[str] = []
+
+
+class MLFlowExperimentRequest(BaseModel):
+    experiment_id: str
 
 
 class EvaluationExample(BaseModel):

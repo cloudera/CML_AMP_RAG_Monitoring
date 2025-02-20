@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import Any, Dict, List, Union, Optional
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -11,7 +11,11 @@ import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 from wordcloud import WordCloud
 
-from data_types import MLFlowStoreRequest
+from data_types import (
+    MLFlowStoreMetricRequest,
+    MLFlowExperimentRequest,
+    MLFlowStoreIdentifier,
+)
 
 table_cols_to_show = [
     "response_id",
@@ -28,7 +32,7 @@ table_cols_to_show = [
 ]
 
 
-def get_experiment_ids():
+def get_experiments():
     """
     Fetches a list of unique experiment IDs from a MLFLow store.
 
@@ -47,20 +51,20 @@ def get_experiment_ids():
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     response_json = response.json()
     if not response_json:
         return []
-    return list(set(response_json))
+    return response_json
 
 
-def get_runs(experiment_id: str):
+def get_runs(request: MLFlowExperimentRequest):
     """
     Fetches the list of runs for a given experiment ID from the MLflow store.
 
     Args:
-        experiment_id (str): The ID of the experiment for which to fetch the runs.
+        request (MLFlowExperimentRequest): The request object containing the experiment ID.
 
     Returns:
         list: A list of runs for the given experiment ID. Returns an empty list if no runs are found or if the response is empty.
@@ -71,11 +75,11 @@ def get_runs(experiment_id: str):
     uri = "http://localhost:3000/runs/list"
     response = requests.post(
         url=uri,
-        json={"experiment_id": experiment_id},
+        data=request.json(),
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     response_json = response.json()
     if not response_json:
@@ -106,15 +110,147 @@ def get_custom_evaluators(custom_evals_dir: Union[Path, os.PathLike, str]):
     return custom_evaluators
 
 
+def get_metric_names(request: MLFlowExperimentRequest):
+    """
+    Fetches a list of metric names from the MLflow store.
+
+    Args:
+        request (MLFlowExperimentRequest): The request object containing the experiment ID.
+
+    Returns:
+        list: A list of metric names retrieved from the response. If the response is not successful, returns an empty list.
+    """
+    uri = "http://localhost:3000/metrics/names"
+    response = requests.get(
+        url=uri,
+        params=request.dict(),
+        headers={
+            "Accept": "application/json",
+        },
+        timeout=60,
+    )
+    response_json = response.json()
+    if not response_json:
+        return []
+    return response_json
+
+
+def get_parameters(request: MLFlowStoreIdentifier):
+    """
+    Fetches the parameters for a given experiment run ID from the MLflow store.
+
+    Args:
+        request (MLFlowStoreIdentifier): The request object containing the experiment run ID.
+
+    Returns:
+        dict: A dictionary containing the parameters for the given experiment run ID. If the response is empty, returns an empty dictionary.
+    """
+    uri = "http://localhost:3000/runs/parameters"
+    response = requests.get(
+        url=uri,
+        params=request.dict(),
+        headers={
+            "Accept": "application/json",
+        },
+        timeout=60,
+    )
+    response_json = response.json()
+    if not response_json:
+        return {}
+    return response_json
+
+
+def merge_jsons(*dicts):
+    """
+    Merges multiple dictionaries into a single dictionary.
+
+    Args:
+        *dicts: A variable number of dictionaries to merge.
+
+    Returns:
+        dict: A dictionary containing the merged key-value pairs from all input dictionaries.
+    """
+    merged = {}
+
+    for d in dicts:
+        for key, value in d.items():
+            if key in merged:
+                if merged[key] != value:
+                    if not isinstance(merged[key], list):
+                        merged[key] = [merged[key]]
+                    if value not in merged[key]:
+                        merged[key].append(value)
+            else:
+                merged[key] = value
+
+    return merged
+
+
+def get_json(
+    request: MLFlowStoreMetricRequest,
+):
+    """
+    Fetches JSON data from the MLflow store.
+
+    Args:
+        request (MLFlowStoreMetricRequest): The request object containing the data to be sent in the POST request.
+
+    Returns:
+        list: A list of JSON data retrieved from the response. If the response is not successful, returns an empty list.
+    """
+    json_dicts = get_metrics(request)
+    for json_dict in json_dicts:
+        new_json_list = []
+        if json_dict["value"]["metricType"] == "text":
+            json_dict["value"]["stringValue"] = json.loads(
+                json_dict["value"]["stringValue"]
+            )
+        columns = json_dict["value"]["stringValue"]["columns"]
+        for data in json_dict["value"]["stringValue"]["data"]:
+            new_json_list.append(dict(zip(columns, data)))
+        merged_json = merge_jsons(*new_json_list)
+        json_dict["value"] = merged_json
+    return json_dicts
+
+
+def get_params_df(run_ids: List[str], experiment_id: str):
+    """
+    Fetches parameters for a list of run IDs from the MLflow store.
+
+    Args:
+        run_ids (List[str]): A list of run IDs.
+        experiment_id (str): The experiment ID.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the parameters for the given run IDs.
+    """
+    run_params_list = []
+    for run in run_ids:
+        run_id = run["experiment_run_id"]
+        run_params_request = MLFlowStoreIdentifier(
+            experiment_id=experiment_id, run_id=run_id
+        )
+        run_params = get_parameters(run_params_request)
+        run_params = {list(d.values())[0]: list(d.values())[1] for d in run_params}
+        run_params["run_id"] = run_id
+
+        run_params_list.append(run_params)
+
+    if not run_params_list:
+        return pd.DataFrame()
+
+    return pd.DataFrame(run_params_list)
+
+
 def parse_live_results_table(
-    table_request: MLFlowStoreRequest,
+    table_request: MLFlowStoreMetricRequest,
     table_cols_to_show: List[str] = table_cols_to_show,
 ):
     """
-    Parses the live results table from the given MLFlowStoreRequest.
+    Parses the live results table from the given MLFlowStoreMetricRequest.
 
     Args:
-        table_request (MLFlowStoreRequest): The request object containing the necessary parameters to fetch metrics.
+        table_request (MLFlowStoreMetricRequest): The request object containing the necessary parameters to fetch metrics.
 
     Returns:
         pd.DataFrame: A DataFrame containing the parsed results with columns specified in `table_cols_to_show`.
@@ -192,13 +328,13 @@ def parse_live_results_table(
 
 # pull data from metric store
 def get_metrics(
-    request: MLFlowStoreRequest,
+    request: MLFlowStoreMetricRequest,
 ):
     """
     Sends a POST request to the MLflow store to retrieve metrics.
 
     Args:
-        request (MLFlowStoreRequest): The request object containing the data to be sent in the POST request.
+        request (MLFlowStoreMetricRequest): The request object containing the data to be sent in the POST request.
 
     Returns:
         list: A list of metrics retrieved from the response. If the response is not successful, returns an empty list.
@@ -210,7 +346,7 @@ def get_metrics(
         headers={
             "Content-Type": "application/json",
         },
-        timeout=10,
+        timeout=60,
     )
     # if response is not successful, return empty list
     if not response.ok:
@@ -218,12 +354,12 @@ def get_metrics(
     return response.json()
 
 
-def get_numeric_metrics_df(request: MLFlowStoreRequest):
+def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     """
     Retrieve numeric metrics from MLFlow store and return them as a DataFrame.
 
     Args:
-        request (MLFlowStoreRequest): The request object containing parameters to fetch metrics.
+        request (MLFlowStoreMetricRequest): The request object containing parameters to fetch metrics.
 
     Returns:
         pd.DataFrame: A DataFrame containing the following columns:
@@ -256,7 +392,62 @@ def get_numeric_metrics_df(request: MLFlowStoreRequest):
     return metrics_df
 
 
+def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
+    """
+    Converts a dictionary of lists to a pandas DataFrame.
+
+    Args:
+        json_data (Dict[str, Union[str, List[str]]]): A dictionary containing lists of data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the data from the input dictionary.
+    """
+    keys_to_keep = ["run_id"]
+    rows = []
+    for json_dict in json_list:
+        json_data = json_dict["value"]
+        json_data["run_id"] = json_dict["experiment_run_id"]
+        for key, value in json_data.items():
+            if not isinstance(value, (list, dict)):
+                keys_to_keep.append(key)
+        new_json_data = {}
+        for key in keys_to_keep:
+            new_json_data[key] = json_data.get(key, None)
+        rows.append(new_json_data)
+    return pd.DataFrame(rows)
+
+
+def get_df_from_json_dicts(json_dicts: Dict[str, List[Dict[str, Any]]]) -> pd.DataFrame:
+    """
+    Converts a dictionary of lists to a pandas DataFrame.
+
+    Args:
+        json_dict (Dict[str, List[Dict]]): A dictionary containing lists of data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the data from the input dictionary.
+    """
+    json_dfs = {}
+    for json_file, json_list in json_dicts.items():
+        json_dfs[json_file] = get_df_from_json_list(json_list)
+    json_df = reduce(
+        lambda left, right: pd.merge(left, right, on="run_id", how="left"),
+        [df for df in json_dfs.values()],
+    )
+    return json_df
+
+
 def highlight_words(s, words):
+    """
+    Highlights words in a string with a background color.
+
+    Args:
+        s (str): The string to highlight.
+        words (List[str]): A list of words to highlight in the string.
+
+    Returns:
+        str: The string with highlighted words.
+    """
     for word in words:
         if word in s:
             s = s.replace(
@@ -266,10 +457,20 @@ def highlight_words(s, words):
     return s
 
 
-def show_live_df_component(
+def show_detailed_logs_component(
     live_results_df: pd.DataFrame,
     metrics_dfs: List[pd.DataFrame],
 ):
+    """
+    Display detailed logs for live results and metrics.
+
+    Args:
+        live_results_df (pd.DataFrame): DataFrame containing live results.
+        metrics_dfs (List[pd.DataFrame]): List of DataFrames containing metrics.
+
+    Returns:
+        None
+    """
     if not live_results_df.empty:
         if metrics_dfs:
             metrics_dfs = [live_results_df] + metrics_dfs
@@ -277,18 +478,40 @@ def show_live_df_component(
                 lambda left, right: pd.merge(left, right, on="run_id", how="left"),
                 metrics_dfs,
             )
-        live_results_df = live_results_df.drop_duplicates(
-            subset=["response_id"], keep="last"
-        )
-        live_results_df = live_results_df.drop(columns=["response_id", "run_id"])
+        if "response_id" in live_results_df.columns:
+            live_results_df = live_results_df.drop(columns=["response_id"])
+        if "run_id" in live_results_df.columns:
+            live_results_df = live_results_df.drop(columns=["run_id"])
 
         if "feedback" in live_results_df.columns:
             live_results_df["feedback"] = live_results_df["feedback"].apply(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
             )
+        # sort the columns in alphabetical order
+        live_results_df = live_results_df.reindex(
+            sorted(live_results_df.columns), axis=1
+        )
         with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
-            st.write("### Detailed Logs")
-            st.dataframe(live_results_df.sort_values(by="timestamp", ascending=False))
+            if not "timestamp" in live_results_df.columns:
+                live_results_df = live_results_df.rename(
+                    columns={
+                        x: x.replace("_", " ").title() for x in live_results_df.columns
+                    }
+                )
+                st.dataframe(live_results_df)
+                return
+            live_results_df["timestamp"] = pd.to_datetime(
+                live_results_df["timestamp"], format="mixed", dayfirst=True
+            )
+            live_results_df.sort_values(
+                by="timestamp", ascending=False, inplace=True, ignore_index=True
+            )
+            live_results_df = live_results_df.rename(
+                columns={
+                    x: x.replace("_", " ").title() for x in live_results_df.columns
+                }
+            )
+            st.write(live_results_df)
 
 
 def show_i_o_component(
@@ -419,9 +642,7 @@ def show_i_o_component(
 
 def show_feedback_component(
     feedback_df: pd.DataFrame,
-    thumbs_up_placeholder: DeltaGenerator,
-    thumbs_down_placeholder: DeltaGenerator,
-    no_feedback_placeholder: DeltaGenerator,
+    label: str,
     update_timestamp: str,
 ):
     """
@@ -440,6 +661,15 @@ def show_feedback_component(
         thumbs_down_count = feedback_df["feedback"].to_list().count(0)
         no_feedback_count = feedback_df["feedback"].isna().sum()
 
+        st.markdown(
+            f"### {label}",
+            help="Feedback received from users.",
+        )
+
+        thumbs_up_placeholder, thumbs_down_placeholder, no_feedback_placeholder = (
+            st.columns(3)
+        )
+
         thumbs_up_placeholder.metric(
             label="Thumbs Up :material/thumb_up:",
             help="The number of thumbs up received.",
@@ -457,25 +687,55 @@ def show_feedback_component(
             help="The number of no feedback received.",
             value=no_feedback_count,
         )
+        fig = go.Figure(
+            data=go.Pie(
+                labels=["Thumbs Up", "Thumbs Down", "No Feedback"],
+                values=[
+                    thumbs_up_count,
+                    thumbs_down_count,
+                    no_feedback_count,
+                ],
+                hole=0.5,
+                hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
+            )
+        )
+        st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
 
-        with st.expander("# :material/feedback: **Feedback Overview**", expanded=True):
-            st.markdown(
-                "### Feedback Received",
-                help="Feedback received from users.",
-            )
-            fig = go.Figure(
-                data=go.Pie(
-                    labels=["Thumbs Up", "Thumbs Down", "No Feedback"],
-                    values=[
-                        thumbs_up_count,
-                        thumbs_down_count,
-                        no_feedback_count,
-                    ],
-                    hole=0.5,
-                    hovertemplate="%{label}: <b>%{value}</b><extra></extra>",
-                )
-            )
-            st.plotly_chart(fig, key=f"feedback_fig_{update_timestamp}")
+
+def show_feedback_kpi(
+    metric_key: str,
+    metrics_df: pd.DataFrame,
+    kpi_placeholder: DeltaGenerator,
+    label: str,
+    tooltip: Optional[
+        str
+    ] = "Average pass rate of responses. Includes thumbs up and no feecback.",
+):
+    """
+    Display feedback KPIs.
+
+    Parameters:
+    metric_key (str): The key to identify the metric in the DataFrame.
+    metrics_df (pd.DataFrame): DataFrame containing feedback and timestamps.
+    kpi_placeholder (DeltaGenerator): Streamlit placeholder for feedback KPI.
+    label (str): The label for the feedback KPI.
+    tooltip (str): The tooltip text for the feedback KPI.
+
+    Returns:
+    None
+    """
+    if metric_key in metrics_df:
+        thumbs_down_count = metrics_df[metric_key].to_list().count(0)
+        prev_thumbs_down_count = metrics_df[metric_key].to_list()[:-1].count(0)
+        metric_value = (1 - (thumbs_down_count / len(metrics_df))) * 100
+        metric_value = round(metric_value, 2)
+        prev_metric_value = (1 - (prev_thumbs_down_count / (len(metrics_df) - 1))) * 100
+        prev_metric_value = round(prev_metric_value, 2)
+        delta_value = metric_value - prev_metric_value if len(metrics_df) > 1 else 0
+        metric_value = f"{metric_value}%"
+        kpi_placeholder.metric(
+            label=label, help=tooltip, value=metric_value, delta=delta_value
+        )
 
 
 def show_numeric_metric_kpi(
@@ -483,7 +743,7 @@ def show_numeric_metric_kpi(
     metrics_df: pd.DataFrame,
     kpi_placeholder: DeltaGenerator,
     label: str,
-    tooltip: str,
+    tooltip: Optional[str] = None,
 ):
     """
     Display numeric metric KPIs.
@@ -518,10 +778,10 @@ def show_pie_chart_component(
     metric_key: str,
     metrics_df: pd.DataFrame,
     title: str,
-    tooltip: str,
     labels: List[str],
     update_timestamp: str,
     fig_placeholder: DeltaGenerator = None,
+    tooltip: Optional[str] = None,
 ):
     """
     Displays a pie chart component in a Streamlit app.
@@ -539,7 +799,6 @@ def show_pie_chart_component(
     None
     """
     if metric_key in metrics_df:
-        st.markdown(f"### {title}", help=tooltip)
         fig = go.Figure(
             data=go.Pie(
                 labels=labels,
@@ -553,8 +812,10 @@ def show_pie_chart_component(
             )
         )
         if fig_placeholder is None:
+            st.markdown(f"### {title}", help=tooltip)
             st.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
             return
+        fig_placeholder.markdown(f"### {title}", help=tooltip)
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
@@ -562,10 +823,10 @@ def show_time_series_component(
     metric_key: str,
     metrics_df: pd.DataFrame,
     title: str,
-    tooltip: str,
     update_timestamp: str,
     frequency: str = "h",
     fig_placeholder: DeltaGenerator = None,
+    tooltip: Optional[str] = None,
 ):
     """
     Displays a time series component in a Streamlit app.
@@ -616,31 +877,52 @@ def show_time_series_component(
         fig_placeholder.plotly_chart(fig, key=f"{metric_key}_fig_{update_timestamp}")
 
 
-def show_wordcloud_component(df: pd.DataFrame):
+def keywords_in_dict(d: Dict):
+    """
+    Check if the dictionary contains keywords.
+
+    Args:
+        d (Dict): The dictionary to check for keywords.
+
+    Returns:
+        bool: True if the dictionary contains keywords, False otherwise.
+    """
+    if "query_keywords" in d or "response_keywords" in d:
+        return True
+    return False
+
+
+def show_wordcloud_component(live_results_dict: List[Dict]):
     """
     Displays a word cloud component in Streamlit.
 
     Parameters:
-    df (pd.DataFrame): DataFrame containing the data (keyword column) for the word cloud.
-    fig_placeholder (DeltaGenerator): Streamlit placeholder for the word cloud.
+    live_results_dict (List[Dict]): A list of dictionaries containing the live results.
 
     Returns:
     None
     """
-    if "query_keywords" and "response_keywords" in df.columns:
-        query_keywords = " ".join(df["query_keywords"].to_list())
-        response_keywords = " ".join(df["response_keywords"].to_list())
-        q_wc = WordCloud()
-        r_wc = WordCloud()
+    query_keywords = ""
+    response_keywords = ""
 
-        q_fig = q_wc.generate(query_keywords)
-        r_fig = r_wc.generate(response_keywords)
+    for d in live_results_dict:
+        if "query_keywords" in d["value"]:
+            query_keywords += d["value"]["query_keywords"]
+        if "response_keywords" in d["value"]:
+            response_keywords += d["value"]["response_keywords"]
 
-        with st.expander(":material/label: **Word Cloud**", expanded=True):
-            q_col, r_col = st.columns(2)
+    q_wc = WordCloud()
+    q_fig = q_wc.generate(query_keywords)
+    r_wc = WordCloud()
+    r_fig = r_wc.generate(response_keywords)
+
+    with st.expander(":material/label: **Word Cloud**", expanded=True):
+        q_col, r_col = st.columns(2)
+        if "query_keywords" != "":
             with q_col:
                 st.markdown("### Query Keywords")
-                st.image(q_fig.to_image(), use_column_width=True)
+                st.image(q_fig.to_image(), use_container_width=True)
+        if "response_keywords" != "":
             with r_col:
                 st.markdown("### Response Keywords")
-                st.image(r_fig.to_image(), use_column_width=True)
+                st.image(r_fig.to_image(), use_container_width=True)

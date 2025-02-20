@@ -7,12 +7,11 @@ import (
 )
 
 type Config struct {
-	LocalMLFlowBaseUrl string `env:"LOCAL_MLFLOW_BASE_URL" envDefault:"http://localhost:5000"`
-	CDSWDomain         string `env:"CDSW_DOMAIN" envDefault:""`
-	CDSWApiProtocol    string `env:"CDSW_API_PROTOCOL" envDefault:"https"`
-	CDSWMLFlowBaseUrl  string
-	CDSWProjectID      string `env:"CDSW_PROJECT_ID" envDefault:""`
-	CDSWApiKey         string `env:"CDSW_APIV2_KEY" envDefault:""`
+	CDSWDomain        string `env:"CDSW_DOMAIN" envDefault:""`
+	CDSWApiProtocol   string `env:"CDSW_API_PROTOCOL" envDefault:"https"`
+	CDSWMLFlowBaseUrl string
+	CDSWProjectID     string `env:"CDSW_PROJECT_ID" envDefault:""`
+	CDSWApiKey        string `env:"CDSW_APIV2_KEY" envDefault:""`
 }
 
 func NewConfigFromEnv() (*Config, error) {

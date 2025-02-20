@@ -32,8 +32,8 @@ type dependencies struct {
 func NewMigration(appCfg *config.Config, cfg *lsql.Config) (*lmigration.Migration, error) {
 	if appCfg.Migrate {
 		return lmigration.NewMigration(cfg, map[string]lmigration.MigrationSet{
-			"sqlite":   lmigration.MigrationSet{AssetNames: sqlitemig.AssetNames, Asset: sqlitemig.Asset},
-			"postgres": lmigration.MigrationSet{AssetNames: postgresmig.AssetNames, Asset: postgresmig.Asset},
+			"sqlite":   {AssetNames: sqlitemig.AssetNames, Asset: sqlitemig.Asset},
+			"postgres": {AssetNames: postgresmig.AssetNames, Asset: postgresmig.Asset},
 		})
 	}
 	return nil, nil
@@ -83,13 +83,7 @@ func main() {
 		panic(err)
 	}
 
-	// wait for the local mlflow instance to start
-	localErr := deps.dataStores.Local.WaitForReady(deps.app.Context())
-	if localErr != nil {
-		panic(localErr)
-	}
-
-	// Start the metrics reconciler
+	// Start the reconcilers
 	deps.reconcilers.Start()
 	defer deps.reconcilers.Finish()
 

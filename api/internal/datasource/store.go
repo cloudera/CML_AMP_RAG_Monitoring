@@ -34,17 +34,14 @@ type DataStore interface {
 	ArtifactStore
 	ExperimentStore
 	RunStore
-	WaitForReady(ctx context.Context) error
 }
 
 type DataStores struct {
-	Local  DataStore
 	Remote DataStore
 }
 
 func NewDataStores(cfg *Config, connections *clientbase.Connections) DataStores {
 	return DataStores{
-		Local:  NewMLFlow(cfg.LocalMLFlowBaseUrl, cfg, connections),
 		Remote: NewPlatformMLFlow(cfg.CDSWMLFlowBaseUrl, cfg, connections),
 	}
 }

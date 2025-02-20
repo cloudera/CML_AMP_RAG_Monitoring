@@ -41,6 +41,8 @@ type ExperimentsAPI interface {
 
 // MetricsAPI
 type MetricsAPI interface {
+	// GetMetricsNames is List monitoring metric names for an experiment
+	GetMetricsNames(ctx context.Context, params metrics.GetMetricsNamesParams) (*metrics.GetMetricsNamesOK, *lhttp.HttpError)
 	// PostMetrics is Create monitoring metrics
 	PostMetrics(ctx context.Context, params metrics.PostMetricsParams) (*metrics.PostMetricsOK, *lhttp.HttpError)
 	// PostMetricsList is List monitoring metrics
@@ -54,6 +56,8 @@ type MetricsAPI interface {
 type RunsAPI interface {
 	// DeleteRuns is Delete an experiment run from monitoring.
 	DeleteRuns(ctx context.Context, params runs.DeleteRunsParams) (*runs.DeleteRunsOK, *lhttp.HttpError)
+	// GetRunsParameters is Get a list of monitored experiment run parameters.
+	GetRunsParameters(ctx context.Context, params runs.GetRunsParametersParams) (*runs.GetRunsParametersOK, *lhttp.HttpError)
 	// PostRuns is Register an experiment run for monitoring
 	PostRuns(ctx context.Context, params runs.PostRunsParams) (*runs.PostRunsOK, *lhttp.HttpError)
 	// PostRunsList is Get a list monitored experiment runs for an experiment.
@@ -140,6 +144,62 @@ func Handler(c Config) (http.Handler, error) {
 		}
 
 		api.ExperimentsGetExperimentsHandler = experiments.GetExperimentsHandlerFunc(func(params experiments.GetExperimentsParams) middleware.Responder {
+			resp, herr := baseHandler(params.HTTPRequest.Context(), params.HTTPRequest.Header, params)
+			if herr != nil {
+				return herr
+			}
+			return resp.(middleware.Responder)
+		})
+	}
+
+	{
+		info := &swaggerinterceptors.UnaryServerInfo{
+			FullMethod: "Metrics/GetMetricsNames", // TODO: add full package
+		}
+
+		baseHandler := func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+			typedParams := req.(metrics.GetMetricsNamesParams)
+			resp, herr := c.MetricsAPI.GetMetricsNames(ctx, typedParams)
+			return resp, herr
+		}
+
+		for i := len(c.Interceptors) - 1; i >= 0; i-- {
+			interceptor := c.Interceptors[i]
+			currentHandler := baseHandler
+			baseHandler = func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+				return interceptor(ctx, header, req, info, currentHandler)
+			}
+		}
+
+		api.MetricsGetMetricsNamesHandler = metrics.GetMetricsNamesHandlerFunc(func(params metrics.GetMetricsNamesParams) middleware.Responder {
+			resp, herr := baseHandler(params.HTTPRequest.Context(), params.HTTPRequest.Header, params)
+			if herr != nil {
+				return herr
+			}
+			return resp.(middleware.Responder)
+		})
+	}
+
+	{
+		info := &swaggerinterceptors.UnaryServerInfo{
+			FullMethod: "Runs/GetRunsParameters", // TODO: add full package
+		}
+
+		baseHandler := func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+			typedParams := req.(runs.GetRunsParametersParams)
+			resp, herr := c.RunsAPI.GetRunsParameters(ctx, typedParams)
+			return resp, herr
+		}
+
+		for i := len(c.Interceptors) - 1; i >= 0; i-- {
+			interceptor := c.Interceptors[i]
+			currentHandler := baseHandler
+			baseHandler = func(ctx context.Context, header http.Header, req interface{}) (interface{}, *lhttp.HttpError) {
+				return interceptor(ctx, header, req, info, currentHandler)
+			}
+		}
+
+		api.RunsGetRunsParametersHandler = runs.GetRunsParametersHandlerFunc(func(params runs.GetRunsParametersParams) middleware.Responder {
 			resp, herr := baseHandler(params.HTTPRequest.Context(), params.HTTPRequest.Header, params)
 			if herr != nil {
 				return herr
@@ -270,6 +330,7 @@ var (
 	ExperimentQueryParse              = query.MustNewBuilder(&query.Config{Model: models.Experiment{}}).ParseRequest
 	ExperimentRunQueryParse           = query.MustNewBuilder(&query.Config{Model: models.ExperimentRun{}}).ParseRequest
 	ExperimentRunListFilterQueryParse = query.MustNewBuilder(&query.Config{Model: models.ExperimentRunListFilter{}}).ParseRequest
+	ExperimentRunParameterQueryParse  = query.MustNewBuilder(&query.Config{Model: models.ExperimentRunParameter{}}).ParseRequest
 	MetricQueryParse                  = query.MustNewBuilder(&query.Config{Model: models.Metric{}}).ParseRequest
 	MetricListFilterQueryParse        = query.MustNewBuilder(&query.Config{Model: models.MetricListFilter{}}).ParseRequest
 	MetricTagQueryParse               = query.MustNewBuilder(&query.Config{Model: models.MetricTag{}}).ParseRequest

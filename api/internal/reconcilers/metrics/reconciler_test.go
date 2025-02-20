@@ -15,7 +15,7 @@ type state struct {
 	runs           *db.ExperimentRunsMock
 	metrics        *db.MetricsMock
 	mlFlow         datasource.MlFlowMock
-	reconciler     *Reconciler
+	reconciler     *MetricsReconciler
 	config         *Config
 	queue          *reconciler.ReconcileQueue[int64]
 	reconcileItems []reconciler.ReconcileItem[int64]

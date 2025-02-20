@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
 	"strings"
@@ -12,14 +13,16 @@ import (
 )
 
 type Metrics struct {
-	db *lsql.Instance
+	db  *lsql.Instance
+	cfg *config.Config
 }
 
 var _ db.MetricsService = &Metrics{}
 
-func NewMetrics(instance *lsql.Instance) db.MetricsService {
+func NewMetrics(instance *lsql.Instance, cfg *config.Config) db.MetricsService {
 	return &Metrics{
-		db: instance,
+		db:  instance,
+		cfg: cfg,
 	}
 }
 
@@ -49,8 +52,8 @@ func (r *Metrics) CreateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 	}
 
 	query := `
-	INSERT INTO metrics (experiment_id, run_id, name, value_numeric, value_text, tags, ts)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO metrics (project_id, experiment_id, run_id, name, value_numeric, value_text, tags, ts)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	RETURNING id
 	`
 	ts := time.Now()
@@ -63,7 +66,7 @@ func (r *Metrics) CreateMetric(ctx context.Context, m *db.Metric) (*db.Metric, e
 		return nil, err
 	}
 
-	args := []interface{}{m.ExperimentId, m.RunId, m.Name, m.ValueNumeric, m.ValueText, tags, ts}
+	args := []interface{}{r.cfg.CDSWProjectID, m.ExperimentId, m.RunId, m.Name, m.ValueNumeric, m.ValueText, tags, ts}
 	id, err := r.db.ExecAndReturnId(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -83,15 +86,84 @@ func (r *Metrics) GetMetric(ctx context.Context, id int64) (*db.Metric, error) {
 	query := `
 	SELECT id, experiment_id, run_id, name, value_numeric, value_text, tags, ts
 	FROM metrics
-	WHERE id = ?
+	WHERE id = ? AND project_id = ?
 	`
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRowContext(ctx, query, id, r.cfg.CDSWProjectID)
 
 	if response, err := MetricInstance(row); err != nil {
 		return nil, err
 	} else {
 		return response, nil
 	}
+}
+
+func (r *Metrics) GetMetricByName(ctx context.Context, experimentId string, runId string, name string) (*db.Metric, error) {
+	query := `
+	SELECT id, experiment_id, run_id, name, value_numeric, value_text, tags, ts
+	FROM metrics
+	WHERE experiment_id = ? AND run_id = ? AND name = ? AND project_id = ?
+	`
+	row := r.db.QueryRowContext(ctx, query, experimentId, runId, name, r.cfg.CDSWProjectID)
+
+	if response, err := MetricInstance(row); err != nil {
+		return nil, err
+	} else {
+		return response, nil
+	}
+}
+
+func (r *Metrics) UpdateMetric(ctx context.Context, m *db.Metric) (*db.Metric, error) {
+	query := `
+	UPDATE metrics
+	SET value_numeric = ?, value_text = ?, tags = ?, ts = ?
+	WHERE id = ? AND project_id = ?
+	`
+	ts := time.Now()
+	if m.Timestamp != nil {
+		ts = *m.Timestamp
+	}
+
+	tags, err := json.Marshal(m.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	args := []interface{}{m.ValueNumeric, m.ValueText, tags, ts, m.Id, r.cfg.CDSWProjectID}
+	id, err := r.db.ExecAndReturnId(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return &db.Metric{
+		Id:           id,
+		ExperimentId: m.ExperimentId,
+		RunId:        m.RunId,
+		Name:         m.Name,
+		ValueNumeric: m.ValueNumeric,
+		ValueText:    m.ValueText,
+		Timestamp:    &ts,
+	}, nil
+}
+
+func (r *Metrics) ListMetricNames(ctx context.Context, experimentId string) ([]string, error) {
+	query := `
+	SELECT DISTINCT name
+	FROM metrics
+	WHERE experiment_id = ? AND project_id = ?
+	`
+	rows, err := r.db.QueryContext(ctx, query, experimentId, r.cfg.CDSWProjectID)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]string, 0)
+	for rows.Next() {
+		var name string
+		err = rows.Scan(&name)
+		if err != nil {
+			return nil, err
+		}
+		response = append(response, name)
+	}
+	return response, nil
 }
 
 func (r *Metrics) ListMetrics(ctx context.Context, experimentId *string, runIds []string, metricNames []string) ([]*db.Metric, error) {
@@ -101,6 +173,8 @@ func (r *Metrics) ListMetrics(ctx context.Context, experimentId *string, runIds 
 	`
 	conditions := []string{}
 	parameters := []interface{}{}
+	conditions = append(conditions, "project_id = ?")
+	parameters = append(parameters, r.cfg.CDSWProjectID)
 	if experimentId != nil && *experimentId != "" {
 		conditions = append(conditions, "experiment_id = ?")
 		parameters = append(parameters, *experimentId)

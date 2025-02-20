@@ -25,6 +25,11 @@ type API interface {
 	*/
 	DeleteRuns(ctx context.Context, params *DeleteRunsParams) (*DeleteRunsOK, error)
 	/*
+	   GetRunsParameters gets a list of monitored experiment run parameters
+	   Get a list of monitored experiment run parameters.
+	*/
+	GetRunsParameters(ctx context.Context, params *GetRunsParametersParams) (*GetRunsParametersOK, error)
+	/*
 	   PostRuns registers an experiment run for monitoring
 	   Register an experiment run for monitoring
 	*/
@@ -84,6 +89,39 @@ func (a *Client) DeleteRuns(ctx context.Context, params *DeleteRunsParams) (*Del
 		return nil, err
 	}
 	return result.(*DeleteRunsOK), nil
+
+}
+
+/*
+GetRunsParameters gets a list of monitored experiment run parameters
+
+Get a list of monitored experiment run parameters.
+*/
+func (a *Client) GetRunsParameters(ctx context.Context, params *GetRunsParametersParams) (*GetRunsParametersOK, error) {
+
+	operation := &runtime.ClientOperation{
+		ID:                 "GetRunsParameters",
+		Method:             "GET",
+		PathPattern:        "/runs/parameters",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetRunsParametersReader{formats: a.formats},
+		Context:            ctx,
+		Client:             params.HTTPClient,
+	}
+	result, err := a.transport.Submit(operation)
+	if err != nil {
+		// Make sure to convert back to an error type so that nil comparisons work as expected
+		var richError error
+		richError, err = lswagger.NewRichError(operation, err)
+		if err == nil {
+			err = richError
+		}
+		return nil, err
+	}
+	return result.(*GetRunsParametersOK), nil
 
 }
 

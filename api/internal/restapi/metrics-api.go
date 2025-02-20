@@ -72,6 +72,19 @@ func (m MetricsAPI) PostMetrics(ctx context.Context, params metrics.PostMetricsP
 	return &metrics.PostMetricsOK{}, nil
 }
 
+func (m MetricsAPI) GetMetricsNames(ctx context.Context, params metrics.GetMetricsNamesParams) (*metrics.GetMetricsNamesOK, *lhttp.HttpError) {
+	if params.ExperimentID == nil || *params.ExperimentID == "" {
+		return nil, lhttp.NewBadRequest("experiment_id is required")
+	}
+	results, err := m.db.Metrics().ListMetricNames(ctx, *params.ExperimentID)
+	if err != nil {
+		return nil, lhttp.NewInternalError(err.Error())
+	}
+	return &metrics.GetMetricsNamesOK{
+		Payload: results,
+	}, nil
+}
+
 func (m MetricsAPI) PostMetricsList(ctx context.Context, params metrics.PostMetricsListParams) (*metrics.PostMetricsListOK, *lhttp.HttpError) {
 	if params.Body == nil {
 		return nil, lhttp.NewBadRequest("body is required")

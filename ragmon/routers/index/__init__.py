@@ -42,12 +42,10 @@ import json
 import logging
 import os
 from pathlib import Path
+import time
 import uuid
 import sys
-from typing import Dict, Union
-import mlflow
-from mlflow.tracking import MlflowClient
-
+from typing import Dict
 import opentelemetry.trace
 from fastapi import APIRouter
 from llama_index.core.base.llms.types import MessageRole
@@ -81,8 +79,6 @@ logger.addHandler(handler)
 logger.setLevel(settings.rag_log_level)
 
 tracer = opentelemetry.trace.get_tracer(__name__)
-
-mlflow.set_tracking_uri(settings.mlflow.tracking_uri)
 
 router = APIRouter(
     prefix="/index",
@@ -200,6 +196,7 @@ async def predict(
         source_nodes=response_source_nodes,
         chat_history=new_history,
         metrics_logged_status="pending",
+        timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     if request.do_evaluate:

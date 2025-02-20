@@ -22,6 +22,9 @@ type Experiment struct {
 
 	// The ID
 	ID int64 `json:"id,omitempty"`
+
+	// The name of the experiment
+	Name string `json:"name,omitempty"`
 }
 
 // Validate validates this experiment

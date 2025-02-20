@@ -3,30 +3,33 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/config"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
 	lsql "github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/sql"
 	"time"
 )
 
 type ExperimentRuns struct {
-	db *lsql.Instance
+	db  *lsql.Instance
+	cfg *config.Config
 }
 
 var _ db.ExperimentRunService = &ExperimentRuns{}
 
-func NewExperimentRuns(instance *lsql.Instance) db.ExperimentRunService {
+func NewExperimentRuns(instance *lsql.Instance, cfg *config.Config) db.ExperimentRunService {
 	return &ExperimentRuns{
-		db: instance,
+		db:  instance,
+		cfg: cfg,
 	}
 }
 
 func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.ExperimentRun) (*db.ExperimentRun, error) {
 	query := `
-	INSERT INTO experiment_runs (experiment_id, run_id, updated)
-	VALUES (?, ?, true)
+	INSERT INTO experiment_runs (project_id, experiment_id, run_id, updated)
+	VALUES (?, ?, ?, true)
 	RETURNING id
 	`
-	args := []interface{}{run.ExperimentId, run.RunId}
+	args := []interface{}{e.cfg.CDSWProjectID, run.ExperimentId, run.RunId}
 	id, err := e.db.ExecAndReturnId(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -40,11 +43,11 @@ func (e *ExperimentRuns) CreateExperimentRun(ctx context.Context, run *db.Experi
 
 func (e *ExperimentRuns) GetExperimentRunById(ctx context.Context, id int64) (*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
-	WHERE id = ?
+	WHERE id = ? AND project_id = ?
 	`
-	row := e.db.QueryRowContext(ctx, query, id)
+	row := e.db.QueryRowContext(ctx, query, id, e.cfg.CDSWProjectID)
 
 	if response, err := ExperimentRunInstance(row); err != nil {
 		return nil, err
@@ -55,11 +58,11 @@ func (e *ExperimentRuns) GetExperimentRunById(ctx context.Context, id int64) (*d
 
 func (e *ExperimentRuns) GetExperimentRun(ctx context.Context, experimentId string, runId string) (*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
-	WHERE experiment_id = ? AND run_id = ?
+	WHERE experiment_id = ? AND run_id = ? AND project_id = ?
 	`
-	row := e.db.QueryRowContext(ctx, query, experimentId, runId)
+	row := e.db.QueryRowContext(ctx, query, experimentId, runId, e.cfg.CDSWProjectID)
 
 	if response, err := ExperimentRunInstance(row); err != nil {
 		return nil, err
@@ -70,11 +73,11 @@ func (e *ExperimentRuns) GetExperimentRun(ctx context.Context, experimentId stri
 
 func (e *ExperimentRuns) ListExperimentRuns(ctx context.Context, experimentId string) ([]*db.ExperimentRun, error) {
 	query := `
-	SELECT id, experiment_id, run_id, remote_run_id, created, updated, deleted, created_ts, updated_ts
+	SELECT id, experiment_id, run_id, created, updated, deleted, created_ts, updated_ts
 	FROM experiment_runs
-	WHERE experiment_id = ?
+	WHERE experiment_id = ? AND project_id = ?
 	`
-	args := []interface{}{experimentId}
+	args := []interface{}{experimentId, e.cfg.CDSWProjectID}
 	rows, err := e.db.QueryContext(ctx, query, args...)
 
 	if err != nil {
@@ -96,11 +99,11 @@ func (e *ExperimentRuns) ListExperimentRunIdsForReconciliation(ctx context.Conte
 	query := `
 	SELECT id
 	FROM experiment_runs
-	WHERE deleted = false AND updated = true
+	WHERE deleted = false AND updated = true AND project_id = ?
 	LIMIT ?
 	`
 
-	args := []interface{}{maxItems}
+	args := []interface{}{e.cfg.CDSWProjectID, maxItems}
 
 	rows, err := e.db.QueryContext(ctx, query, args...)
 
@@ -127,11 +130,11 @@ func (e *ExperimentRuns) ListExperimentRunIdsForMetricReconciliation(ctx context
 	query := `
 	SELECT id
 	FROM experiment_runs
-	WHERE deleted = false AND updated = true AND reconcile_metrics = true
+	WHERE deleted = false AND reconcile_metrics = true AND project_id = ?
 	LIMIT ?
 	`
 
-	args := []interface{}{maxItems}
+	args := []interface{}{e.cfg.CDSWProjectID, maxItems}
 
 	rows, err := e.db.QueryContext(ctx, query, args...)
 
@@ -154,21 +157,7 @@ func (e *ExperimentRuns) ListExperimentRunIdsForMetricReconciliation(ctx context
 	return response, nil
 }
 
-func (e *ExperimentRuns) UpdateRemoteRunId(ctx context.Context, id int64, remoteRunId string) error {
-	query := `
-	UPDATE experiment_runs
-	SET remote_run_id = ?
-	WHERE id = ?
-	`
-	args := []interface{}{remoteRunId, id}
-	_, err := e.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (e *ExperimentRuns) UpdateExperimentRunReconcileMetrics(ctx context.Context, id int64, reconcileMetrics bool) error {
+func (e *ExperimentRuns) MarkExperimentRunForMetricsReconciliation(ctx context.Context, id int64, reconcileMetrics bool) error {
 	query := `
 	UPDATE experiment_runs
 	SET reconcile_metrics = ?
@@ -182,13 +171,13 @@ func (e *ExperimentRuns) UpdateExperimentRunReconcileMetrics(ctx context.Context
 	return nil
 }
 
-func (e *ExperimentRuns) UpdateExperimentRunUpdatedAndTimestamp(ctx context.Context, id int64, updated bool, updatedAt time.Time) error {
+func (e *ExperimentRuns) MarkExperimentRunForReconciliation(ctx context.Context, id int64, reconcile bool) error {
 	query := `
 	UPDATE experiment_runs
 	SET updated = ?, updated_ts = ?
 	WHERE id = ? 
 	`
-	args := []interface{}{updated, updatedAt, id}
+	args := []interface{}{reconcile, time.Now(), id}
 	_, err := e.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
@@ -208,12 +197,8 @@ func (e *ExperimentRuns) DeleteExperimentRun(ctx context.Context, experimentId s
 
 func ExperimentRunInstance(scanner lsql.RowScanner) (*db.ExperimentRun, error) {
 	run := &db.ExperimentRun{}
-	remoteRunId := sql.NullString{}
-	if err := scanner.Scan(&run.Id, &run.ExperimentId, &run.RunId, &remoteRunId, &run.Created, &run.Updated, &run.Deleted, &run.CreatedTs, &run.UpdatedTs); err != nil {
+	if err := scanner.Scan(&run.Id, &run.ExperimentId, &run.RunId, &run.Created, &run.Updated, &run.Deleted, &run.CreatedTs, &run.UpdatedTs); err != nil {
 		return nil, err
-	}
-	if remoteRunId.Valid {
-		run.RemoteRunId = remoteRunId.String
 	}
 	return run, nil
 }
