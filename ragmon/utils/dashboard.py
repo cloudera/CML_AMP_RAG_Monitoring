@@ -497,8 +497,8 @@ def show_detailed_logs_component(
                 )
                 st.dataframe(live_results_df)
                 return
-            live_results_df["timestamp"] = live_results_df["timestamp"].dt.strftime(
-                "%Y-%m-%d %H:%M:%S"
+            live_results_df["timestamp"] = pd.to_datetime(
+                live_results_df["timestamp"], format="mixed", dayfirst=True
             )
             live_results_df = live_results_df.rename(
                 columns={
