@@ -402,20 +402,20 @@ def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the data from the input dictionary.
     """
-    # keys_to_keep = ["run_id"]
+    keys_to_keep = ["run_id"]
     rows = []
     for json_dict in json_list:
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
         st.write(json_data)
-        # for key, value in json_data.items():
-        #     if not isinstance(value, List) or not isinstance(value, Dict):
-        #         keys_to_keep.append(key)
-        # json_data = {
-        #     key: value for key, value in json_data.items() if key in keys_to_keep
-        # }
+        for key, value in json_data.items():
+            if not isinstance(value, list) or not isinstance(value, dict):
+                keys_to_keep.append(key)
+        json_data = {
+            key: value for key, value in json_data.items() if key in keys_to_keep
+        }
         rows.append(json_data)
-    return pd.DataFrame(json_list)
+    return pd.DataFrame(rows)
 
 
 def get_df_from_json_dicts(json_dicts: Dict[str, List[Dict[str, Any]]]) -> pd.DataFrame:
