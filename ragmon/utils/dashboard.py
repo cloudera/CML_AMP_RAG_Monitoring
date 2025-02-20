@@ -392,7 +392,7 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     return metrics_df
 
 
-def get_df_from_json_list(json_dicts: List[Dict[str, Any]]) -> pd.DataFrame:
+def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
@@ -404,8 +404,8 @@ def get_df_from_json_list(json_dicts: List[Dict[str, Any]]) -> pd.DataFrame:
     """
     keys_to_keep = ["run_id"]
     json_list = []
-    for json_dict in json_dicts:
-        st.write(json_dict)
+    st.write(json_list)
+    for json_dict in json_list:
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
         for key, value in json_data.items():
