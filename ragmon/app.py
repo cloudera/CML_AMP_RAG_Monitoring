@@ -84,7 +84,7 @@ def setup_sidebar():
         st.page_link("pages/1_Home.py", label="Home", icon=":material/home:")
         st.page_link(
             "pages/2_Monitoring_Dashboard.py",
-            label="RAG Studio Monitoring Dashboard",
+            label="RAG Studio",
             icon=":material/monitoring:",
         )
         st.page_link(

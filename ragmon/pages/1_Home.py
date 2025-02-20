@@ -109,8 +109,3 @@ Real-time monitoring for RAG chatbots—powered by best practices and leading fr
 4. Monitor real-time quality metrics :material/monitoring:
 """
 )
-_, _, button_col, _, _ = st.columns([1, 1, 1, 1, 1])
-
-with button_col:
-    if st.button("Get Started", key="get_started"):
-        st.switch_page("pages/2_Data_Source.py")
