@@ -402,7 +402,7 @@ def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     Returns:
         pd.DataFrame: A DataFrame containing the data from the input dictionary.
     """
-    keys_to_keep = ["run_id"]
+    # keys_to_keep = ["run_id"]
     rows = []
     for json_dict in json_list:
         json_data = json_dict["value"]
