@@ -407,7 +407,6 @@ def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     for json_dict in json_list:
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
-        st.write(json_data)
         for key, value in json_data.items():
             if not isinstance(value, (list, dict)):
                 keys_to_keep.append(key)
@@ -500,7 +499,7 @@ def show_detailed_logs_component(
             live_results_df["timestamp"] = pd.to_datetime(
                 live_results_df["timestamp"], format="mixed", dayfirst=True
             )
-            live_results_df.sort_values(by="timestamp".title(), ascending=False)
+            live_results_df.sort_values(by="timestamp", ascending=False)
             live_results_df = live_results_df.rename(
                 columns={
                     x: x.replace("_", " ").title() for x in live_results_df.columns
