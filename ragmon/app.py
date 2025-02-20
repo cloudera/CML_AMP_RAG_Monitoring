@@ -55,23 +55,15 @@ def setup_navigation():
         [
             st.Page("pages/1_Home.py", title="Home"),
             st.Page(
-                "pages/2_Data_Source.py",
-                title="Data Sources",
+                "pages/2_Monitoring_Dashboard.py",
+                title="RAG Studio Monitoring Dashboard",
             ),
             st.Page(
-                "pages/3_RAG_Chat.py",
-                title="RAG Chat",
-            ),
-            st.Page(
-                "pages/4_Monitoring_Dashboard.py",
-                title="Monitoring Dashboard",
-            ),
-            st.Page(
-                "pages/5_Custom_Evaluators.py",
+                "pages/3_Custom_Evaluators.py",
                 title="Custom Evaluators",
             ),
             st.Page(
-                "pages/6_Leave_Feedback.py",
+                "pages/4_Leave_Feedback.py",
                 title="Leave Feedback",
             ),
         ],
@@ -80,7 +72,7 @@ def setup_navigation():
     centered_pages = ["Home"]
     st.set_page_config(
         layout="centered" if pg.title in centered_pages else "wide",
-        page_title="RAG Monitoring AMP",
+        page_title="Monitoring AMP",
     )
     pg.run()
 
@@ -91,23 +83,17 @@ def setup_sidebar():
         st.image(logo_path, use_container_width=True)
         st.page_link("pages/1_Home.py", label="Home", icon=":material/home:")
         st.page_link(
-            "pages/2_Data_Source.py",
-            label="Data Sources",
-            icon=":material/stacks:",
-        )
-        st.page_link("pages/3_RAG_Chat.py", label="RAG Chat", icon=":material/forum:")
-        st.page_link(
-            "pages/4_Monitoring_Dashboard.py",
-            label="Monitoring Dashboard",
+            "pages/2_Monitoring_Dashboard.py",
+            label="RAG Studio Monitoring Dashboard",
             icon=":material/monitoring:",
         )
         st.page_link(
-            "pages/5_Custom_Evaluators.py",
+            "pages/3_Custom_Evaluators.py",
             label="Custom Evaluators",
             icon=":material/custom_typography:",
         )
         st.page_link(
-            "pages/6_Leave_Feedback.py",
+            "pages/4_Leave_Feedback.py",
             label="Leave Feedback",
             icon=":material/comment:",
         )
