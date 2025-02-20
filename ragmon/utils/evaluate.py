@@ -386,9 +386,9 @@ async def evaluate_json_data(data):
                         "response_id": data.id,
                         "input": query,
                         "output": response,
-                        "source_nodes": data.source_nodes,
                         "query_keywords": ", ".join(query_keywords or []),
                         "response_keywords": ", ".join(response_keywords or []),
+                        "source_nodes": data.source_nodes,
                     },
                     artifact_file="live_results.json",
                 )

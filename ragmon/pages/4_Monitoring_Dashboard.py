@@ -258,6 +258,12 @@ if experiments:
                 json_df = get_df_from_json_dicts(json_dicts)
 
                 # merge json_df with params_df
+                # check common columns in both dataframes
+                common_columns = list(
+                    set(json_df.columns).intersection(set(params_df.columns))
+                )
+                if common_columns:
+                    params_df = params_df.drop(columns=common_columns)
                 params_df = pd.merge(json_df, params_df, on="run_id", how="left")
 
             # Find json file which contains the keywords

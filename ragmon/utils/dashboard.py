@@ -487,10 +487,6 @@ def show_detailed_logs_component(
             live_results_df["feedback"] = live_results_df["feedback"].apply(
                 lambda x: "👍" if x == 1 else "👎" if x == 0 else "🤷‍♂️"
             )
-        # sort the columns in alphabetical order
-        live_results_df = live_results_df.reindex(
-            sorted(live_results_df.columns), axis=1
-        )
         with st.expander(":material/live_help: **Detailed Logs**", expanded=True):
             if not "timestamp" in live_results_df.columns:
                 live_results_df = live_results_df.rename(
