@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Union, Optional
+from typing import Any, Dict, List, Union, Optional
 from functools import reduce
 import numpy as np
 import pandas as pd
@@ -392,7 +392,7 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     return metrics_df
 
 
-def get_df_from_json_list(json_dicts: List[Dict]) -> pd.DataFrame:
+def get_df_from_json_list(json_dicts: List[Dict[str, Any]]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
@@ -417,7 +417,7 @@ def get_df_from_json_list(json_dicts: List[Dict]) -> pd.DataFrame:
     return pd.DataFrame(json_list)
 
 
-def get_df_from_json_dict(json_dict: Dict[List[Dict]]) -> pd.DataFrame:
+def get_df_from_json_dict(json_dict: Dict[List[Dict[str, Any]]]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
