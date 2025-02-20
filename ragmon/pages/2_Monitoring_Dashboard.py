@@ -260,10 +260,10 @@ if experiments:
                 # merge json_df with params_df
                 # check common columns in both dataframes except
                 common_columns = list(
-                    set(json_df.columns).intersection(set(params_df.columns))
+                    set(json_df.drop(columns=["run_id"]).columns).intersection(
+                        set(params_df.drop(columns=["run_id"]).columns)
+                    )
                 )
-                if "run_id" in common_columns:
-                    common_columns.remove("run_id")
                 if common_columns:
                     params_df = params_df.drop(columns=common_columns)
                 params_df = pd.merge(json_df, params_df, on="run_id", how="left")
