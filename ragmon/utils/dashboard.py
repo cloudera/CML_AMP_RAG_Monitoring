@@ -404,16 +404,16 @@ def get_df_from_json_list(json_list: List[Dict[str, Any]]) -> pd.DataFrame:
     """
     keys_to_keep = ["run_id"]
     rows = []
-    st.write(json_list)
     for json_dict in json_list:
         json_data = json_dict["value"]
         json_data["run_id"] = json_dict["experiment_run_id"]
-        for key, value in json_data.items():
-            if not isinstance(value, List) or not isinstance(value, Dict):
-                keys_to_keep.append(key)
-        json_data = {
-            key: value for key, value in json_data.items() if key in keys_to_keep
-        }
+        st.write(json_data)
+        # for key, value in json_data.items():
+        #     if not isinstance(value, List) or not isinstance(value, Dict):
+        #         keys_to_keep.append(key)
+        # json_data = {
+        #     key: value for key, value in json_data.items() if key in keys_to_keep
+        # }
         rows.append(json_data)
     return pd.DataFrame(json_list)
 
