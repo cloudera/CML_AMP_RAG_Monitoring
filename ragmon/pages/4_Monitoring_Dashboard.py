@@ -256,11 +256,11 @@ if experiments:
             # build dataframes from json files
             if json_files:
                 json_df = get_df_from_json_dicts(json_dicts)
+                st.write(json_df)
 
                 # merge json_df with params_df
-                params_df = pd.merge(json_df, params_df, on="run_id", how="left")
+                # params_df = pd.merge(json_df, params_df, on="run_id", how="left")
 
-                st.write(json_df)
                 st.write(params_df)
 
             # Find json file which contains the keywords
