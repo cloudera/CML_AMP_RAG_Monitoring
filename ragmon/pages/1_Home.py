@@ -107,12 +107,13 @@ Real-time monitoring for AI Studios by best practices and leading frameworks.
 rag_studio, syn_data_studio, ft_studio, ml_studio = st.columns(4, border=False)
 
 with rag_studio:
-    st.button(
+    rag_studio_button = st.button(
         ":material/chat_apps_script: :material/data_table: \nRAG Studio",
         key="rag_studio",
-        on_click=st.switch_page("pages/2_Monitoring_Dashboard.py"),
         use_container_width=True,
     )
+    if rag_studio_button:
+        st.switch_page("pages/2_Monitoring_Dashboard.py")
 
 with syn_data_studio:
     st.button(
