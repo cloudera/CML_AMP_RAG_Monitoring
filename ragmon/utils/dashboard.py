@@ -417,7 +417,7 @@ def get_df_from_json_list(json_dicts: List[Dict[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame(json_list)
 
 
-def get_df_from_json_dict(json_dict: Dict[List[Dict[str, Any]]]) -> pd.DataFrame:
+def get_df_from_json_dict(json_dict: Dict[str, List[Dict[str, Any]]]) -> pd.DataFrame:
     """
     Converts a dictionary of lists to a pandas DataFrame.
 
