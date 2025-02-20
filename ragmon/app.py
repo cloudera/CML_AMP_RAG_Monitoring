@@ -85,7 +85,7 @@ def setup_sidebar():
         st.page_link(
             "pages/2_Monitoring_Dashboard.py",
             label="RAG Studio",
-            icon=":material/monitoring:",
+            icon=":material/chat_apps_script:",
         )
         st.page_link(
             "pages/3_Custom_Evaluators.py",

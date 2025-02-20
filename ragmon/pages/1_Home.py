@@ -98,14 +98,42 @@ with img_col:
     st.image(logo_path, use_container_width=True)
 st.markdown(
     """
-Real-time monitoring for RAG chatbots—powered by best practices and leading frameworks.
+Real-time monitoring for AI Studios by best practices and leading frameworks.
 
-**How AMP Works:**
-
-1. Create Data Sources :material/stacks:
-2. Upload Documents :material/upload_file:
-2. Chat with your Documents :material/forum:
-3. Provide :material/thumb_up: / :material/thumb_down: or text feedback :material/comment:
-4. Monitor real-time quality metrics :material/monitoring:
+**Select a Studio to monitor.**
 """
 )
+
+rag_studio, syn_data_studio, ft_studio, ml_studio = st.columns(4, border=False)
+
+with rag_studio:
+    st.button(
+        ":material/chat_apps_script: :material/data_table: \nRAG Studio",
+        key="rag_studio",
+        on_click=st.switch_page("pages/2_Monitoring_Dashboard.py"),
+        use_container_width=True,
+    )
+
+with syn_data_studio:
+    st.button(
+        ":material/precision_manufacturing: :material/description: \nSynthetic Data Studio",
+        key="syn_data_studio",
+        use_container_width=True,
+        disabled=True,
+    )
+
+with ft_studio:
+    st.button(
+        ":material/model_training: :material/tune: \nFine Tuning Studio",
+        key="ft_studio",
+        use_container_width=True,
+        disabled=True,
+    )
+
+with ml_studio:
+    st.button(
+        ":material/analytics: :material/schema: \nTraditional ML Monitoring",
+        key="ml_studio",
+        use_container_width=True,
+        disabled=True,
+    )

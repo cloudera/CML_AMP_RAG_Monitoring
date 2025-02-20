@@ -75,15 +75,10 @@ from utils.dashboard import (
 
 warnings.filterwarnings("ignore")
 
-file_path = Path(os.path.realpath(__file__))
-st_app_dir = file_path.parents[1]
-data_dir = os.path.join(st_app_dir, "data")
-custom_evals_dir = Path(os.path.join(data_dir, "custom_evaluators"))
-
 title_col, refresh_col = st.columns([12, 1])
 # dashboard title
 with title_col:
-    st.title(":material/monitoring: Monitoring Dashboard")
+    st.title(":material/monitoring: RAG Studio")
 
 with refresh_col:
     if st.button(
