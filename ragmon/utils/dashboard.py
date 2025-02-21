@@ -10,6 +10,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from streamlit.delta_generator import DeltaGenerator
 from wordcloud import WordCloud
+from streamlit_extras.dataframe_explorer import dataframe_explorer
 
 from data_types import (
     MLFlowStoreMetricRequest,
@@ -423,7 +424,10 @@ def show_detailed_logs_component(
                     x: x.replace("_", " ").title() for x in live_results_df.columns
                 }
             )
-            st.write(live_results_df)
+            filtered_live_results_df = dataframe_explorer(
+                df=live_results_df, case=False
+            )
+            st.dataframe(filtered_live_results_df)
 
 
 def show_i_o_component(

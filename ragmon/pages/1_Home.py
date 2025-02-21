@@ -42,7 +42,6 @@ import subprocess
 import streamlit as st
 import os
 from pathlib import Path
-from streamlit_card import card
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))
@@ -100,43 +99,60 @@ with img_col:
 st.markdown(
     """
 Real-time monitoring for AI Studios by best practices and leading frameworks.
-
-**Select a Studio to monitor.**
 """
 )
 
-rag_studio_col, sd_studio_col, ft_studio_col, agent_studio_col = st.columns(4)
-
-rag_studio = card(
-    title="RAG Studio",
-    text="Real-time monitoring for RAG Studio",
-    key="rag_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
+rag_studio_col, sd_studio_col, ft_studio_col, agent_studio_col = st.columns(
+    4, border=True, vertical_alignment="center"
 )
 
-if rag_studio:
-    st.switch_page("pages/2_Monitoring_Dashboard.py")
+with rag_studio_col:
+    st.image(
+        "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
+        use_container_width=True,
+    )
+    st.markdown(
+        """
+        **RAG Studio**
+        Real-time monitoring for RAG Studio
+        """
+    )
+    st.page_link(
+        "pages/2_Monitoring_Dashboard.py", label="Open", icon=":material/analytics:"
+    )
 
-sd_studio = card(
-    title="Synthetic Data Studio",
-    text="",
-    key="sd_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
-)
-st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
+with sd_studio_col:
+    st.image(
+        "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
+        use_container_width=True,
+    )
+    st.markdown(
+        """
+        **Synthetic Data Studio**
+        ":gray-background[:material/wb_sunny: Coming SOON!]"
+        """
+    )
 
-ft_studio = card(
-    title="Fine-Tuning Studio",
-    text="",
-    key="ft_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
-)
-st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
+with ft_studio_col:
+    st.image(
+        "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
+        use_container_width=True,
+    )
+    st.markdown(
+        """
+        **Fine-Tuning Studio**
+        ":gray-background[:material/wb_sunny: Coming SOON!]"
+        """
+    )
 
-agent_studio = card(
-    title="Agent Studio",
-    text=":material/wb_sunny: Coming SOON!",
-    key="agent_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
-)
-st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
+with agent_studio_col:
+    st.image(
+        "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
+        use_container_width=True,
+    )
+    st.markdown(
+        """
+        **Agent Studio**
+        ":gray-background[:material/wb_sunny: Coming SOON!]"
+        """
+    )
