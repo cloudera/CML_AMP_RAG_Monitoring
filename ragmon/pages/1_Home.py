@@ -105,14 +105,18 @@ Real-time monitoring for AI Studios by best practices and leading frameworks.
 """
 )
 
-rag_studio, syn_data_studio, ft_studio, ml_studio = st.columns(4, border=False)
+syn_data_studio, ft_studio, ml_studio = st.columns(3, border=False)
 
-with rag_studio:
-    card(
-        title=":material/chat_apps_script: :material/monitor:",
-        text="RAG Studio",
-        key="rag_studio",
-    )
+
+rag_studio = card(
+    title="RAG Studio",
+    text="Real-time monitoring for RAG Studio",
+    key="rag_studio",
+    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
+)
+
+if rag_studio:
+    st.switch_page("pages/2_Monitoring_Dashboard.py")
 
 with syn_data_studio:
     st.button(
