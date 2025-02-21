@@ -281,20 +281,12 @@ async def evaluate_json_data(data):
                 # log request params
                 mlflow.log_params(
                     {
-                        "input": query,
-                        "output": response,
                         "data_source_id": data_source_id,
                         "top_k": top_k,
                         "chunk_size": chunk_size,
                         "model_name": model_name,
-                        "timestamp": data.timestamp,
                     }
                 )
-
-                # log contexts
-                if contexts:
-                    for i, context in enumerate(contexts):
-                        mlflow.log_param(f"context_{i}", context)
 
                 # Evaluate the response
                 (
@@ -380,21 +372,34 @@ async def evaluate_json_data(data):
                 query_keywords = extract_keywords(query)
                 response_keywords = extract_keywords(response)
 
-                # log response
+                # store response in dict to log
+                response_table = {
+                    "response_id": data.id,
+                    "input": query,
+                    "output": response,
+                    "query_keywords": ", ".join(query_keywords or []),
+                    "response_keywords": ", ".join(response_keywords or []),
+                    "timestamp": data.timestamp,
+                }
+
+                # log context texts
+                if contexts:
+                    for i, context in enumerate(contexts):
+                        response_table[f"context_{i}"] = context
+
                 mlflow.log_table(
-                    {
-                        "response_id": data.id,
-                        "input": query,
-                        "output": response,
-                        "query_keywords": ", ".join(query_keywords or []),
-                        "response_keywords": ", ".join(response_keywords or []),
-                        "source_nodes": data.source_nodes,
-                    },
+                    response_table,
                     artifact_file="live_results.json",
                 )
 
+                # log the source nodes
+                mlflow.log_table(
+                    data.source_nodes.__dict__,
+                    artifact_file="source_nodes.json",
+                )
+
                 logger.info(
-                    "Logged keywords for exp id %s and run id %s",
+                    "Logged response and keywords for exp id %s and run id %s",
                     data.mlflow_experiment_id,
                     data.mlflow_run_id,
                 )
