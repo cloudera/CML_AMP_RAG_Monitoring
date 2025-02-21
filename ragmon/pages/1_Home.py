@@ -111,12 +111,8 @@ with rag_studio_col:
         "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
         use_container_width=True,
     )
-    st.markdown(
-        """
-        **RAG Studio**
-        Real-time monitoring for RAG Studio
-        """
-    )
+    st.markdown("**RAG Studio**")
+    st.markdown("Real-time monitoring for AI Studios.")
     st.page_link(
         "pages/2_Monitoring_Dashboard.py", label="Open", icon=":material/analytics:"
     )
@@ -126,11 +122,13 @@ with sd_studio_col:
         "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
         use_container_width=True,
     )
-    st.markdown(
-        """
-        **Synthetic Data Studio**
-        ":gray-background[:material/wb_sunny: Coming SOON!]"
-        """
+    st.markdown("**Synthetic Data Studio**")
+    st.markdown(":gray-background[:material/wb_sunny: Coming SOON!]")
+    st.page_link(
+        "pages/2_Monitoring_Dashboard.py",
+        label="Open",
+        icon=":material/analytics:",
+        disabled=True,
     )
 
 with ft_studio_col:
@@ -138,11 +136,13 @@ with ft_studio_col:
         "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
         use_container_width=True,
     )
-    st.markdown(
-        """
-        **Fine-Tuning Studio**
-        ":gray-background[:material/wb_sunny: Coming SOON!]"
-        """
+    st.markdown("**Fine-tuning Studio**")
+    st.markdown(":gray-background[:material/wb_sunny: Coming SOON!]")
+    st.page_link(
+        "pages/2_Monitoring_Dashboard.py",
+        label="Open",
+        icon=":material/analytics:",
+        disabled=True,
     )
 
 with agent_studio_col:
@@ -150,9 +150,11 @@ with agent_studio_col:
         "https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
         use_container_width=True,
     )
-    st.markdown(
-        """
-        **Agent Studio**
-        ":gray-background[:material/wb_sunny: Coming SOON!]"
-        """
+    st.markdown("**Agent Studio**")
+    st.markdown(":gray-background[:material/wb_sunny: Coming SOON!]")
+    st.page_link(
+        "pages/2_Monitoring_Dashboard.py",
+        label="Open",
+        icon=":material/analytics:",
+        disabled=True,
     )
