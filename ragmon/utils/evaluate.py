@@ -374,12 +374,12 @@ async def evaluate_json_data(data):
 
                 # store response in dict to log
                 response_table = {
+                    "timestamp": data.timestamp,
                     "response_id": data.id,
                     "input": query,
                     "output": response,
                     "query_keywords": ", ".join(query_keywords or []),
                     "response_keywords": ", ".join(response_keywords or []),
-                    "timestamp": data.timestamp,
                 }
 
                 # log context texts
@@ -394,7 +394,7 @@ async def evaluate_json_data(data):
 
                 # log the source nodes
                 mlflow.log_table(
-                    data.source_nodes.__dict__,
+                    {f"node_{i}": node for i, node in enumerate(data.source_nodes)},
                     artifact_file="source_nodes.json",
                 )
 
