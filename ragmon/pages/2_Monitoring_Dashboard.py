@@ -122,7 +122,6 @@ if experiments:
         # create requests for metric names, get metric names and sort it
         metric_names = get_metric_names(selected_experiment_request)
         metric_names = sorted(metric_names)
-        st.write(metric_names)
 
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
         json_files = [x for x in metric_names if x.endswith(".json")]
@@ -248,6 +247,8 @@ if experiments:
                         metric_names=[json_file],
                     )
                     json_dicts[json_file] = get_json(json_file_request)
+
+            st.write(json_dicts)
 
             # build dataframes from json files
             if json_files:
