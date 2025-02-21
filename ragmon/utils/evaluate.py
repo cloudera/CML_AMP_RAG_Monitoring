@@ -407,9 +407,10 @@ async def evaluate_json_data(data):
                 )
 
                 # log the source nodes
-                source_nodes_dict = convert_list_of_dicts_to_dict_of_lists(
-                    data.source_nodes
-                )
+                source_nodes = [
+                    node.model_dump(mode="json") for node in data.source_nodes
+                ]
+                source_nodes_dict = convert_list_of_dicts_to_dict_of_lists(source_nodes)
                 mlflow.log_table(
                     source_nodes_dict,
                     artifact_file="source_nodes.json",
