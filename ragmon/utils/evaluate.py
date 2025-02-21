@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 import sys
-from typing import Union, Tuple, Sequence, Dict
+from typing import Any, Union, Tuple, Sequence, Dict
 
 from uvicorn.logging import DefaultFormatter
 
@@ -63,6 +63,20 @@ def get_custom_evaluators():
             evaluator_name = eval_json.pop("name")
             custom_evaluators[evaluator_name] = eval_json
     return custom_evaluators
+
+
+def convert_list_of_dicts_to_dict_of_lists(list_of_dicts: Sequence[Dict[str, Any]]):
+    if not list_of_dicts:
+        return {}
+
+    keys = list_of_dicts[0].keys()
+    dict_of_lists = {key: [] for key in keys}
+
+    for item in list_of_dicts:
+        for key, value in item.items():
+            dict_of_lists[key].append(value)
+
+    return dict_of_lists
 
 
 async def evaluate_response(
@@ -393,8 +407,11 @@ async def evaluate_json_data(data):
                 )
 
                 # log the source nodes
+                source_nodes_dict = convert_list_of_dicts_to_dict_of_lists(
+                    data.source_nodes
+                )
                 mlflow.log_table(
-                    {f"node_{i}": node for i, node in enumerate(data.source_nodes)},
+                    source_nodes_dict,
                     artifact_file="source_nodes.json",
                 )
 
