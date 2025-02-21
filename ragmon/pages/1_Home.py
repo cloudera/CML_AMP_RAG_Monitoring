@@ -112,7 +112,8 @@ with rag_studio_col:
         use_container_width=True,
     )
     st.markdown("**RAG Studio**")
-    st.markdown("Real-time monitoring for AI Studios.")
+    st.markdown("")
+    st.markdown("")
     st.page_link(
         "pages/2_Monitoring_Dashboard.py", label="Open", icon=":material/analytics:"
     )
@@ -137,6 +138,7 @@ with ft_studio_col:
         use_container_width=True,
     )
     st.markdown("**Fine-tuning Studio**")
+    st.markdown("")
     st.markdown(":gray-background[:material/wb_sunny: Coming SOON!]")
     st.page_link(
         "pages/2_Monitoring_Dashboard.py",
@@ -151,6 +153,7 @@ with agent_studio_col:
         use_container_width=True,
     )
     st.markdown("**Agent Studio**")
+    st.markdown("")
     st.markdown(":gray-background[:material/wb_sunny: Coming SOON!]")
     st.page_link(
         "pages/2_Monitoring_Dashboard.py",
