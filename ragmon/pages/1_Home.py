@@ -105,8 +105,6 @@ Real-time monitoring for AI Studios by best practices and leading frameworks.
 """
 )
 
-syn_data_studio, ft_studio, ml_studio = st.columns(3, border=False)
-
 
 rag_studio = card(
     title="RAG Studio",
@@ -118,26 +116,23 @@ rag_studio = card(
 if rag_studio:
     st.switch_page("pages/2_Monitoring_Dashboard.py")
 
-with syn_data_studio:
-    st.button(
-        ":material/precision_manufacturing: :material/description: \nSynthetic Data Studio",
-        key="syn_data_studio",
-        use_container_width=True,
-        disabled=True,
-    )
+sd_studio = card(
+    title="Synthetic Data Studio",
+    text=":material/wb_sunny: Coming SOON!",
+    key="sd_studio",
+    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
+)
 
-with ft_studio:
-    st.button(
-        ":material/model_training: :material/tune: \nFine Tuning Studio",
-        key="ft_studio",
-        use_container_width=True,
-        disabled=True,
-    )
+ft_studio = card(
+    title="Fine-Tuning Studio",
+    text=":material/wb_sunny: Coming SOON!",
+    key="ft_studio",
+    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
+)
 
-with ml_studio:
-    st.button(
-        ":material/analytics: :material/schema: \nTraditional ML Monitoring",
-        key="ml_studio",
-        use_container_width=True,
-        disabled=True,
-    )
+agent_studio = card(
+    title="Agent Studio",
+    text=":material/wb_sunny: Coming SOON!",
+    key="agent_studio",
+    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
+)
