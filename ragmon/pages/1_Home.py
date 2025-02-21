@@ -123,7 +123,7 @@ sd_studio = card(
     key="sd_studio",
     image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
 )
-st.caption(":material/wb_sunny: Coming SOON!")
+st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
 
 ft_studio = card(
     title="Fine-Tuning Studio",
@@ -131,7 +131,7 @@ ft_studio = card(
     key="ft_studio",
     image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
 )
-st.caption(":material/wb_sunny: Coming SOON!")
+st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
 
 agent_studio = card(
     title="Agent Studio",
@@ -139,4 +139,4 @@ agent_studio = card(
     key="agent_studio",
     image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
 )
-st.caption(":material/wb_sunny: Coming SOON!")
+st.caption(":gray-background[:material/wb_sunny: Coming SOON!]")
