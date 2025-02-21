@@ -105,34 +105,39 @@ Real-time monitoring for AI Studios by best practices and leading frameworks.
 """
 )
 
+rag_studio_col, sd_studio_col, ft_studio_col, agent_studio_col = st.columns(4)
 
-rag_studio = card(
-    title="RAG Studio",
-    text="Real-time monitoring for RAG Studio",
-    key="rag_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
-)
+with rag_studio_col:
+    rag_studio = card(
+        title="RAG Studio",
+        text="Real-time monitoring for RAG Studio",
+        key="rag_studio",
+        image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/rag-studio-banner.svg",
+    )
 
-if rag_studio:
-    st.switch_page("pages/2_Monitoring_Dashboard.py")
+    if rag_studio:
+        st.switch_page("pages/2_Monitoring_Dashboard.py")
 
-sd_studio = card(
-    title="Synthetic Data Studio",
-    text=":material/wb_sunny: Coming SOON!",
-    key="sd_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
-)
+with sd_studio_col:
+    sd_studio = card(
+        title="Synthetic Data Studio",
+        text=":material/wb_sunny: Coming SOON!",
+        key="sd_studio",
+        image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/synthetic-data-studio-banner.svg",
+    )
 
-ft_studio = card(
-    title="Fine-Tuning Studio",
-    text=":material/wb_sunny: Coming SOON!",
-    key="ft_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
-)
+with ft_studio_col:
+    ft_studio = card(
+        title="Fine-Tuning Studio",
+        text=":material/wb_sunny: Coming SOON!",
+        key="ft_studio",
+        image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/fine-tuning-studio-banner.svg",
+    )
 
-agent_studio = card(
-    title="Agent Studio",
-    text=":material/wb_sunny: Coming SOON!",
-    key="agent_studio",
-    image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
-)
+with agent_studio_col:
+    agent_studio = card(
+        title="Agent Studio",
+        text=":material/wb_sunny: Coming SOON!",
+        key="agent_studio",
+        image="https://raw.githubusercontent.com/cloudera/AI-Studios/refs/heads/master/images/agent-studio-banner.svg",
+    )
