@@ -27,4 +27,5 @@ dependencies = [
     "keybert>=0.8.5",
     "wordcloud>=1.9.4",
     "streamlit==1.42.0",
+    "streamlit-extras>=0.5.5",
 ]

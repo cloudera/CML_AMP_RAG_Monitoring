@@ -42,6 +42,7 @@ import subprocess
 import streamlit as st
 import os
 from pathlib import Path
+from streamlit_card import card
 
 # get resources directory
 file_path = Path(os.path.realpath(__file__))
@@ -107,13 +108,11 @@ Real-time monitoring for AI Studios by best practices and leading frameworks.
 rag_studio, syn_data_studio, ft_studio, ml_studio = st.columns(4, border=False)
 
 with rag_studio:
-    rag_studio_button = st.button(
-        ":material/chat_apps_script: :material/data_table: \nRAG Studio",
+    card(
+        title=":material/chat_apps_script: :material/monitor:",
+        text="RAG Studio",
         key="rag_studio",
-        use_container_width=True,
     )
-    if rag_studio_button:
-        st.switch_page("pages/2_Monitoring_Dashboard.py")
 
 with syn_data_studio:
     st.button(
