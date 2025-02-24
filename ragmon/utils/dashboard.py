@@ -392,13 +392,14 @@ def show_parameters_overview_component(
     if not params_df.empty:
         params_container = st.container(border=True)
         # Combined configuration across all runs
+        st.write("### Parameters")
         with params_container:
-            st.write("### Parameters")
             if "run_id" in params_df.columns.to_list():
                 params_df = params_df.drop(columns=["run_id"])
             column_names = params_df.columns
             most_common_config = params_df.value_counts().idxmax()
             counts = params_df.value_counts().max()
+            st.write("**Most Common Configuration Parameters**")
             overview_param_cols = st.columns(len(column_names) + 1)
             for i, col in enumerate(overview_param_cols):
                 if i == len(column_names):

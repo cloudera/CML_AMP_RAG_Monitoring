@@ -106,184 +106,193 @@ if experiments:
         experiment_id=str(selected_experiment_id)
     )
 
-    # select run
-    runs = get_runs(selected_experiment_request)
+    dashboard_tab, settings_tab = st.tabs(["Dashboard", "Settings"])
 
-    if not runs:
-        st.write("No Metrics Logged Yet")
+    if dashboard_tab:
+        # select run
+        runs = get_runs(selected_experiment_request)
 
-    if runs:
-        run_ids = [run["experiment_run_id"] for run in runs]
+        if not runs:
+            st.write("No Metrics Logged Yet")
 
-        mock_precision_scores = np.random.random(len(run_ids))
-        mock_recall_scores = np.random.random(len(run_ids))
+        if runs:
+            run_ids = [run["experiment_run_id"] for run in runs]
 
-        # create requests for metric names, get metric names and sort it
-        metric_names = get_metric_names(selected_experiment_request)
-        metric_names = sorted(metric_names)
+            mock_precision_scores = np.random.random(len(run_ids))
+            mock_recall_scores = np.random.random(len(run_ids))
 
-        numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
-        json_files = [x for x in metric_names if x.endswith(".json")]
+            # create requests for metric names, get metric names and sort it
+            metric_names = get_metric_names(selected_experiment_request)
+            metric_names = sorted(metric_names)
 
-        # get parameters and construct a dataframe
-        params_df = get_params_df(run_ids=runs, experiment_id=selected_experiment_id)
+            numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
+            json_files = [x for x in metric_names if x.endswith(".json")]
 
-        # show parameters overview
-        show_parameters_overview_component(params_df)
-
-        # create requests for metrics
-        numeric_metrics_requests = {}
-
-        for metric_name in numeric_metrics:
-            metric_request = MLFlowStoreMetricRequest(
-                experiment_id=str(selected_experiment_id),
-                run_ids=run_ids,
-                metric_names=[metric_name],
+            # get parameters and construct a dataframe
+            params_df = get_params_df(
+                run_ids=runs, experiment_id=selected_experiment_id
             )
-            numeric_metrics_requests[metric_name] = metric_request
 
-        placeholder = st.empty()
+            # show parameters overview
+            show_parameters_overview_component(params_df)
 
-        # near real-time / live feed simulation
-        update_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+            # create requests for metrics
+            numeric_metrics_requests = {}
 
-        # get metrics responses
-        metric_dfs = {}
-        for metric_name, metric_request in numeric_metrics_requests.items():
-            metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
+            for metric_name in numeric_metrics:
+                metric_request = MLFlowStoreMetricRequest(
+                    experiment_id=str(selected_experiment_id),
+                    run_ids=run_ids,
+                    metric_names=[metric_name],
+                )
+                numeric_metrics_requests[metric_name] = metric_request
 
-        with placeholder.container():
-            # Non empty metrics
-            non_empty_metrics = [
-                metric_name
-                for metric_name, metric_df in metric_dfs.items()
-                if not metric_df.empty
-            ]
-            if non_empty_metrics:
-                metric_rows = [
-                    st.columns([1, 1, 1, 1, 1, 1])
-                    for _ in range(
-                        len(non_empty_metrics) // 6 + 1
-                        if len(non_empty_metrics) % 6 != 0
-                        else len(non_empty_metrics) // 6
-                    )
+            placeholder = st.empty()
+
+            # near real-time / live feed simulation
+            update_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            # get metrics responses
+            metric_dfs = {}
+            for metric_name, metric_request in numeric_metrics_requests.items():
+                metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
+
+            with placeholder.container():
+                # Non empty metrics
+                non_empty_metrics = [
+                    metric_name
+                    for metric_name, metric_df in metric_dfs.items()
+                    if not metric_df.empty
                 ]
-                with st.expander(
-                    ":material/analytics: **Metrics Overview**", expanded=True
-                ):
-                    metric_fig_rows = [
-                        st.columns([1, 1, 1], border=False)
+                if non_empty_metrics:
+                    metric_rows = [
+                        st.columns([1, 1, 1, 1, 1, 1])
                         for _ in range(
-                            len(non_empty_metrics) // 3 + 1
-                            if len(non_empty_metrics) % 3 != 0
-                            else len(non_empty_metrics) // 3
+                            len(non_empty_metrics) // 6 + 1
+                            if len(non_empty_metrics) % 6 != 0
+                            else len(non_empty_metrics) // 6
                         )
                     ]
-                for i, metric_name in enumerate(non_empty_metrics):
-                    metric_df = metric_dfs[metric_name]
-                    metric_kpi = metric_rows[i // 6][i % 6]
-                    if not "feedback" in metric_name.lower():
-                        show_numeric_metric_kpi(
-                            metric_key=metric_name,
-                            metrics_df=metric_df,
-                            kpi_placeholder=metric_kpi,
-                            label=metric_name.replace("_", " ").title(),
-                            tooltip=f"Average {metric_name.replace('_', ' ').title()}",
-                        )
-                    else:
-                        show_feedback_kpi(
-                            metric_key=metric_name,
-                            metrics_df=metric_df,
-                            kpi_placeholder=metric_kpi,
-                            label=metric_name.replace("_", " ").title(),
-                        )
-                    if "faithfulness" in metric_name.lower():
-                        metric_fig = metric_fig_rows[i // 3][i % 3]
-                        show_pie_chart_component(
-                            metric_key=metric_name,
-                            metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()}",
-                            labels=["Faithful", "Not Faithful"],
-                            update_timestamp=update_timestamp,
-                            fig_placeholder=metric_fig,
-                        )
-                    elif "relevance" in metric_name.lower():
-                        metric_fig = metric_fig_rows[i // 3][i % 3]
-                        show_pie_chart_component(
-                            metric_key=metric_name,
-                            metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()}",
-                            labels=["Relevant", "Not Relevant"],
-                            update_timestamp=update_timestamp,
-                            fig_placeholder=metric_fig,
-                        )
-                    elif "feedback" in metric_name.lower():
-                        metric_fig = metric_fig_rows[i // 3][i % 3]
-                        with metric_fig:
-                            feedback_df = metric_df
-                            show_feedback_component(
-                                feedback_df=feedback_df,
-                                label=metric_name.replace("_", " ").title(),
-                                update_timestamp=update_timestamp,
+                    with st.expander(
+                        ":material/analytics: **Metrics Overview**", expanded=True
+                    ):
+                        metric_fig_rows = [
+                            st.columns([1, 1, 1], border=False)
+                            for _ in range(
+                                len(non_empty_metrics) // 3 + 1
+                                if len(non_empty_metrics) % 3 != 0
+                                else len(non_empty_metrics) // 3
                             )
-                    else:
-                        metric_fig = metric_fig_rows[i // 3][i % 3]
-                        show_time_series_component(
-                            metric_key=metric_name,
-                            metrics_df=metric_df,
-                            title=f"{metric_name.replace('_', ' ').title()}",
-                            update_timestamp=update_timestamp,
-                            frequency="h",
-                            fig_placeholder=metric_fig,
+                        ]
+                    for i, metric_name in enumerate(non_empty_metrics):
+                        metric_df = metric_dfs[metric_name]
+                        metric_kpi = metric_rows[i // 6][i % 6]
+                        if not "feedback" in metric_name.lower():
+                            show_numeric_metric_kpi(
+                                metric_key=metric_name,
+                                metrics_df=metric_df,
+                                kpi_placeholder=metric_kpi,
+                                label=metric_name.replace("_", " ").title(),
+                                tooltip=f"Average {metric_name.replace('_', ' ').title()}",
+                            )
+                        else:
+                            show_feedback_kpi(
+                                metric_key=metric_name,
+                                metrics_df=metric_df,
+                                kpi_placeholder=metric_kpi,
+                                label=metric_name.replace("_", " ").title(),
+                            )
+                        if "faithfulness" in metric_name.lower():
+                            metric_fig = metric_fig_rows[i // 3][i % 3]
+                            show_pie_chart_component(
+                                metric_key=metric_name,
+                                metrics_df=metric_df,
+                                title=f"{metric_name.replace('_', ' ').title()}",
+                                labels=["Faithful", "Not Faithful"],
+                                update_timestamp=update_timestamp,
+                                fig_placeholder=metric_fig,
+                            )
+                        elif "relevance" in metric_name.lower():
+                            metric_fig = metric_fig_rows[i // 3][i % 3]
+                            show_pie_chart_component(
+                                metric_key=metric_name,
+                                metrics_df=metric_df,
+                                title=f"{metric_name.replace('_', ' ').title()}",
+                                labels=["Relevant", "Not Relevant"],
+                                update_timestamp=update_timestamp,
+                                fig_placeholder=metric_fig,
+                            )
+                        elif "feedback" in metric_name.lower():
+                            metric_fig = metric_fig_rows[i // 3][i % 3]
+                            with metric_fig:
+                                feedback_df = metric_df
+                                show_feedback_component(
+                                    feedback_df=feedback_df,
+                                    label=metric_name.replace("_", " ").title(),
+                                    update_timestamp=update_timestamp,
+                                )
+                        else:
+                            metric_fig = metric_fig_rows[i // 3][i % 3]
+                            show_time_series_component(
+                                metric_key=metric_name,
+                                metrics_df=metric_df,
+                                title=f"{metric_name.replace('_', ' ').title()}",
+                                update_timestamp=update_timestamp,
+                                frequency="h",
+                                fig_placeholder=metric_fig,
+                            )
+
+                json_dicts = {}
+
+                # build dataframes from json files
+                if json_files:
+                    # Get logged json files
+                    for json_file in json_files:
+                        json_file_request = MLFlowStoreMetricRequest(
+                            experiment_id=str(selected_experiment_id),
+                            run_ids=run_ids,
+                            metric_names=[json_file],
+                        )
+                        json_dicts[json_file] = get_json(json_file_request)
+                    json_df = get_df_from_json_dicts(json_dicts)
+
+                    # merge json_df with params_df
+                    # check common columns in both dataframes except
+                    common_columns = list(
+                        set(json_df.drop(columns=["run_id"]).columns).intersection(
+                            set(params_df.drop(columns=["run_id"]).columns)
+                        )
+                    )
+                    if common_columns:
+                        params_df = params_df.drop(columns=common_columns)
+                    params_df = pd.merge(json_df, params_df, on="run_id", how="left")
+
+                # Find json file which contains the keywords
+                if json_dicts:
+                    keywords_file = None
+                    for json_file, json_list in json_dicts.items():
+                        for d in json_list:
+                            if keywords_in_dict(d["value"]):
+                                keywords_file = json_file
+                                break
+                        if keywords_file:
+                            break
+
+                    # Show keywords wordcloud
+                    if keywords_file:
+                        dict_w_keyword = json_dicts.get(keywords_file, None)
+                        show_wordcloud_component(
+                            live_results_dict=dict_w_keyword,
                         )
 
-            json_dicts = {}
+                metrics_dfs = [
+                    df.drop(columns=["timestamp"])
+                    for _, df in metric_dfs.items()
+                    if not df.empty
+                ]
 
-            # build dataframes from json files
-            if json_files:
-                # Get logged json files
-                for json_file in json_files:
-                    json_file_request = MLFlowStoreMetricRequest(
-                        experiment_id=str(selected_experiment_id),
-                        run_ids=run_ids,
-                        metric_names=[json_file],
-                    )
-                    json_dicts[json_file] = get_json(json_file_request)
-                json_df = get_df_from_json_dicts(json_dicts)
+                show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
 
-                # merge json_df with params_df
-                # check common columns in both dataframes except
-                common_columns = list(
-                    set(json_df.drop(columns=["run_id"]).columns).intersection(
-                        set(params_df.drop(columns=["run_id"]).columns)
-                    )
-                )
-                if common_columns:
-                    params_df = params_df.drop(columns=common_columns)
-                params_df = pd.merge(json_df, params_df, on="run_id", how="left")
-
-            # Find json file which contains the keywords
-            if json_dicts:
-                keywords_file = None
-                for json_file, json_list in json_dicts.items():
-                    for d in json_list:
-                        if keywords_in_dict(d["value"]):
-                            keywords_file = json_file
-                            break
-                    if keywords_file:
-                        break
-
-                # Show keywords wordcloud
-                if keywords_file:
-                    dict_w_keyword = json_dicts.get(keywords_file, None)
-                    show_wordcloud_component(
-                        live_results_dict=dict_w_keyword,
-                    )
-
-            metrics_dfs = [
-                df.drop(columns=["timestamp"])
-                for _, df in metric_dfs.items()
-                if not df.empty
-            ]
-
-            show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
+    if settings_tab:
+        st.title("Settings Tab")
+        st.caption("Coming Soon")
