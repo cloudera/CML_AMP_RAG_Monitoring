@@ -126,6 +126,27 @@ if experiments:
         numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
         json_files = [x for x in metric_names if x.endswith(".json")]
 
+        # get parameters and construct a dataframe
+        params_df = get_params_df(run_ids=runs, experiment_id=selected_experiment_id)
+
+        if not params_df.empty:
+            with st.expander(
+                ":material/settings: **Parameters Overview**", expanded=True
+            ):
+                # Combined configuration across all runs
+                st.write("Most common configuration across all runs")
+                st.caption(params_df.value_counts().argmax())
+                st.caption(f"{params_df.value_counts().max()} times")
+
+                # Count the number of unique values in each column
+                st.write("Top Configuration Parameters")
+                column_names = params_df.columns
+                metric_cols = st.columns(len(column_names))
+                for i, col in enumerate(column_names):
+                    st.write(f"**{col.title()}**")
+                    st.caption(params_df[col].value_counts().argmax())
+                    st.caption(f"{params_df[col].value_counts().max()} times")
+
         # create requests for metrics
         numeric_metrics_requests = {}
 
@@ -231,11 +252,6 @@ if experiments:
                             frequency="h",
                             fig_placeholder=metric_fig,
                         )
-
-            # get parameters and construct a dataframe
-            params_df = get_params_df(
-                run_ids=runs, experiment_id=selected_experiment_id
-            )
 
             # Get logged json files
             json_dicts = {}
