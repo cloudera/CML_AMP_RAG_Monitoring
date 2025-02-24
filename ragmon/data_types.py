@@ -41,8 +41,10 @@
 from pydantic import BaseModel
 from llama_index.core.base.llms.types import MessageRole
 from typing import List, Optional, Union
+from dataclasses import dataclass
 
 
+@dataclass(init=False)
 class RagIndexConfiguration(BaseModel):
     id: int
     name: str
@@ -52,12 +54,14 @@ class RagIndexConfiguration(BaseModel):
     chunk_overlap: int = 10
 
 
+@dataclass(init=False)
 class RagPredictConfiguration(BaseModel):
     top_k: int = 5
     chunk_size: int = 512
     model_name: str = "meta.llama3-70b-instruct-v1:0"
 
 
+@dataclass(init=False)
 class RagPredictSourceNode(BaseModel):
     node_id: str
     doc_id: str
@@ -66,17 +70,20 @@ class RagPredictSourceNode(BaseModel):
     content: str
 
 
+@dataclass(init=False)
 class RagMessage(BaseModel):
     role: MessageRole
     content: str
 
 
+@dataclass(init=False)
 class RagIndexDocumentConfiguration(BaseModel):
     # TODO: Add more params
     chunk_size: int = 512  # this is llama-index's default
     chunk_overlap: int = 10  # percentage of tokens in a chunk (chunk_size)
 
 
+@dataclass(init=False)
 class RagPredictRequest(BaseModel):
     # session_id: str
     data_source_id: int
@@ -86,16 +93,19 @@ class RagPredictRequest(BaseModel):
     do_evaluate: bool = True
 
 
+@dataclass(init=False)
 class Metric(BaseModel):
     name: str
     value: Union[float, None]
 
 
+@dataclass(init=False)
 class RagFeedback(BaseModel):
     feedback: Union[float, None] = None  # 0.0 or 1.0
     feedback_str: Optional[str] = None
 
 
+@dataclass(init=False)
 class RagPredictResponse(BaseModel):
     id: str
     input: str
@@ -115,6 +125,7 @@ class RagPredictResponse(BaseModel):
     timestamp: Optional[str] = None
 
 
+@dataclass(init=False)
 class RagFeedbackRequest(BaseModel):
     response_id: str
     mlflow_experiment_id: Optional[str] = None
@@ -123,26 +134,31 @@ class RagFeedbackRequest(BaseModel):
     feedback_str: Optional[str] = None
 
 
+@dataclass(init=False)
 class MLFlowStoreIdentifier(BaseModel):
     experiment_id: str
     run_id: str
 
 
+@dataclass(init=False)
 class MLFlowStoreMetricRequest(BaseModel):
     experiment_id: str
     run_ids: List[str] = []
     metric_names: List[str] = []
 
 
+@dataclass(init=False)
 class MLFlowExperimentRequest(BaseModel):
     experiment_id: str
 
 
+@dataclass(init=False)
 class EvaluationExample(BaseModel):
     input: str
     evaluation: str
 
 
+@dataclass(init=False)
 class CreateCustomEvaluatorRequest(BaseModel):
     name: str
     eval_definition: str

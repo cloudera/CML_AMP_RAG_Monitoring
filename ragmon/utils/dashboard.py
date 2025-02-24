@@ -187,7 +187,7 @@ def merge_jsons(*dicts):
     return merged
 
 
-@st.cache(show_spinner=True)
+@st.cache_data(show_spinner=True)
 def get_json(
     request: MLFlowStoreMetricRequest,
 ):
@@ -215,7 +215,7 @@ def get_json(
     return json_dicts
 
 
-@st.cache(show_spinner=True)
+@st.cache_data(show_spinner=True)
 def get_params_df(run_ids: List[str], experiment_id: str):
     """
     Fetches parameters for a list of run IDs from the MLflow store.
@@ -273,7 +273,7 @@ def get_metrics(
     return response.json()
 
 
-@st.cache(show_spinner=True)
+@st.cache_data(show_spinner=True)
 def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     """
     Retrieve numeric metrics from MLFlow store and return them as a DataFrame.
