@@ -56,7 +56,7 @@ def setup_navigation():
             st.Page("pages/1_Home.py", title="Home"),
             st.Page(
                 "pages/2_Monitoring_Dashboard.py",
-                title="RAG Studio Monitoring Dashboard",
+                title="RAG Studio",
             ),
             st.Page(
                 "pages/3_Custom_Evaluators.py",
@@ -72,7 +72,7 @@ def setup_navigation():
     centered_pages = ["Home"]
     st.set_page_config(
         layout="centered" if pg.title in centered_pages else "wide",
-        page_title="Monitoring AMP",
+        page_title="AI Monitoring AMP",
     )
     pg.run()
 

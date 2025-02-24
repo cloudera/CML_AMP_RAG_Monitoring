@@ -187,6 +187,7 @@ def merge_jsons(*dicts):
     return merged
 
 
+@st.cache(show_spinner=True)
 def get_json(
     request: MLFlowStoreMetricRequest,
 ):
@@ -214,6 +215,7 @@ def get_json(
     return json_dicts
 
 
+@st.cache(show_spinner=True)
 def get_params_df(run_ids: List[str], experiment_id: str):
     """
     Fetches parameters for a list of run IDs from the MLflow store.
@@ -271,6 +273,7 @@ def get_metrics(
     return response.json()
 
 
+@st.cache(show_spinner=True)
 def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
     """
     Retrieve numeric metrics from MLFlow store and return them as a DataFrame.
@@ -372,6 +375,38 @@ def highlight_words(s, words):
                 f'<span style="background-color: #f0f9eb; border-radius: 5px;">{word}</span>',
             )
     return s
+
+
+def show_parameters_overview_component(
+    params_df: pd.DataFrame,
+):
+    """
+    Display the parameters overview component.
+
+    Args:
+        parameters_df (pd.DataFrame): DataFrame containing parameters.
+
+    Returns:
+        None
+    """
+    if not params_df.empty:
+        with st.expander(":material/settings: **Parameters Overview**", expanded=True):
+            # Combined configuration across all runs
+            st.write("**Most common configuration across all runs**")
+            st.caption(
+                f"{params_df.value_counts().idxmax()} ({params_df.value_counts().max()} times)"
+            )
+
+            # Count the number of unique values for each parameter
+            st.write("Top Configuration Parameters")
+            column_names = params_df.columns
+            metric_cols = st.columns(len(column_names))
+            for i, col in enumerate(metric_cols):
+                col.write(f"**{column_names[i].replace('_', ' ').title()}**")
+                col.caption(
+                    f"{params_df[column_names[i]].value_counts().idxmax()} "
+                    f"({params_df[column_names[i]].value_counts().max()} times)"
+                )
 
 
 def show_detailed_logs_component(

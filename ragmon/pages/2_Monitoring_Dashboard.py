@@ -63,6 +63,7 @@ from utils.dashboard import (
     get_numeric_metrics_df,
     get_json,
     get_df_from_json_dicts,
+    show_parameters_overview_component,
     show_feedback_component,
     show_feedback_kpi,
     show_numeric_metric_kpi,
@@ -129,23 +130,8 @@ if experiments:
         # get parameters and construct a dataframe
         params_df = get_params_df(run_ids=runs, experiment_id=selected_experiment_id)
 
-        if not params_df.empty:
-            with st.expander(
-                ":material/settings: **Parameters Overview**", expanded=True
-            ):
-                # Combined configuration across all runs
-                st.write("Most common configuration across all runs")
-                st.caption(params_df.value_counts().argmax())
-                st.caption(f"{params_df.value_counts().max()} times")
-
-                # Count the number of unique values in each column
-                st.write("Top Configuration Parameters")
-                column_names = params_df.columns
-                metric_cols = st.columns(len(column_names))
-                for i, col in enumerate(column_names):
-                    st.write(f"**{col.title()}**")
-                    st.caption(params_df[col].value_counts().argmax())
-                    st.caption(f"{params_df[col].value_counts().max()} times")
+        # show parameters overview
+        show_parameters_overview_component(params_df)
 
         # create requests for metrics
         numeric_metrics_requests = {}
@@ -253,9 +239,11 @@ if experiments:
                             fig_placeholder=metric_fig,
                         )
 
-            # Get logged json files
             json_dicts = {}
+
+            # build dataframes from json files
             if json_files:
+                # Get logged json files
                 for json_file in json_files:
                     json_file_request = MLFlowStoreMetricRequest(
                         experiment_id=str(selected_experiment_id),
@@ -263,11 +251,6 @@ if experiments:
                         metric_names=[json_file],
                     )
                     json_dicts[json_file] = get_json(json_file_request)
-
-            st.write(json_dicts)
-
-            # build dataframes from json files
-            if json_files:
                 json_df = get_df_from_json_dicts(json_dicts)
 
                 # merge json_df with params_df
@@ -282,23 +265,23 @@ if experiments:
                 params_df = pd.merge(json_df, params_df, on="run_id", how="left")
 
             # Find json file which contains the keywords
-            keywords_file = None
-            for json_file, json_list in json_dicts.items():
-                for d in json_list:
-                    if keywords_in_dict(d["value"]):
-                        keywords_file = json_file
+            if json_dicts:
+                keywords_file = None
+                for json_file, json_list in json_dicts.items():
+                    for d in json_list:
+                        if keywords_in_dict(d["value"]):
+                            keywords_file = json_file
+                            break
+                    if keywords_file:
                         break
+
+                # Show keywords wordcloud
                 if keywords_file:
-                    break
+                    dict_w_keyword = json_dicts.get(keywords_file, None)
+                    show_wordcloud_component(
+                        live_results_dict=dict_w_keyword,
+                    )
 
-            # Show keywords wordcloud
-            if keywords_file:
-                dict_w_keyword = json_dicts.get(keywords_file, None)
-                show_wordcloud_component(
-                    live_results_dict=dict_w_keyword,
-                )
-
-            # TODO: reimplementation of detailed logs
             metrics_dfs = [
                 df.drop(columns=["timestamp"])
                 for _, df in metric_dfs.items()
