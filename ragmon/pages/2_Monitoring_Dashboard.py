@@ -49,12 +49,10 @@ import pandas as pd  # read csv, df manipulation
 import plotly.graph_objects as go  # interactive charts
 import streamlit as st  # 🎈 data web app development
 
-from qdrant_client import QdrantClient
 from data_types import (
     MLFlowExperimentRequest,
     MLFlowStoreMetricRequest,
 )
-from utils import get_collections
 from utils.dashboard import (
     get_experiments,
     get_runs,
