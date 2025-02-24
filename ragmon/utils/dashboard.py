@@ -392,14 +392,17 @@ def show_parameters_overview_component(
     if not params_df.empty:
         with st.expander(":material/settings: **Parameters Overview**", expanded=True):
             # Combined configuration across all runs
+            column_names = params_df.columns
             st.write("**Most common configuration across all runs**")
-            st.caption(
-                f"{params_df.value_counts().idxmax()} ({params_df.value_counts().max()} times)"
-            )
+            most_common_config = params_df.value_counts().idxmax()
+            caption_string = ""
+            for i, col in enumerate(column_names):
+                caption_string += f"**{col}**: {most_common_config[i]} "
+            counts = params_df.value_counts().max()
+            st.caption(f"{caption_string} ({counts} times)")
 
             # Count the number of unique values for each parameter
             st.write("Top Configuration Parameters")
-            column_names = params_df.columns
             metric_cols = st.columns(len(column_names))
             for i, col in enumerate(metric_cols):
                 col.write(f"**{column_names[i].replace('_', ' ').title()}**")
