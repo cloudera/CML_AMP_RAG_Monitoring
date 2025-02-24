@@ -394,7 +394,7 @@ def show_parameters_overview_component(
             # Combined configuration across all runs
             st.write("**Most common configuration across all runs**")
             if "run_id" in params_df.columns.to_list():
-                params_df = params_df.drop("run_id")
+                params_df = params_df.drop(columns=["run_id"])
             column_names = params_df.columns
             most_common_config = params_df.value_counts().idxmax()
             counts = params_df.value_counts().max()
