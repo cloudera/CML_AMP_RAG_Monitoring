@@ -393,20 +393,24 @@ def show_parameters_overview_component(
         with st.expander(":material/settings: **Parameters Overview**", expanded=True):
             # Combined configuration across all runs
             st.write("**Most common configuration across all runs**")
-            if "run_id" in column_names:
+            if "run_id" in params_df.columns:
                 params_df = params_df.drop("run_id")
             column_names = params_df.columns
             most_common_config = params_df.value_counts().idxmax()
-            caption_string = ""
-            for i, col in enumerate(column_names):
-                caption_string += f"**{col}**: {most_common_config[i]} "
             counts = params_df.value_counts().max()
-            st.caption(f"{caption_string} ({counts} times)")
+            overview_param_cols = st.columns(len(column_names) + 1)
+            for i, col in enumerate(overview_param_cols):
+                if i == len(column_names):
+                    col.write("**Frequency**")
+                    col.caption(counts)
+                else:
+                    col.write(f"**{column_names[i].replace('_', ' ').title()}**")
+                    col.caption(f"{most_common_config[i]}")
 
             # Count the number of unique values for each parameter
             st.write("Top Configuration Parameters")
-            metric_cols = st.columns(len(column_names))
-            for i, col in enumerate(metric_cols):
+            param_cols = st.columns(len(column_names))
+            for i, col in enumerate(param_cols):
                 col.write(f"**{column_names[i].replace('_', ' ').title()}**")
                 col.caption(
                     f"{params_df[column_names[i]].value_counts().idxmax()} "
