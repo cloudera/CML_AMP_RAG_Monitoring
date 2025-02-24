@@ -147,7 +147,8 @@ if experiments:
                 )
                 numeric_metrics_requests[metric_name] = metric_request
 
-            placeholder = st.empty()
+            st.write("### Metrics")
+            placeholder = st.container()
 
             # near real-time / live feed simulation
             update_timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -157,7 +158,7 @@ if experiments:
             for metric_name, metric_request in numeric_metrics_requests.items():
                 metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
 
-            with placeholder.container():
+            with placeholder:
                 # Non empty metrics
                 non_empty_metrics = [
                     metric_name

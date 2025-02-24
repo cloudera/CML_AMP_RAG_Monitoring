@@ -390,10 +390,10 @@ def show_parameters_overview_component(
         None
     """
     if not params_df.empty:
-        params_container = st.container(border=True)
-        # Combined configuration across all runs
         st.write("### Parameters")
+        params_container = st.container(border=True)
         with params_container:
+            # Combined configuration across all runs
             if "run_id" in params_df.columns.to_list():
                 params_df = params_df.drop(columns=["run_id"])
             column_names = params_df.columns
