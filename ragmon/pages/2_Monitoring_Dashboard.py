@@ -108,7 +108,7 @@ if experiments:
 
     dashboard_tab, settings_tab = st.tabs(["Dashboard", "Settings"])
 
-    if dashboard_tab:
+    with dashboard_tab:
         # select run
         runs = get_runs(selected_experiment_request)
 
@@ -294,6 +294,6 @@ if experiments:
 
                 show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
 
-    if settings_tab:
+    with settings_tab:
         st.title("Settings Tab")
         st.caption("Coming Soon")
