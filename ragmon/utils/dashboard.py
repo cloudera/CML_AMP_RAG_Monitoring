@@ -392,8 +392,10 @@ def show_parameters_overview_component(
     if not params_df.empty:
         with st.expander(":material/settings: **Parameters Overview**", expanded=True):
             # Combined configuration across all runs
-            column_names = params_df.columns
             st.write("**Most common configuration across all runs**")
+            if "run_id" in column_names:
+                params_df = params_df.drop("run_id")
+            column_names = params_df.columns
             most_common_config = params_df.value_counts().idxmax()
             caption_string = ""
             for i, col in enumerate(column_names):
