@@ -393,7 +393,7 @@ def show_parameters_overview_component(
         params_container = st.container(border=True)
         # Combined configuration across all runs
         with params_container:
-            st.write("Parameters")
+            st.write("### Parameters")
             if "run_id" in params_df.columns.to_list():
                 params_df = params_df.drop(columns=["run_id"])
             column_names = params_df.columns
