@@ -119,6 +119,11 @@ if experiments:
             options=metric_names,
             default=metric_names,
         )
+        wc_checkbox = st.checkbox(
+            "Show Wordcloud for Keywords",
+            help="Show wordcloud for keywords in the selected json file",
+            value=True,
+        )
 
     # get all runs for the selected experiment
     runs = get_runs(selected_experiment_request)
@@ -289,7 +294,7 @@ if experiments:
                             break
 
                     # Show keywords wordcloud
-                    if keywords_file:
+                    if keywords_file and wc_checkbox:
                         dict_w_keyword = json_dicts.get(keywords_file, None)
                         show_wordcloud_component(
                             live_results_dict=dict_w_keyword,
