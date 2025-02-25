@@ -59,11 +59,7 @@ def setup_navigation():
                 title="RAG Studio",
             ),
             st.Page(
-                "pages/3_Custom_Evaluators.py",
-                title="Custom Evaluators",
-            ),
-            st.Page(
-                "pages/4_Leave_Feedback.py",
+                "pages/3_Leave_Feedback.py",
                 title="Leave Feedback",
             ),
         ],
@@ -88,12 +84,7 @@ def setup_sidebar():
             icon=":material/chat_apps_script:",
         )
         st.page_link(
-            "pages/3_Custom_Evaluators.py",
-            label="Custom Evaluators",
-            icon=":material/custom_typography:",
-        )
-        st.page_link(
-            "pages/4_Leave_Feedback.py",
+            "pages/3_Leave_Feedback.py",
             label="Leave Feedback",
             icon=":material/comment:",
         )

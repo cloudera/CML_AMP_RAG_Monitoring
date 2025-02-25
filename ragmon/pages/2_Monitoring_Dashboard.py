@@ -71,6 +71,7 @@ from utils.dashboard import (
     show_wordcloud_component,
     show_detailed_logs_component,
 )
+from utils.custom_evals import show_custom_evaluators_tab
 
 warnings.filterwarnings("ignore")
 
@@ -303,4 +304,4 @@ if experiments:
                 show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
 
     with settings_tab:
-        st.write("### Custom Evaluators")
+        show_custom_evaluators_tab()

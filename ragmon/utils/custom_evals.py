@@ -110,27 +110,31 @@ def create_evaluator_modal():
             st.error("Failed to create custom evaluator")
 
 
-st.title("Custom Evaluators")
-st.markdown(
+def show_custom_evaluators_tab():
     """
-    Custom evaluators are used to evaluate the quality of the generated responses. 
-    You can create custom evaluators by defining the evaluator and a set of questions.
+    Show the custom evaluators tab
     """
-)
-custom_evaluators = get_custom_evaluators()
-custom_evaluators_placeholder = st.empty()
-with custom_evaluators_placeholder:
-    if custom_evaluators:
-        for evaluator in custom_evaluators:
-            evaluator_json = CreateCustomEvaluatorRequest(**evaluator)
-            with st.expander(f"**:material/function: {evaluator_json.name}**"):
-                st.write("**Definition**")
-                st.caption(evaluator_json.eval_definition)
-                st.write("**Questions**")
-                questions = evaluator_json.questions.split("\n")
-                for question in questions:
-                    st.caption(f"{question}")
-    else:
-        st.write("No custom evaluators found")
-if st.button("Create Custom Evaluator", key="create_evaluator"):
-    create_evaluator_modal()
+    st.title("Custom Evaluators")
+    st.caption(
+        """
+        Custom evaluators are used to evaluate the quality of the generated responses. 
+        You can create custom evaluators by defining the evaluator and a set of questions.
+        """
+    )
+    custom_evaluators = get_custom_evaluators()
+    custom_evaluators_placeholder = st.empty()
+    with custom_evaluators_placeholder:
+        if custom_evaluators:
+            for evaluator in custom_evaluators:
+                evaluator_json = CreateCustomEvaluatorRequest(**evaluator)
+                with st.expander(f"**:material/function: {evaluator_json.name}**"):
+                    st.write("**Definition**")
+                    st.caption(evaluator_json.eval_definition)
+                    st.write("**Questions**")
+                    questions = evaluator_json.questions.split("\n")
+                    for question in questions:
+                        st.caption(f"{question}")
+        else:
+            st.write("No custom evaluators found")
+    if st.button("Create Custom Evaluator", key="create_evaluator"):
+        create_evaluator_modal()
