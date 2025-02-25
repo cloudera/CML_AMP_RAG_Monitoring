@@ -105,12 +105,24 @@ if experiments:
     selected_experiment_request = MLFlowExperimentRequest(
         experiment_id=str(selected_experiment_id)
     )
+    # create requests for metric names, get metric names and sort it
+    metric_names = get_metric_names(selected_experiment_request)
+    metric_names = sorted(metric_names)
 
     dashboard_tab, settings_tab = st.tabs(["Dashboard", "Settings"])
 
+    with settings_tab:
+        st.write("### Settings")
+        metrics_to_show = st.multiselect(
+            "Select Metrics to Show",
+            options=metric_names,
+            default=metric_names,
+        )
+
+    # get all runs for the selected experiment
+    runs = get_runs(selected_experiment_request)
+
     with dashboard_tab:
-        # select run
-        runs = get_runs(selected_experiment_request)
 
         if not runs:
             st.write("No Metrics Logged Yet")
@@ -121,12 +133,8 @@ if experiments:
             mock_precision_scores = np.random.random(len(run_ids))
             mock_recall_scores = np.random.random(len(run_ids))
 
-            # create requests for metric names, get metric names and sort it
-            metric_names = get_metric_names(selected_experiment_request)
-            metric_names = sorted(metric_names)
-
-            numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
-            json_files = [x for x in metric_names if x.endswith(".json")]
+            numeric_metrics = [x for x in metrics_to_show if not x.endswith(".json")]
+            json_files = [x for x in metrics_to_show if x.endswith(".json")]
 
             # get parameters and construct a dataframe
             params_df = get_params_df(
@@ -293,7 +301,3 @@ if experiments:
                 ]
 
                 show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
-
-    with settings_tab:
-        st.title("Settings Tab")
-        st.caption("Coming Soon")
