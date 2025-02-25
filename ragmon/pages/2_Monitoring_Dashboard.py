@@ -301,3 +301,6 @@ if experiments:
                 ]
 
                 show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
+
+    with settings_tab:
+        st.write("### Custom Evaluators")
