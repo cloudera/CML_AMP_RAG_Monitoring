@@ -110,11 +110,11 @@ def create_evaluator_modal():
             st.error("Failed to create custom evaluator")
 
 
-def show_custom_evaluators_tab():
+def show_custom_evaluators_component():
     """
     Show the custom evaluators tab
     """
-    st.title("Custom Evaluators")
+    st.write("### Custom Evaluators")
     st.caption(
         """
         Custom evaluators are used to evaluate the quality of the generated responses. 
