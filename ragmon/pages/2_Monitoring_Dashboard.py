@@ -125,6 +125,7 @@ if experiments:
                 default=numeric_metrics,
             )
             col_1, col_2 = st.columns([1, 1])
+            st.write("#### Select Graph Type for Metrics")
             graph_settings_dict = {}
             for i, metric_name in enumerate(metrics_to_show):
                 if i % 2 == 0:
@@ -146,6 +147,7 @@ if experiments:
                         ),
                         horizontal=True,
                     )
+            st.write("#### Additional Settings")
             wc_checkbox = col_1.checkbox(
                 "Show Wordcloud for Keywords",
                 help="Show wordcloud for keywords in the selected json file",
