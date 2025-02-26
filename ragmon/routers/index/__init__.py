@@ -65,7 +65,7 @@ from ...data_types import (
     RagMessage,
 )
 from ...config import settings
-from ...data_types import CreateCustomEvaluatorRequest
+from ...data_types import CustomEvaluatorRequest
 
 from pprint import pprint
 
@@ -84,28 +84,6 @@ router = APIRouter(
     prefix="/index",
     tags=["index"],
 )
-
-
-@router.post("/add_custom_evaluator", summary="Add a custom evaluator")
-@exceptions.propagates
-@tracer.start_as_current_span("add_custom_evaluator")
-def add_custom_evaluator(
-    request: CreateCustomEvaluatorRequest,
-) -> Dict[str, str]:
-    """Add a custom evaluator"""
-    try:
-        data_directory = os.path.join(os.getcwd(), "data")
-        custom_evals_dir = Path(os.path.join(data_directory, "custom_evaluators"))
-        custom_evals_dir.mkdir(parents=True, exist_ok=True)
-        save_to_disk(
-            request.dict(),
-            custom_evals_dir,
-            f"{request.name.lower().replace(' ', '_')}.json",
-        )
-        return {"status": "success"}
-    except Exception as e:
-        logger.error("Failed to add custom evaluator: %s", e)
-        return {"status": "failed"}
 
 
 @router.post("/feedback", summary="Log feedback for a response")

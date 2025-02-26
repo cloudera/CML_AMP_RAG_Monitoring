@@ -141,6 +141,14 @@ def start_evaluation_reconciler():
     logger.info("Evaluation reconciler started.")
 
 
+# start_evaluation_reconciler()
+# try:
+#     while True:
+#         time.sleep(1)  # Keep the main thread alive
+# except KeyboardInterrupt:
+#     print("Reconciler process stopped.")
+
+
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     """Initialize and teardown the application's lifespan events."""

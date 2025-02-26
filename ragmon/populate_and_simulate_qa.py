@@ -214,10 +214,13 @@ def main():
         "eval_definition": "Friendliness assesses the warmth and approachability of the answer.",
         "questions": "Is the answer friendly?\nIs the answer compassionate?",
         "examples": [],
+        "mlflow_experiment_id": mlflow_exp_id,
     }
     if not os.path.exists(CUSTOM_EVAL_DIR):
         os.makedirs(CUSTOM_EVAL_DIR)
-    with open(os.path.join(CUSTOM_EVAL_DIR, "friendliness.json"), "w+") as f:
+    with open(
+        os.path.join(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}", "friendliness.json"), "w+"
+    ) as f:
         json.dump(friendliness_eval_def, f, indent=2)
 
     # simulate question answering

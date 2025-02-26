@@ -348,4 +348,4 @@ if experiments:
                     show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
 
     with settings_tab:
-        show_custom_evaluators_component()
+        show_custom_evaluators_component(experiment_id=selected_experiment_id)

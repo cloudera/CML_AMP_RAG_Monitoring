@@ -159,8 +159,9 @@ class EvaluationExample(BaseModel):
 
 
 @dataclass(init=False)
-class CreateCustomEvaluatorRequest(BaseModel):
+class CustomEvaluatorRequest(BaseModel):
     name: str
     eval_definition: str
     questions: Union[List[str], str]
     examples: List[EvaluationExample] = []
+    mlflow_experiment_id: Optional[str] = None
