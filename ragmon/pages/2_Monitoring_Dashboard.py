@@ -145,10 +145,10 @@ if experiments:
                             ":material/pie_chart: Pie Chart",
                         ],
                         index=(
-                            0
+                            1
                             if "faithfulness" in metric_name.lower()
                             or "relevance" in metric_name.lower()
-                            else 1
+                            else 0
                         ),
                         horizontal=True,
                         captions=[
