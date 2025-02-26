@@ -118,9 +118,11 @@ if experiments:
     )
 
     with settings_tab:
-        with st.expander(":material/table_chart_view: Graph Settings", expanded=True):
+        with st.expander(
+            "**:material/table_chart_view: Graph Settings**", expanded=True
+        ):
             metrics_to_show = st.multiselect(
-                "Select Metrics to Show",
+                "##### Select Metrics to Show",
                 options=numeric_metrics,
                 default=numeric_metrics,
             )
