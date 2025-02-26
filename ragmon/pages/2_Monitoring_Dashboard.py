@@ -119,22 +119,23 @@ if experiments:
 
     with settings_tab:
         st.write("### Settings")
-        metrics_to_show = st.multiselect(
-            "Select Metrics to Show",
-            options=numeric_metrics,
-            default=numeric_metrics,
-        )
-        wc_checkbox = st.checkbox(
+        checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
+        wc_checkbox = checkbox_col_1.checkbox(
             "Show Wordcloud for Keywords",
             help="Show wordcloud for keywords in the selected json file",
             value=True,
         )
-        logs_checkbox = st.checkbox(
+        logs_checkbox = checkbox_col_2.checkbox(
             "Show Detailed Logs",
             help="Show detailed logs for the selected experiment",
             value=True,
         )
         with st.expander(":material/table_chart_view: Graph Settings"):
+            metrics_to_show = st.multiselect(
+                "Select Metrics to Show",
+                options=numeric_metrics,
+                default=numeric_metrics,
+            )
             col_1, col_2 = st.columns([1, 1])
             graph_settings_dict = {}
             for i, metric_name in enumerate(metrics_to_show):
