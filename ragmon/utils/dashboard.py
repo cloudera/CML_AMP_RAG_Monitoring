@@ -740,8 +740,8 @@ def show_pie_chart_component(
     metric_key: str,
     metrics_df: pd.DataFrame,
     title: str,
-    labels: List[str],
-    update_timestamp: str,
+    labels: Optional[List[str]] = None,
+    update_timestamp: str = "",
     fig_placeholder: DeltaGenerator = None,
     tooltip: Optional[str] = None,
 ):

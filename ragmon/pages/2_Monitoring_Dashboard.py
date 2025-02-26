@@ -110,7 +110,9 @@ if experiments:
     metric_names = get_metric_names(selected_experiment_request)
     metric_names = sorted(metric_names)
 
-    dashboard_tab, settings_tab = st.tabs(["Dashboard", "Settings"])
+    dashboard_tab, settings_tab = st.tabs(
+        [":material/monitoring: Dashboard", ":material/settings: Settings"]
+    )
 
     with settings_tab:
         st.write("### Settings")
@@ -124,6 +126,31 @@ if experiments:
             help="Show wordcloud for keywords in the selected json file",
             value=True,
         )
+        logs_checkbox = st.checkbox(
+            "Show Detailed Logs",
+            help="Show detailed logs for the selected experiment",
+            value=True,
+        )
+        with st.expander(":material/table_chart_view: Graph Settings"):
+            graph_settings_dict = {}
+            for metric_name in metrics_to_show:
+                if (
+                    not metric_name.endswith(".json")
+                    or not "feedback" in metric_name.lower()
+                ):
+                    graph_settings_dict[metric_name] = st.radio(
+                        f"{metric_name.replace('_', ' ').title()}",
+                        [
+                            ":material/timeline: Line Chart",
+                            ":material/pie_chart: Pie Chart",
+                        ],
+                        index=(
+                            1
+                            if "faithfulness" in metric_name.lower()
+                            or "relevance" in metric_name.lower()
+                            else 0
+                        ),
+                    )
 
     # get all runs for the selected experiment
     runs = get_runs(selected_experiment_request)
@@ -217,27 +244,7 @@ if experiments:
                                 kpi_placeholder=metric_kpi,
                                 label=metric_name.replace("_", " ").title(),
                             )
-                        if "faithfulness" in metric_name.lower():
-                            metric_fig = metric_fig_rows[i // 3][i % 3]
-                            show_pie_chart_component(
-                                metric_key=metric_name,
-                                metrics_df=metric_df,
-                                title=f"{metric_name.replace('_', ' ').title()}",
-                                labels=["Faithful", "Not Faithful"],
-                                update_timestamp=update_timestamp,
-                                fig_placeholder=metric_fig,
-                            )
-                        elif "relevance" in metric_name.lower():
-                            metric_fig = metric_fig_rows[i // 3][i % 3]
-                            show_pie_chart_component(
-                                metric_key=metric_name,
-                                metrics_df=metric_df,
-                                title=f"{metric_name.replace('_', ' ').title()}",
-                                labels=["Relevant", "Not Relevant"],
-                                update_timestamp=update_timestamp,
-                                fig_placeholder=metric_fig,
-                            )
-                        elif "feedback" in metric_name.lower():
+                        if "feedback" in metric_name.lower():
                             metric_fig = metric_fig_rows[i // 3][i % 3]
                             with metric_fig:
                                 feedback_df = metric_df
@@ -248,14 +255,33 @@ if experiments:
                                 )
                         else:
                             metric_fig = metric_fig_rows[i // 3][i % 3]
-                            show_time_series_component(
-                                metric_key=metric_name,
-                                metrics_df=metric_df,
-                                title=f"{metric_name.replace('_', ' ').title()}",
-                                update_timestamp=update_timestamp,
-                                frequency="h",
-                                fig_placeholder=metric_fig,
-                            )
+                            if (
+                                graph_settings_dict.get(metric_name)
+                                == ":material/timeline: Line Chart"
+                            ):
+                                if "faithfulness" in metric_name.lower():
+                                    labels = ["Faithful", "Not Faithful"]
+                                if "relevance" in metric_name.lower():
+                                    labels = ["Relevant", "Not Relevant"]
+                                else:
+                                    labels = None
+                                show_pie_chart_component(
+                                    metric_key=metric_name,
+                                    metrics_df=metric_df,
+                                    title=f"{metric_name.replace('_', ' ').title()}",
+                                    labels=labels,
+                                    update_timestamp=update_timestamp,
+                                    fig_placeholder=metric_fig,
+                                )
+                            else:
+                                show_time_series_component(
+                                    metric_key=metric_name,
+                                    metrics_df=metric_df,
+                                    title=f"{metric_name.replace('_', ' ').title()}",
+                                    update_timestamp=update_timestamp,
+                                    frequency="h",
+                                    fig_placeholder=metric_fig,
+                                )
 
                 json_dicts = {}
 
@@ -269,44 +295,50 @@ if experiments:
                             metric_names=[json_file],
                         )
                         json_dicts[json_file] = get_json(json_file_request)
-                    json_df = get_df_from_json_dicts(json_dicts)
-
-                    # merge json_df with params_df
-                    # check common columns in both dataframes except
-                    common_columns = list(
-                        set(json_df.drop(columns=["run_id"]).columns).intersection(
-                            set(params_df.drop(columns=["run_id"]).columns)
-                        )
-                    )
-                    if common_columns:
-                        params_df = params_df.drop(columns=common_columns)
-                    params_df = pd.merge(json_df, params_df, on="run_id", how="left")
 
                 # Find json file which contains the keywords
                 if json_dicts:
-                    keywords_file = None
-                    for json_file, json_list in json_dicts.items():
-                        for d in json_list:
-                            if keywords_in_dict(d["value"]):
-                                keywords_file = json_file
+                    if wc_checkbox:
+                        keywords_file = None
+                        for json_file, json_list in json_dicts.items():
+                            for d in json_list:
+                                if keywords_in_dict(d["value"]):
+                                    keywords_file = json_file
+                                    break
+                            if keywords_file:
                                 break
+
+                        # Show keywords wordcloud
                         if keywords_file:
-                            break
+                            dict_w_keyword = json_dicts.get(keywords_file, None)
+                            show_wordcloud_component(
+                                live_results_dict=dict_w_keyword,
+                            )
 
-                    # Show keywords wordcloud
-                    if keywords_file and wc_checkbox:
-                        dict_w_keyword = json_dicts.get(keywords_file, None)
-                        show_wordcloud_component(
-                            live_results_dict=dict_w_keyword,
+                if logs_checkbox:
+                    if json_dicts:
+                        # build dataframes from json files
+                        json_df = get_df_from_json_dicts(json_dicts)
+
+                        # check common columns in both dataframes except
+                        common_columns = list(
+                            set(json_df.drop(columns=["run_id"]).columns).intersection(
+                                set(params_df.drop(columns=["run_id"]).columns)
+                            )
                         )
+                        if common_columns:
+                            params_df = params_df.drop(columns=common_columns)
 
-                metrics_dfs = [
-                    df.drop(columns=["timestamp"])
-                    for _, df in metric_dfs.items()
-                    if not df.empty
-                ]
-
-                show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
+                        # merge json and params dataframes
+                        params_df = pd.merge(
+                            json_df, params_df, on="run_id", how="left"
+                        )
+                    metrics_dfs = [
+                        df.drop(columns=["timestamp"])
+                        for _, df in metric_dfs.items()
+                        if not df.empty
+                    ]
+                    show_detailed_logs_component(params_df, metrics_dfs=metrics_dfs)
 
     with settings_tab:
         show_custom_evaluators_component()
