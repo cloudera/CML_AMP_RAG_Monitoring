@@ -135,10 +135,15 @@ if experiments:
             value=True,
         )
         with st.expander(":material/table_chart_view: Graph Settings"):
+            col_1, col_2 = st.columns([1, 1])
             graph_settings_dict = {}
-            for metric_name in metrics_to_show:
+            for i, metric_name in enumerate(metrics_to_show):
+                if i % 2 == 0:
+                    col_to_use = col_1
+                else:
+                    col_to_use = col_2
                 if not "feedback" in metric_name.lower():
-                    graph_settings_dict[metric_name] = st.radio(
+                    graph_settings_dict[metric_name] = col_to_use.radio(
                         f"{metric_name.replace('_', ' ').title()}",
                         [
                             ":material/timeline: Line Chart",
@@ -151,10 +156,6 @@ if experiments:
                             else 0
                         ),
                         horizontal=True,
-                        captions=[
-                            "Show a scatter plot of the metric over time",
-                            "Show a pie chart of the metric",
-                        ],
                     )
 
     # get all runs for the selected experiment
