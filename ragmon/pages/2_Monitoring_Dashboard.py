@@ -145,11 +145,16 @@ if experiments:
                             ":material/pie_chart: Pie Chart",
                         ],
                         index=(
-                            1
+                            0
                             if "faithfulness" in metric_name.lower()
                             or "relevance" in metric_name.lower()
-                            else 0
+                            else 1
                         ),
+                        horizontal=True,
+                        captions=[
+                            "Show a scatter plot of the metric over time",
+                            "Show a pie chart of the metric",
+                        ],
                     )
 
     # get all runs for the selected experiment
