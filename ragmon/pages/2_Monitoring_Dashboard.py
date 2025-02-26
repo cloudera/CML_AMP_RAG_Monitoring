@@ -92,11 +92,11 @@ with refresh_col:
 experiments = get_experiments()
 
 if not experiments:
-    st.write("No Data Sources or Entries Found")
+    st.write("No experiments found")
 
 if experiments:
     selected_experiment = st.selectbox(
-        "Select a Data Source :material/database:",
+        "Select an experiment :material/database:",
         options=experiments,
         index=len(experiments) - 1,
         format_func=lambda x: x["name"],
