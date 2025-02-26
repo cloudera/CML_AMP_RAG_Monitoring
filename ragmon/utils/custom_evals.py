@@ -114,20 +114,12 @@ def show_custom_evaluators_component():
     """
     Show the custom evaluators tab
     """
-    st.write("### Custom Evaluators")
-    st.caption(
-        """
-        Custom evaluators are used to evaluate the quality of the generated responses. 
-        You can create custom evaluators by defining the evaluator and a set of questions.
-        """
-    )
     custom_evaluators = get_custom_evaluators()
-    custom_evaluators_placeholder = st.empty()
-    with custom_evaluators_placeholder:
+    with st.expander("**:material/functions: Custom Evaluators**", expanded=True):
         if custom_evaluators:
             for evaluator in custom_evaluators:
                 evaluator_json = CreateCustomEvaluatorRequest(**evaluator)
-                with st.expander(f"**:material/function: {evaluator_json.name}**"):
+                with st.popover(f"**:material/function: {evaluator_json.name}**"):
                     st.write("**Definition**")
                     st.caption(evaluator_json.eval_definition)
                     st.write("**Questions**")

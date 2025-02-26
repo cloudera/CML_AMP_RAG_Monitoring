@@ -118,19 +118,7 @@ if experiments:
     )
 
     with settings_tab:
-        st.write("### Settings")
-        checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
-        wc_checkbox = checkbox_col_1.checkbox(
-            "Show Wordcloud for Keywords",
-            help="Show wordcloud for keywords in the selected json file",
-            value=True,
-        )
-        logs_checkbox = checkbox_col_2.checkbox(
-            "Show Detailed Logs",
-            help="Show detailed logs for the selected experiment",
-            value=True,
-        )
-        with st.expander(":material/table_chart_view: Graph Settings"):
+        with st.expander(":material/table_chart_view: Graph Settings", expanded=True):
             metrics_to_show = st.multiselect(
                 "Select Metrics to Show",
                 options=numeric_metrics,
@@ -158,6 +146,16 @@ if experiments:
                         ),
                         horizontal=True,
                     )
+            wc_checkbox = col_1.checkbox(
+                "Show Wordcloud for Keywords",
+                help="Show wordcloud for keywords in the selected json file",
+                value=True,
+            )
+            logs_checkbox = col_2.checkbox(
+                "Show Detailed Logs",
+                help="Show detailed logs for the selected experiment",
+                value=True,
+            )
 
     # get all runs for the selected experiment
     runs = get_runs(selected_experiment_request)
