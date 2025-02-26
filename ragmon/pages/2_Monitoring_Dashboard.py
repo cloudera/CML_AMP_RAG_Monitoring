@@ -261,8 +261,8 @@ if experiments:
                         else:
                             metric_fig = metric_fig_rows[i // 3][i % 3]
                             if (
-                                graph_settings_dict.get(metric_name)
-                                == ":material/pie_chart: Pie Chart",
+                                graph_settings_dict.get(metric_name, None)
+                                == ":material/pie_chart: Pie Chart"
                             ):
                                 if "faithfulness" in metric_name.lower():
                                     labels = ["Faithful", "Not Faithful"]
