@@ -110,6 +110,9 @@ if experiments:
     metric_names = get_metric_names(selected_experiment_request)
     metric_names = sorted(metric_names)
 
+    numeric_metrics = [x for x in metric_names if not x.endswith(".json")]
+    json_files = [x for x in metric_names if x.endswith(".json")]
+
     dashboard_tab, settings_tab = st.tabs(
         [":material/monitoring: Dashboard", ":material/settings: Settings"]
     )
@@ -118,8 +121,8 @@ if experiments:
         st.write("### Settings")
         metrics_to_show = st.multiselect(
             "Select Metrics to Show",
-            options=metric_names,
-            default=metric_names,
+            options=numeric_metrics,
+            default=numeric_metrics,
         )
         wc_checkbox = st.checkbox(
             "Show Wordcloud for Keywords",
@@ -134,10 +137,7 @@ if experiments:
         with st.expander(":material/table_chart_view: Graph Settings"):
             graph_settings_dict = {}
             for metric_name in metrics_to_show:
-                if (
-                    not metric_name.endswith(".json")
-                    or not "feedback" in metric_name.lower()
-                ):
+                if not "feedback" in metric_name.lower():
                     graph_settings_dict[metric_name] = st.radio(
                         f"{metric_name.replace('_', ' ').title()}",
                         [
@@ -170,9 +170,6 @@ if experiments:
 
             mock_precision_scores = np.random.random(len(run_ids))
             mock_recall_scores = np.random.random(len(run_ids))
-
-            numeric_metrics = [x for x in metrics_to_show if not x.endswith(".json")]
-            json_files = [x for x in metrics_to_show if x.endswith(".json")]
 
             # get parameters and construct a dataframe
             params_df = get_params_df(
