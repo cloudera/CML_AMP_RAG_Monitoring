@@ -147,8 +147,8 @@ if experiments:
                         ),
                         horizontal=True,
                     )
-            checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
             st.write("##### Additional Settings")
+            checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
             wc_checkbox = checkbox_col_1.checkbox(
                 "Show Wordcloud for Keywords",
                 help="Show wordcloud for keywords in the selected json file",
