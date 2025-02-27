@@ -149,7 +149,7 @@ if experiments:
                         ),
                         horizontal=True,
                     )
-            st.write("##### Additional Settings")
+        with st.expander("**:material/keyboard: Additional Settings**", expanded=True):
             checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
             wc_checkbox = checkbox_col_1.checkbox(
                 "Show Wordcloud for Keywords",
@@ -161,6 +161,12 @@ if experiments:
                 help="Show detailed logs for the selected experiment",
                 value=True,
             )
+            if logs_checkbox:
+                jsons_to_use = st.multiselect(
+                    "##### Select JSON Files to use for Detailed Logs",
+                    options=json_files,
+                    default=json_files,
+                )
 
     # get all runs for the selected experiment
     runs = get_runs(selected_experiment_request)
@@ -325,9 +331,13 @@ if experiments:
                 if logs_checkbox:
                     if json_dicts:
                         # build dataframes from json files
-                        json_df = get_df_from_json_dicts(json_dicts)
+                        json_dicts_to_use = {
+                            json_file: json_dicts[json_file]
+                            for json_file in jsons_to_use
+                        }
+                        json_df = get_df_from_json_dicts(json_dicts_to_use)
 
-                        # check common columns in both dataframes except
+                        # check common columns in both dataframes except run_id
                         common_columns = list(
                             set(json_df.drop(columns=["run_id"]).columns).intersection(
                                 set(params_df.drop(columns=["run_id"]).columns)

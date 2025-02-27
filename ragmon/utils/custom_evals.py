@@ -183,5 +183,7 @@ def show_custom_evaluators_component(experiment_id: Optional[str] = None):
                         st.caption(f"{question}")
         else:
             st.write("No custom evaluators found")
-    if st.button("Create Custom Evaluator", key="create_evaluator"):
-        create_evaluator_modal(experiment_id=experiment_id)
+
+        # Create custom evaluator
+        if st.button("Create Custom Evaluator", key="create_evaluator"):
+            create_evaluator_modal(experiment_id=experiment_id)
