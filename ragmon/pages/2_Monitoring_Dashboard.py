@@ -274,7 +274,7 @@ if experiments:
                             ):
                                 if "faithfulness" in metric_name.lower():
                                     labels = ["Faithful", "Not Faithful"]
-                                if "relevance" in metric_name.lower():
+                                elif "relevance" in metric_name.lower():
                                     labels = ["Relevant", "Not Relevant"]
                                 else:
                                     labels = None
