@@ -113,7 +113,7 @@ def get_custom_evaluators(exp_id: Optional[str] = None) -> Dict[str, Dict[str, A
     if not exp_custom_evals_dir.exists():
         return custom_evaluators
     for file in exp_custom_evals_dir.iterdir():
-        if file.endswith() == ".json":
+        if file.suffix == ".json":
             # read the json file
             eval_json = json.load(file.open())
             evaluator_name = eval_json.pop("name")
