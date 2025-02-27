@@ -63,10 +63,10 @@ class RagPredictConfiguration(BaseModel):
 
 @dataclass(init=False)
 class RagPredictSourceNode(BaseModel):
-    node_id: str
-    doc_id: str
-    source_file_name: str
-    score: float
+    node_id: Optional[str]
+    doc_id: Optional[str]
+    source_file_name: Optional[str]
+    score: Optional[float]
     content: str
 
 

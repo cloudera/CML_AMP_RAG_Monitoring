@@ -436,17 +436,12 @@ async def evaluate_json_data(data):
                     "response_keywords": ", ".join(response_keywords or []),
                 }
 
-                # log context texts
-                if contexts:
-                    for i, context in enumerate(contexts):
-                        response_table[f"context_{i}"] = context
-
                 mlflow.log_table(
                     response_table,
                     artifact_file="live_results.json",
                 )
 
-                # log the source nodes
+                # log the source nodes/contexts
                 source_nodes = [
                     node.model_dump(mode="json") for node in data.source_nodes
                 ]
