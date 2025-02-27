@@ -53,13 +53,10 @@ from data_types import (
     MLFlowExperimentRequest,
     MLFlowStoreMetricRequest,
 )
+from utils.metric_store import get_experiments, get_metric_names, get_json, get_runs
 from utils.dashboard import (
-    get_experiments,
-    get_runs,
-    get_metric_names,
     get_params_df,
     get_numeric_metrics_df,
-    get_json,
     get_df_from_json_dicts,
     show_parameters_overview_component,
     show_feedback_component,

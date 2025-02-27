@@ -39,41 +39,39 @@
 # ###########################################################################
 
 """
-This module contains functions to evaluate the response of a chat engine against a query and contexts.
+Module for functions to evaluate the response against a query and contexts.
 """
 
+import sys
 import asyncio
 import json
 import logging
 import os
 from pathlib import Path
-import sys
-from typing import Any, Union, Tuple, Sequence, Dict
+from typing import Any, Optional, Union, Tuple, Sequence, Dict
 
+import mlflow
 from uvicorn.logging import DefaultFormatter
-
+from llama_index.core.chat_engine.types import AgentChatResponse
 from llama_index.core.evaluation import (
     FaithfulnessEvaluator,
     RelevancyEvaluator,
     ContextRelevancyEvaluator,
     EvaluationResult,
+    BaseEvaluator,
 )
-from llama_index.llms.bedrock_converse import BedrockConverse
 
 from .keyword_detection import extract_keywords
 from .mlflowstore import register_experiment_and_run
 from ..services.ragllm import get_inference_model
 from ..data_types import RagPredictResponse, Metric
-from llama_index.core.chat_engine.types import AgentChatResponse
-
-import mlflow
-
 from .judge import (
     MaliciousnessEvaluator,
     ToxicityEvaluator,
     ComprehensivenessEvaluator,
     load_custom_evaluator,
 )
+from .custom_evals import get_custom_evaluators
 from ..config import settings
 
 logger = logging.getLogger(__name__)
@@ -91,21 +89,16 @@ data_dir = Path(os.path.join(main_dir, "data"))
 CUSTOM_EVALUATORS_DIR = Path(os.path.join(data_dir, "custom_evaluators"))
 
 
-def get_custom_evaluators():
-    # check for json files in custom evaluators directory
-    if not CUSTOM_EVALUATORS_DIR.exists():
-        return {}
-    custom_evaluators = {}
-    for file in CUSTOM_EVALUATORS_DIR.iterdir():
-        if file.suffix == ".json":
-            # read the json file
-            eval_json = json.load(file.open())
-            evaluator_name = eval_json.pop("name")
-            custom_evaluators[evaluator_name] = eval_json
-    return custom_evaluators
-
-
 def convert_list_of_dicts_to_dict_of_lists(list_of_dicts: Sequence[Dict[str, Any]]):
+    """
+    Convert a list of dictionaries to a dictionary of lists.
+
+    Args:
+        list_of_dicts (Sequence[Dict[str, Any]]): The list of dictionaries to convert.
+
+    Returns:
+        Dict[str, List[Any]]: The dictionary of lists.
+    """
     if not list_of_dicts:
         return {}
 
@@ -117,6 +110,30 @@ def convert_list_of_dicts_to_dict_of_lists(list_of_dicts: Sequence[Dict[str, Any
             dict_of_lists[key].append(value)
 
     return dict_of_lists
+
+
+def load_all_evaluators(exp_id: Optional[str] = None) -> Dict[str, BaseEvaluator]:
+    """
+    Load all evaluators including custom evaluators.
+
+    Args:
+        exp_id (Optional[str], optional): The experiment ID. Defaults to None.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: The loaded custom evaluators.
+    """
+    # load
+
+    custom_evaluators = {}
+    custom_evals_dir = CUSTOM_EVALUATORS_DIR.joinpath(exp_id)
+
+    if custom_evals_dir.exists():
+        for eval_file in custom_evals_dir.iterdir():
+            if eval_file.suffix == ".json":
+                with open(eval_file, "r") as f:
+                    eval_data = json.load(f)
+                    custom_evaluators[eval_data["name"]] = eval_data
+    return custom_evaluators
 
 
 async def evaluate_response(
@@ -370,12 +387,13 @@ async def evaluate_json_data(data):
                 if custom_eval_results:
                     logger.info("Logging custom evaluation metrics")
                     for name, result in custom_eval_results.items():
-                        logger.info("%s: %s", name, result.score)
-                        mlflow.log_metric(
-                            key=f"{name.lower().replace(' ', '_')}_score",
-                            value=result.score,
-                            synchronous=True,
-                        )
+                        if result.score is not None:
+                            logger.info("%s: %s", name, result.score)
+                            mlflow.log_metric(
+                                key=f"{name.lower().replace(' ', '_')}_score",
+                                value=result.score,
+                                synchronous=True,
+                            )
                 else:
                     logger.info("No custom evaluators or metrics to log")
 
