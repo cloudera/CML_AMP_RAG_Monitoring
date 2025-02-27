@@ -108,6 +108,15 @@ def add_custom_evaluator(
 
 
 def get_custom_evaluators(exp_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """
+    Get the custom evaluators for the given experiment ID
+
+    Args:
+        exp_id (Optional[str], optional): The experiment ID. Defaults to None.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: A dictionary containing the custom evaluators
+    """
     custom_evaluators = {}
     exp_custom_evals_dir = get_custom_evals_dir(exp_id)
     if not exp_custom_evals_dir.exists():
@@ -116,8 +125,7 @@ def get_custom_evaluators(exp_id: Optional[str] = None) -> Dict[str, Dict[str, A
         if file.suffix == ".json":
             # read the json file
             eval_json = json.load(file.open())
-            evaluator_name = eval_json.pop("name")
-            custom_evaluators[evaluator_name] = eval_json
+            custom_evaluators[eval_json["name"]] = eval_json
     return custom_evaluators
 
 
@@ -180,11 +188,9 @@ def show_custom_evaluators_component(experiment_id: Optional[str] = None):
             """
         )
         if custom_evaluators:
-            for evaluator_name, evaluator in custom_evaluators.items():
-                evaluator_json = CustomEvaluatorRequest(
-                    name=evaluator_name, **evaluator
-                )
-                with st.popover(f"**:material/function: {evaluator_name}**"):
+            for _, evaluator in custom_evaluators.items():
+                evaluator_json = CustomEvaluatorRequest(**evaluator)
+                with st.popover(f"**:material/function: {evaluator_json.name}**"):
                     st.write("**Definition**")
                     st.caption(evaluator_json.eval_definition)
                     st.write("**Questions**")

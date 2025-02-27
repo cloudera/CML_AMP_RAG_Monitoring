@@ -123,137 +123,26 @@ def load_all_evaluators(exp_id: Optional[str] = None) -> Dict[str, BaseEvaluator
         Dict[str, Dict[str, Any]]: The loaded custom evaluators.
     """
     # load
-
-    custom_evaluators = {}
-    custom_evals_dir = CUSTOM_EVALUATORS_DIR.joinpath(exp_id)
-
-    if custom_evals_dir.exists():
-        for eval_file in custom_evals_dir.iterdir():
-            if eval_file.suffix == ".json":
-                with open(eval_file, "r") as f:
-                    eval_data = json.load(f)
-                    custom_evaluators[eval_data["name"]] = eval_data
-    return custom_evaluators
-
-
-async def evaluate_response(
-    query: str,
-    chat_response: Union[str, AgentChatResponse],
-    contexts: Sequence[str] = None,
-) -> Tuple[
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    EvaluationResult,
-    Dict[str, EvaluationResult],
-]:
-    """
-    Evaluate a response against a query and contexts.
-
-    Args:
-        query: The query string.
-        chat_response: The response to evaluate.
-        contexts: The contexts to evaluate the response against.
-
-    Returns:
-        A tuple of evaluation results for the response.
-    """
     evaluator_llm = get_inference_model()
+    evaluators = {}
+    custom_evals = get_custom_evaluators(exp_id)
 
-    relevancy_evaluator = RelevancyEvaluator(llm=evaluator_llm)
-    faithfulness_evaluator = FaithfulnessEvaluator(llm=evaluator_llm)
-    context_relevancy_evaluator = ContextRelevancyEvaluator(llm=evaluator_llm)
-    maliciousness_evaluator = MaliciousnessEvaluator(llm=evaluator_llm)
-    toxicity_evaluator = ToxicityEvaluator(llm=evaluator_llm)
-    comprehensiveness_evaluator = ComprehensivenessEvaluator(llm=evaluator_llm)
+    evaluators["relevancy"] = RelevancyEvaluator(llm=evaluator_llm)
+    evaluators["faithfulness"] = FaithfulnessEvaluator(llm=evaluator_llm)
+    evaluators["context_relevancy"] = ContextRelevancyEvaluator(llm=evaluator_llm)
+    evaluators["maliciousness"] = MaliciousnessEvaluator(llm=evaluator_llm)
+    evaluators["toxicity"] = ToxicityEvaluator(llm=evaluator_llm)
+    evaluators["comprehensiveness"] = ComprehensivenessEvaluator(llm=evaluator_llm)
 
-    if isinstance(chat_response, AgentChatResponse):
-        results = await asyncio.gather(
-            relevancy_evaluator.aevaluate_response(query=query, response=chat_response),
-            faithfulness_evaluator.aevaluate_response(
-                query=query, response=chat_response
-            ),
-            context_relevancy_evaluator.aevaluate_response(
-                query=query, response=chat_response
-            ),
-            maliciousness_evaluator.aevaluate_response(
-                query=query, response=chat_response
-            ),
-            toxicity_evaluator.aevaluate_response(query=query, response=chat_response),
-            comprehensiveness_evaluator.aevaluate_response(
-                query=query, response=chat_response
-            ),
-        )
-
-    else:
-        results = await asyncio.gather(
-            relevancy_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-            faithfulness_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-            context_relevancy_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-            maliciousness_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-            toxicity_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-            comprehensiveness_evaluator.aevaluate(
-                query=query, response=chat_response, contexts=contexts
-            ),
-        )
-
-    (
-        relevance,
-        faithfulness,
-        context_relevancy,
-        maliciousness,
-        toxicity,
-        comprehensiveness,
-    ) = results
-
-    # check custom evaluators directory for custom evaluators
-    custom_evaluators = get_custom_evaluators()
-    loaded_custom_evals = []
-
-    for _, evaluator_params in custom_evaluators.items():
+    for _, evaluator_params in custom_evals.items():
         evaluator = load_custom_evaluator(
             eval_definition=evaluator_params["eval_definition"],
             questions=evaluator_params["questions"],
             llm=evaluator_llm,
         )
-        loaded_custom_evals.append(evaluator)
+        evaluators[evaluator_params["name"]] = evaluator
 
-    custom_eval_results = {}
-    if loaded_custom_evals:
-        custom_eval_results = await asyncio.gather(
-            *[
-                evaluator.aevaluate(
-                    query=query, response=chat_response, contexts=contexts
-                )
-                for evaluator in loaded_custom_evals
-            ]
-        )
-
-        custom_eval_results = {
-            k: v for k, v in zip(custom_evaluators.keys(), custom_eval_results)
-        }
-
-    return (
-        relevance,
-        faithfulness,
-        context_relevancy,
-        maliciousness,
-        toxicity,
-        comprehensiveness,
-        custom_eval_results,
-    )
+    return evaluators
 
 
 def set_experiment_and_run(data):
@@ -359,74 +248,38 @@ async def evaluate_json_data(data):
                     }
                 )
 
-                # Evaluate the response
-                (
-                    relevance,
-                    faithfulness,
-                    context_relevancy,
-                    maliciousness,
-                    toxicity,
-                    comprehensiveness,
-                    custom_eval_results,
-                ) = await evaluate_response(query, response, contexts)
+                # load all evaluators
+                evaluators = load_all_evaluators(data.mlflow_experiment_id)
 
-                # show the evaluation results logger
-                logger.info(
-                    "Relevance: %s, Faithfulness: %s, "
-                    "Context Relevancy: %s, Maliciousness: %s, "
-                    "Toxicity: %s, Comprehensiveness: %s",
-                    relevance.score,
-                    faithfulness.score,
-                    context_relevancy.score,
-                    maliciousness.score,
-                    toxicity.score,
-                    comprehensiveness.score,
+                # Evaluate the response
+                eval_results = await asyncio.gather(
+                    *[
+                        evaluator.aevaluate(query, response, contexts)
+                        for evaluator in evaluators.values()
+                    ]
                 )
 
-                # show the custom evaluation metrics
-                if custom_eval_results:
-                    logger.info("Logging custom evaluation metrics")
-                    for name, result in custom_eval_results.items():
-                        if result.score is not None:
-                            logger.info("%s: %s", name, result.score)
-                            mlflow.log_metric(
-                                key=f"{name.lower().replace(' ', '_')}_score",
-                                value=result.score,
-                                synchronous=True,
-                            )
-                else:
-                    logger.info("No custom evaluators or metrics to log")
-
-                # create metric dictionary and do not add metrics which are none or empty
-
-                metrics = [
-                    Metric(name="relevance_score", value=relevance.score),
-                    Metric(name="faithfulness_score", value=faithfulness.score),
-                    Metric(
-                        name="context_relevancy_score", value=context_relevancy.score
-                    ),
-                    Metric(name="maliciousness_score", value=maliciousness.score),
-                    Metric(name="toxicity_score", value=toxicity.score),
-                    Metric(
-                        name="comprehensiveness_score", value=comprehensiveness.score
-                    ),
-                    Metric(name="input_length", value=len(query.split())),
-                    Metric(name="output_length", value=len(response.split())),
-                ]
-
-                # add custom metrics to metrics list
-                for name, result in custom_eval_results.items():
-                    metrics.append(
-                        Metric(
-                            name=f"{name.lower().replace(' ', '_')}_score",
-                            value=result.score,
-                        )
+                eval_results_dict = {
+                    evaluator_name: eval_result
+                    for evaluator_name, eval_result in zip(
+                        evaluators.keys(), eval_results
                     )
+                }
 
-                data.metrics = metrics
+                # log the evaluation results
+                data.metrics = []
+
+                for evaluator_name, eval_result in eval_results_dict.items():
+                    if isinstance(eval_result, EvaluationResult):
+                        data.metrics.append(
+                            Metric(
+                                name=evaluator_name,
+                                value=eval_result.score,
+                            )
+                        )
 
                 # Log the metrics
-                for metric in metrics:
+                for metric in data.metrics:
                     if metric.value is not None:
                         mlflow.log_metric(
                             metric.name,
@@ -450,13 +303,20 @@ async def evaluate_json_data(data):
                     "response_id": data.id,
                     "input": query,
                     "output": response,
-                    "query_keywords": ", ".join(query_keywords or []),
-                    "response_keywords": ", ".join(response_keywords or []),
                 }
 
                 mlflow.log_table(
                     response_table,
                     artifact_file="live_results.json",
+                )
+
+                # log the keywords
+                mlflow.log_table(
+                    {
+                        "query_keywords": ", ".join(query_keywords or []),
+                        "response_keywords": ", ".join(response_keywords or []),
+                    },
+                    artifact_file="keywords.json",
                 )
 
                 # log the source nodes/contexts
