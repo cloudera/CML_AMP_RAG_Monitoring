@@ -2,6 +2,7 @@ import subprocess
 import os
 
 root_dir = "/home/cdsw/ml-monitoring" if os.getenv("IS_COMPOSABLE", "") != "" else "/home/cdsw"
+os.makedirs(root_dir, exist_ok=True)
 os.chdir(root_dir)
 
 print(
