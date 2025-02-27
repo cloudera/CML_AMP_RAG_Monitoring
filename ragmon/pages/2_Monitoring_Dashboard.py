@@ -211,8 +211,9 @@ if experiments:
             metric_dfs = {}
             for metric_name, metric_request in numeric_metrics_requests.items():
                 metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
-                st.write(f"#### {metric_name.replace('_', ' ').title()}")
-                st.write(metric_dfs[metric_name])
+                with placeholder:
+                    st.write(f"#### {metric_name.replace('_', ' ').title()}")
+                    st.write(metric_dfs[metric_name])
 
                 # with placeholder:
                 #     # Non empty metrics
