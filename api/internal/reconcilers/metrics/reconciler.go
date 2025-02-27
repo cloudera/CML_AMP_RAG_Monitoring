@@ -7,11 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/datasource"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/db"
+	"github.infra.cloudera.com/CAI/AmpRagMonitoring/internal/util"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/app"
 	"github.infra.cloudera.com/CAI/AmpRagMonitoring/pkg/reconciler"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type MetricsReconciler struct {
@@ -70,7 +70,8 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 			continue
 		}
 		for _, metric := range mlFlowMetrics {
-			ts := time.Unix(0, metric.Timestamp*int64(time.Millisecond))
+			ts := util.TimeStamp(metric.Timestamp)
+			log.Printf("found metric %s with timestamp %s", metric.Key, ts)
 
 			// check and see if the metric already exists in the database
 			existing, err := r.db.Metrics().GetMetricByName(ctx, run.ExperimentId, run.RunId, metric.Key)
@@ -91,6 +92,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 					} else {
 						log.Printf("metric %s is not numeric, skipping update", metric.Key)
 					}
+					existing.Timestamp = &ts
 					_, err := r.db.Metrics().UpdateMetric(ctx, existing)
 					if err != nil {
 						log.Printf("failed to update metric %s with database ID %d for experiment run %s: %s", metric.Key, existing.Id, run.RunId, err)
