@@ -181,7 +181,9 @@ def show_custom_evaluators_component(experiment_id: Optional[str] = None):
         )
         if custom_evaluators:
             for evaluator_name, evaluator in custom_evaluators.items():
-                evaluator_json = CustomEvaluatorRequest(**evaluator)
+                evaluator_json = CustomEvaluatorRequest(
+                    name=evaluator_name, **evaluator
+                )
                 with st.popover(f"**:material/function: {evaluator_name}**"):
                     st.write("**Definition**")
                     st.caption(evaluator_json.eval_definition)
