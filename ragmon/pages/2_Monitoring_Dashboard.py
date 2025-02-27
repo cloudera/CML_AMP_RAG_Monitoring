@@ -211,90 +211,92 @@ if experiments:
             metric_dfs = {}
             for metric_name, metric_request in numeric_metrics_requests.items():
                 metric_dfs[metric_name] = get_numeric_metrics_df(metric_request)
+                st.write(f"#### {metric_name.replace('_', ' ').title()}")
+                st.write(metric_dfs[metric_name])
 
-            with placeholder:
-                # Non empty metrics
-                non_empty_metrics = [
-                    metric_name
-                    for metric_name, metric_df in metric_dfs.items()
-                    if not metric_df.empty
-                ]
-                if non_empty_metrics:
-                    metric_rows = [
-                        st.columns([1, 1, 1, 1, 1, 1])
-                        for _ in range(
-                            len(non_empty_metrics) // 6 + 1
-                            if len(non_empty_metrics) % 6 != 0
-                            else len(non_empty_metrics) // 6
-                        )
-                    ]
-                    with st.expander(
-                        ":material/analytics: **Metrics Overview**", expanded=True
-                    ):
-                        metric_fig_rows = [
-                            st.columns([1, 1, 1], border=False)
-                            for _ in range(
-                                len(non_empty_metrics) // 3 + 1
-                                if len(non_empty_metrics) % 3 != 0
-                                else len(non_empty_metrics) // 3
-                            )
-                        ]
-                    for i, metric_name in enumerate(non_empty_metrics):
-                        metric_df = metric_dfs[metric_name]
-                        metric_kpi = metric_rows[i // 6][i % 6]
-                        if not "feedback" in metric_name.lower():
-                            show_numeric_metric_kpi(
-                                metric_key=metric_name,
-                                metrics_df=metric_df,
-                                kpi_placeholder=metric_kpi,
-                                label=metric_name.replace("_", " ").title(),
-                                tooltip=f"Average {metric_name.replace('_', ' ').title()}",
-                            )
-                        else:
-                            show_feedback_kpi(
-                                metric_key=metric_name,
-                                metrics_df=metric_df,
-                                kpi_placeholder=metric_kpi,
-                                label=metric_name.replace("_", " ").title(),
-                            )
-                        if "feedback" in metric_name.lower():
-                            metric_fig = metric_fig_rows[i // 3][i % 3]
-                            with metric_fig:
-                                feedback_df = metric_df
-                                show_feedback_component(
-                                    feedback_df=feedback_df,
-                                    label=metric_name.replace("_", " ").title(),
-                                    update_timestamp=update_timestamp,
-                                )
-                        else:
-                            metric_fig = metric_fig_rows[i // 3][i % 3]
-                            if (
-                                graph_settings_dict.get(metric_name, None)
-                                == ":material/pie_chart: Pie Chart"
-                            ):
-                                if "faithfulness" in metric_name.lower():
-                                    labels = ["Faithful", "Not Faithful"]
-                                elif "relevance" in metric_name.lower():
-                                    labels = ["Relevant", "Not Relevant"]
-                                else:
-                                    labels = None
-                                show_pie_chart_component(
-                                    metric_key=metric_name,
-                                    metrics_df=metric_df,
-                                    title=f"{metric_name.replace('_', ' ').title()}",
-                                    labels=labels,
-                                    update_timestamp=update_timestamp,
-                                    fig_placeholder=metric_fig,
-                                )
-                            else:
-                                show_time_series_component(
-                                    metric_key=metric_name,
-                                    metrics_df=metric_df,
-                                    title=f"{metric_name.replace('_', ' ').title()}",
-                                    update_timestamp=update_timestamp,
-                                    frequency="h",
-                                    fig_placeholder=metric_fig,
-                                )
+                # with placeholder:
+                #     # Non empty metrics
+                #     non_empty_metrics = [
+                #         metric_name
+                #         for metric_name, metric_df in metric_dfs.items()
+                #         if not metric_df.empty
+                #     ]
+                #     if non_empty_metrics:
+                #         metric_rows = [
+                #             st.columns([1, 1, 1, 1, 1, 1])
+                #             for _ in range(
+                #                 len(non_empty_metrics) // 6 + 1
+                #                 if len(non_empty_metrics) % 6 != 0
+                #                 else len(non_empty_metrics) // 6
+                #             )
+                #         ]
+                #         with st.expander(
+                #             ":material/analytics: **Metrics Overview**", expanded=True
+                #         ):
+                #             metric_fig_rows = [
+                #                 st.columns([1, 1, 1], border=False)
+                #                 for _ in range(
+                #                     len(non_empty_metrics) // 3 + 1
+                #                     if len(non_empty_metrics) % 3 != 0
+                #                     else len(non_empty_metrics) // 3
+                #                 )
+                #             ]
+                #         for i, metric_name in enumerate(non_empty_metrics):
+                #             metric_df = metric_dfs[metric_name]
+                #             metric_kpi = metric_rows[i // 6][i % 6]
+                #             if not "feedback" in metric_name.lower():
+                #                 show_numeric_metric_kpi(
+                #                     metric_key=metric_name,
+                #                     metrics_df=metric_df,
+                #                     kpi_placeholder=metric_kpi,
+                #                     label=metric_name.replace("_", " ").title(),
+                #                     tooltip=f"Average {metric_name.replace('_', ' ').title()}",
+                #                 )
+                #             else:
+                #                 show_feedback_kpi(
+                #                     metric_key=metric_name,
+                #                     metrics_df=metric_df,
+                #                     kpi_placeholder=metric_kpi,
+                #                     label=metric_name.replace("_", " ").title(),
+                #                 )
+                #             if "feedback" in metric_name.lower():
+                #                 metric_fig = metric_fig_rows[i // 3][i % 3]
+                #                 with metric_fig:
+                #                     feedback_df = metric_df
+                #                     show_feedback_component(
+                #                         feedback_df=feedback_df,
+                #                         label=metric_name.replace("_", " ").title(),
+                #                         update_timestamp=update_timestamp,
+                #                     )
+                #             else:
+                #                 metric_fig = metric_fig_rows[i // 3][i % 3]
+                #                 if (
+                #                     graph_settings_dict.get(metric_name, None)
+                #                     == ":material/pie_chart: Pie Chart"
+                #                 ):
+                #                     if "faithfulness" in metric_name.lower():
+                #                         labels = ["Faithful", "Not Faithful"]
+                #                     elif "relevance" in metric_name.lower():
+                #                         labels = ["Relevant", "Not Relevant"]
+                #                     else:
+                #                         labels = None
+                #                     show_pie_chart_component(
+                #                         metric_key=metric_name,
+                #                         metrics_df=metric_df,
+                #                         title=f"{metric_name.replace('_', ' ').title()}",
+                #                         labels=labels,
+                #                         update_timestamp=update_timestamp,
+                #                         fig_placeholder=metric_fig,
+                #                     )
+                #                 else:
+                #                     show_time_series_component(
+                #                         metric_key=metric_name,
+                #                         metrics_df=metric_df,
+                #                         title=f"{metric_name.replace('_', ' ').title()}",
+                #                         update_timestamp=update_timestamp,
+                #                         frequency="h",
+                #                         fig_placeholder=metric_fig,
+                #                     )
 
                 json_dicts = {}
 
