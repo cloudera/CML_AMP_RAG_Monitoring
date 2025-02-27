@@ -216,8 +216,8 @@ def main():
         "examples": [],
         "mlflow_experiment_id": mlflow_exp_id,
     }
-    if not os.path.exists(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}"):
-        os.makedirs(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}")
+    if not os.path.exists(os.path.join(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}")):
+        os.makedirs(os.path.join(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}"))
     with open(
         os.path.join(CUSTOM_EVAL_DIR, f"{mlflow_exp_id}", "friendliness.json"), "w+"
     ) as f:
