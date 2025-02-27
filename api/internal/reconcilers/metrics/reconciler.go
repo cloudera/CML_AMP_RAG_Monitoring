@@ -71,7 +71,7 @@ func (r *MetricsReconciler) Reconcile(ctx context.Context, items []reconciler.Re
 		}
 		for _, metric := range mlFlowMetrics {
 			ts := util.TimeStamp(metric.Timestamp)
-			log.Printf("found metric %s with timestamp %s", metric.Key, ts)
+			log.Printf("found metric %s with timestamp %d (%s)", metric.Key, metric.Timestamp, ts)
 
 			// check and see if the metric already exists in the database
 			existing, err := r.db.Metrics().GetMetricByName(ctx, run.ExperimentId, run.RunId, metric.Key)
