@@ -305,9 +305,7 @@ def get_numeric_metrics_df(request: MLFlowStoreMetricRequest):
         )
     else:
         metrics_df = pd.DataFrame(columns=["run_id", metric_name, "timestamp"])
-    metrics_df["timestamp"] = pd.to_datetime(
-        metrics_df["timestamp"], format="mixed", dayfirst=True
-    )
+    metrics_df["timestamp"] = pd.to_datetime(metrics_df["timestamp"])
     metrics_df = metrics_df.sort_values(by="timestamp", ascending=True)
     return metrics_df
 
