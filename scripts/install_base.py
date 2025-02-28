@@ -7,7 +7,7 @@ os.chdir(root_dir)
 
 print(
     subprocess.run(
-        ["bash $root_dir/scripts/install_base.sh"], shell=True, check=True
+        [f"bash {root_dir}/scripts/install_base.sh"], shell=True, check=True
     )
 )
 print("Installing base dependencies complete")
