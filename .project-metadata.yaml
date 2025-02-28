@@ -6,7 +6,7 @@ specification_version: 1.0
 prototype_version: 1.0
 
 runtimes:
-  - editor: Workbench
+  - editor: PBJ Workbench
     kernel: Python 3.10
     edition: Standard
 

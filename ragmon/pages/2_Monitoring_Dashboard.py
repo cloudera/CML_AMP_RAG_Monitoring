@@ -53,13 +53,10 @@ from data_types import (
     MLFlowExperimentRequest,
     MLFlowStoreMetricRequest,
 )
+from utils.metric_store import get_experiments, get_metric_names, get_json, get_runs
 from utils.dashboard import (
-    get_experiments,
-    get_runs,
-    get_metric_names,
     get_params_df,
     get_numeric_metrics_df,
-    get_json,
     get_df_from_json_dicts,
     show_parameters_overview_component,
     show_feedback_component,
@@ -129,11 +126,8 @@ if experiments:
             st.write("##### Select Graph Type for Metrics")
             col_1, col_2 = st.columns([1, 1])
             graph_settings_dict = {}
+            col_to_use = col_1
             for i, metric_name in enumerate(metrics_to_show):
-                if i % 2 == 0:
-                    col_to_use = col_1
-                else:
-                    col_to_use = col_2
                 if not "feedback" in metric_name.lower():
                     graph_settings_dict[metric_name] = col_to_use.radio(
                         f"{metric_name.replace('_', ' ').title()}",
@@ -149,6 +143,10 @@ if experiments:
                         ),
                         horizontal=True,
                     )
+                if col_to_use == col_1:
+                    col_to_use = col_2
+                else:
+                    col_to_use = col_1
         with st.expander("**:material/keyboard: Additional Settings**", expanded=True):
             checkbox_col_1, checkbox_col_2 = st.columns([1, 1])
             wc_checkbox = checkbox_col_1.checkbox(

@@ -115,7 +115,7 @@ class RagPredictResponse(BaseModel):
     chunk_size: int
     model_name: str
     source_nodes: List[RagPredictSourceNode] = []
-    chat_history: List[RagMessage]
+    chat_history: List[RagMessage] = []
     mlflow_experiment_id: Optional[str] = None
     mlflow_run_id: Optional[str] = None
     metrics: Optional[List[Metric]] = []

@@ -58,10 +58,6 @@ def setup_navigation():
                 "pages/2_Monitoring_Dashboard.py",
                 title="RAG Studio",
             ),
-            st.Page(
-                "pages/3_Leave_Feedback.py",
-                title="Leave Feedback",
-            ),
         ],
         position="hidden",
     )
@@ -82,11 +78,6 @@ def setup_sidebar():
             "pages/2_Monitoring_Dashboard.py",
             label="RAG Studio",
             icon=":material/chat_apps_script:",
-        )
-        st.page_link(
-            "pages/3_Leave_Feedback.py",
-            label="Leave Feedback",
-            icon=":material/comment:",
         )
 
 

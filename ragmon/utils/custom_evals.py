@@ -40,7 +40,7 @@
 
 import os
 import json
-from typing import Optional, Union, Dict
+from typing import Any, Optional, Union, Dict
 from pathlib import Path
 import streamlit as st
 from data_types import CustomEvaluatorRequest
@@ -96,21 +96,36 @@ def add_custom_evaluator(
             exp_custom_evals_dir,
             f"{request.name.lower().replace(' ', '_')}.json",
         )
-        return True
+        return {
+            "status": True,
+            "error": None,
+        }
     except Exception as e:
-        return False
+        return {
+            "status": False,
+            "error": str(e),
+        }
 
 
-def get_custom_evaluators(exp_id: Optional[str] = None):
-    custom_evaluators = []
+def get_custom_evaluators(exp_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """
+    Get the custom evaluators for the given experiment ID
+
+    Args:
+        exp_id (Optional[str], optional): The experiment ID. Defaults to None.
+
+    Returns:
+        Dict[str, Dict[str, Any]]: A dictionary containing the custom evaluators
+    """
+    custom_evaluators = {}
     exp_custom_evals_dir = get_custom_evals_dir(exp_id)
     if not exp_custom_evals_dir.exists():
         return custom_evaluators
-    for file in os.listdir(exp_custom_evals_dir):
-        if file.endswith(".json"):
+    for file in exp_custom_evals_dir.iterdir():
+        if file.suffix == ".json":
             # read the json file
-            with open(os.path.join(exp_custom_evals_dir, file), "r") as f:
-                custom_evaluators.append(json.load(f))
+            eval_json = json.load(file.open())
+            custom_evaluators[eval_json["name"]] = eval_json
     return custom_evaluators
 
 
@@ -146,11 +161,12 @@ def create_evaluator_modal(experiment_id: Optional[str] = None):
             questions=questions,
             mlflow_experiment_id=experiment_id,
         )
-        if add_custom_evaluator(request):
+        result = add_custom_evaluator(request)
+        if result["status"]:
             st.success("Custom Evaluator Created")
             st.rerun()
         else:
-            st.error("Failed to create custom evaluator")
+            st.error(f"Failed to create custom evaluator.\nError: {result['error']}")
 
 
 def show_custom_evaluators_component(experiment_id: Optional[str] = None):
@@ -172,7 +188,7 @@ def show_custom_evaluators_component(experiment_id: Optional[str] = None):
             """
         )
         if custom_evaluators:
-            for evaluator in custom_evaluators:
+            for _, evaluator in custom_evaluators.items():
                 evaluator_json = CustomEvaluatorRequest(**evaluator)
                 with st.popover(f"**:material/function: {evaluator_json.name}**"):
                     st.write("**Definition**")
@@ -182,7 +198,7 @@ def show_custom_evaluators_component(experiment_id: Optional[str] = None):
                     for question in questions:
                         st.caption(f"{question}")
         else:
-            st.write("No custom evaluators found")
+            st.caption("No custom evaluators found")
 
         # Create custom evaluator
         if st.button("Create Custom Evaluator", key="create_evaluator"):
