@@ -307,7 +307,7 @@ async def evaluate_json_data(data):
 
                 mlflow.log_table(
                     response_table,
-                    artifact_file="live_results.json",
+                    artifact_file="io_details.json",
                 )
 
                 # log the keywords
