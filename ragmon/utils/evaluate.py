@@ -140,7 +140,7 @@ def load_all_evaluators(exp_id: Optional[str] = None) -> Dict[str, BaseEvaluator
             questions=evaluator_params["questions"],
             llm=evaluator_llm,
         )
-        evaluators[evaluator_params["name"]] = evaluator
+        evaluators[evaluator_params["name"].lower()] = evaluator
 
     return evaluators
 
@@ -273,7 +273,7 @@ async def evaluate_json_data(data):
                     if isinstance(eval_result, EvaluationResult):
                         data.metrics.append(
                             Metric(
-                                name=evaluator_name,
+                                name=f"{evaluator_name}_score",
                                 value=eval_result.score,
                             )
                         )
