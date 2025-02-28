@@ -70,10 +70,6 @@ def setup_navigation():
                 "pages/5_Custom_Evaluators.py",
                 title="Custom Evaluators",
             ),
-            st.Page(
-                "pages/6_Leave_Feedback.py",
-                title="Leave Feedback",
-            ),
         ],
         position="hidden",
     )
@@ -105,11 +101,6 @@ def setup_sidebar():
             "pages/5_Custom_Evaluators.py",
             label="Custom Evaluators",
             icon=":material/custom_typography:",
-        )
-        st.page_link(
-            "pages/6_Leave_Feedback.py",
-            label="Leave Feedback",
-            icon=":material/comment:",
         )
 
 
