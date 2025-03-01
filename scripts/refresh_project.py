@@ -2,7 +2,9 @@ import subprocess
 import cmlapi
 import os
 
-print(subprocess.run(["bash", "/home/cdsw/scripts/refresh_project.sh"], check=True))
+root_dir = "/home/cdsw/monitoring-studio" if os.getenv("IS_COMPOSABLE", "") != "" else "/home/cdsw"
+
+print(subprocess.run(["bash", f"{root_dir}/scripts/refresh_project.sh"], check=True))
 
 print(
     "Project refresh complete. Restarting the Monitoring Application to pick up changes, if this isn't the initial deployment.")
